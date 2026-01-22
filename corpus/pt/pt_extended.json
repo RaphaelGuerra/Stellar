@@ -1,0 +1,275 @@
+[
+  {
+    "item": "Aries",
+    "category": "sign",
+    "title": "O Cara Que Já Tá Indo",
+    "text": "Ariano é aquele que já saiu correndo antes de você terminar de explicar o plano. Enquanto você ainda tá desenhando o fluxograma, ele já mandou três mensagens dizendo que começou. Mestre em começar projeto, péssimo em terminar - a gaveta tá cheia de curso online abandonado na aula dois. Adora uma competição, mesmo que seja pra ver quem come mais rápido ou quem chega primeiro no elevador. Se paciência fosse dinheiro, esse signo tava devendo pro agiota. Mas quando precisa de alguém pra dar o primeiro passo numa situação travada, é ele que levanta da cadeira enquanto todo mundo ainda tá pensando.",
+    "tags": ["iniciativa", "competição", "impulsividade", "liderança", "autonomia", "pressa"]
+  },
+  {
+    "item": "Taurus",
+    "category": "sign",
+    "title": "O Rei do Sofá",
+    "text": "Taurino é a criatura que transformou 'deixa como tá pra ver como fica' em filosofia de vida. O sofá dele tem a marca do corpo, o restaurante favorito já sabe o pedido de cor, e mudar o caminho pro trabalho é motivo de estresse. Confiável pra caralho quando se compromete - se disse que vai, vai, nem que demore. Mas tentar mudar a rotina dele é tipo empurrar geladeira ladeira acima: possível, mas você vai suar. Gosta de conforto e não tem vergonha de admitir que um bom jantar resolve noventa por cento dos problemas. Quando finalmente decide fazer algo, faz com uma persistência que beira a teimosia, e aí ninguém segura.",
+    "tags": ["estabilidade", "teimosia", "conforto", "persistência", "recursos", "rotina"]
+  },
+  {
+    "item": "Gemini",
+    "category": "sign",
+    "title": "O Zap Humano",
+    "text": "Geminiano nasceu com cinco abas abertas na cabeça e nenhuma carregando direito. Num minuto tá falando de astrofísica, no outro quer saber a fofoca do vizinho, e no terceiro já esqueceu os dois assuntos. Aprende rápido, esquece mais rápido ainda - fez curso de violão, japonês e confeitaria no mesmo ano e não terminou nenhum. Fala bem demais e consegue se adaptar a qualquer rolê, do churrasco de família ao jantar chique. Mas pedir compromisso é tipo pedir pra ele escolher só um sabor de pizza: dá um curto-circuito. É o cara que conhece todo mundo superficialmente e consegue puxar papo até com poste.",
+    "tags": ["comunicação", "curiosidade", "versatilidade", "networking", "inconsistência", "ideias"]
+  },
+  {
+    "item": "Cancer",
+    "category": "sign",
+    "title": "O Guardião do Lar",
+    "text": "Canceriano carrega a casa nas costas feito tartaruga emocional. Onde ele chega, já tá perguntando se você comeu, se tá bem, se quer um cafézinho. Memória de elefante pra lembrar o que você fez em 2014 - inclusive aquela piada sem graça que você já esqueceu. Lealdade de cachorro quando confia em você: defende, protege, guarda segredo até debaixo de tortura. Só não critica não, que o bicho recolhe as garras e some no casco por três dias, te deixando no vácuo sem entender o que aconteceu. A geladeira dele sempre tem comida de comfort, e o álbum de foto da família tá organizado por década.",
+    "tags": ["família", "proteção", "emoção", "memória", "segurança", "sensibilidade"]
+  },
+  {
+    "item": "Leo",
+    "category": "sign",
+    "title": "O Show Tem Que Continuar",
+    "text": "Leonino entra no recinto e já procura o holofote - se não tiver, ele improvisa um com o celular. Generoso de verdade: paga rodada, empresta carro, divide o último pedaço de pizza, desde que você reconheça o gesto. Criativo pra resolver problema e nasceu pra liderar - ou pelo menos pra achar que nasceu. O ego precisa de carinho diário, senão murcha feito planta sem água, e aí o drama começa. Dividir os aplausos? Só se for em dose homeopática e com agradecimento explícito. Mas quando ele brilha, ilumina todo mundo junto, e a festa sem leonino é tipo aniversário sem bolo.",
+    "tags": ["autoexpressão", "criatividade", "orgulho", "liderança", "validação", "presença"]
+  },
+  {
+    "item": "Virgo",
+    "category": "sign",
+    "title": "O Fiscal da Vida",
+    "text": "Virginiano é aquele que acha erro em prova já corrigida e manda email pro professor com a correção. Executa com uma qualidade absurda - o relatório dele é o que todo mundo copia. Mas se tortura com detalhes que ninguém mais notou: a vírgula fora do lugar, o pixel desalinhado, o tempero que ficou meio grau a mais. Quer ajudar, quer servir, quer consertar o mundo um defeito por vez. Vai te falar onde você errou sem você pedir, e geralmente tá certo, o que é mais irritante ainda. A casa dele tem etiquetadora, e o armário de tempero tá em ordem alfabética.",
+    "tags": ["análise", "perfeccionismo", "serviço", "organização", "crítica", "eficiência"]
+  },
+  {
+    "item": "Libra",
+    "category": "sign",
+    "title": "O Diplomata Indeciso",
+    "text": "Libriano consegue ver todos os lados de uma questão e por isso não consegue escolher porra nenhuma. Cardápio de restaurante é teste de paciência: ele pede opinião de todo mundo, muda três vezes, e no final pede o mesmo de sempre. Mestre em apaziguar briga alheia - coloca todo mundo pra conversar e acha o meio-termo que ninguém tinha visto. Péssimo em bancar decisão própria, porque e se a outra opção fosse melhor? Quer harmonia, beleza e que todo mundo goste dele - não necessariamente nessa ordem. O ambiente dele é sempre bonito, e ele morre de medo de ser grosso mesmo quando precisa.",
+    "tags": ["equilíbrio", "diplomacia", "indecisão", "parcerias", "estética", "justiça"]
+  },
+  {
+    "item": "Scorpio",
+    "category": "sign",
+    "title": "O Detetive Emocional",
+    "text": "Escorpiano olha pra você e já sabe o que você comeu no café, com quem você conversou e o que você tá escondendo. Intenso em tudo: ama intenso, odeia intenso, até assiste série intenso. Estratégico feito jogador de xadrez - tá sempre três movimentos na frente. Não esquece uma traição nem com amnésia, e a vingança pode demorar anos, mas vem. Transforma crise em renascimento, mas às vezes cria crise só pelo prazer de renascer das cinzas. Controle é o nome do jogo, e ele joga pra ganhar, mesmo quando finge que não tá jogando.",
+    "tags": ["intensidade", "transformação", "poder", "investigação", "sigilo", "profundidade"]
+  },
+  {
+    "item": "Sagittarius",
+    "category": "sign",
+    "title": "O Eterno Viajante",
+    "text": "Sagitariano tá sempre de olho no próximo horizonte enquanto tropeça no degrau da frente. A mala tá sempre meio pronta, o passaporte no bolso, e qualquer feriado prolongado vira desculpa pra cair na estrada. Otimista nato: acha que vai dar certo mesmo quando toda evidência aponta pro contrário. Fala o que pensa na hora que pensa, e às vezes a sinceridade machuca mais que mentira. Acha que entende mais do assunto do que realmente entende - já deu opinião sobre política externa, física quântica e gastronomia molecular no mesmo dia. Começar aventura é fácil; terminar o que começou é outro departamento que ele nem sabe onde fica.",
+    "tags": ["expansão", "otimismo", "viagem", "filosofia", "exagero", "liberdade"]
+  },
+  {
+    "item": "Capricorn",
+    "category": "sign",
+    "title": "O CEO Desde Criança",
+    "text": "Capricorniano já nasceu com plano de carreira de cinco anos e meta batida até 2047. Enquanto os outros brincavam de casinha, ele brincava de empresa. Disciplinado, resistente e leva responsabilidade tão a sério que esquece de viver - férias é só se tiver wifi pra checar email. Quer subir na vida e vai subir, mesmo que demore décadas, um degrau de cada vez. O currículo dele tem mais páginas que novela, e ele guarda recibo de tudo. Mostrar vulnerabilidade? Só depois da aposentadoria, e olhe lá. Mas quando promete, entrega, e a palavra dele vale contrato.",
+    "tags": ["ambição", "disciplina", "estrutura", "responsabilidade", "status", "paciência"]
+  },
+  {
+    "item": "Aquarius",
+    "category": "sign",
+    "title": "O ET de Bermuda",
+    "text": "Aquariano pensa fora da caixa porque nem sabe onde a caixa tá - e sinceramente, não quer saber. Inovador por natureza: enquanto todo mundo usa o app normal, ele já achou um alternativo que ninguém conhece. Meio desligado emocionalmente, não é que não sente, é que processa diferente. Adora ser do contra por esporte - se todo mundo concorda, ele acha o argumento oposto só pra testar. Quer mudar o mundo, mas às vezes esquece de perguntar se o mundo quer ser mudado. Tem mais amigo virtual que presencial, e o grupo de WhatsApp dele é sobre teorias conspiratórias ou tecnologia obscura.",
+    "tags": ["inovação", "independência", "coletivo", "excentricidade", "futuro", "desapego"]
+  },
+  {
+    "item": "Pisces",
+    "category": "sign",
+    "title": "O Sonhador Profissional",
+    "text": "Pisciano vive com um pé na realidade e o outro em Nárnia, e às vezes os dois em Nárnia mesmo. Sensível demais: absorve a energia do ambiente como esponja emocional, entra feliz na festa e sai triste porque sentiu a vibe de alguém no canto. Criativo de um jeito que não dá pra explicar - a arte dele vem de um lugar que nem ele sabe qual é. Precisa de escape às vezes, e se você não der, ele inventa um: seja série, seja vinho, seja devaneio de três horas. Limite é um conceito abstrato, tipo prazo de entrega ou hora de dormir. Mas a empatia dele é real, e quando você precisa de alguém pra ouvir sem julgar, é ele.",
+    "tags": ["imaginação", "empatia", "escapismo", "intuição", "sensibilidade", "arte"]
+  },
+  {
+    "item": "House 1",
+    "category": "house",
+    "title": "A Cara de Pau",
+    "text": "Casa 1 é como você entra no rolê e a primeira impressão que passa - aquele cartão de visita ambulante que você distribui querendo ou não. É o jeito que você anda, fala, se apresenta, antes mesmo de abrir a boca. Boa pra quem precisa de autonomia e sabe se virar sozinho: você não espera convite, você chega. Ruim pra quem esquece que existe gente no mundo além do espelho e acha que o universo gira em torno do próprio umbigo. Aqui mora seu temperamento básico, aquela reação automática antes de você pensar. É a embalagem, não o produto - mas a embalagem vende.",
+    "tags": ["identidade", "aparência", "iniciativa", "presença", "temperamento", "autonomia"]
+  },
+  {
+    "item": "House 2",
+    "category": "house",
+    "title": "O Bolso e o Valor",
+    "text": "Casa 2 é a parte do mapa que cuida do seu dinheiro e do quanto você se acha - as duas coisas mais conectadas do que a gente gosta de admitir. Aqui você vê como a pessoa ganha, gasta e guarda, se é mão de vaca ou mão aberta. Bom pra construir reserva e ter noção do próprio valor: você sabe cobrar pelo seu trabalho. Ruim quando você acha que seu valor depende da conta bancária e confunde ter com ser. Segurança material mora aqui, junto com um leve apego às coisas - aquele que faz você guardar caixa de sapato vazia 'por via das dúvidas'. É sobre recursos, mas também sobre o que você considera recurso.",
+    "tags": ["dinheiro", "valores", "posses", "segurança", "autoestima", "recursos"]
+  },
+  {
+    "item": "House 3",
+    "category": "house",
+    "title": "O Boca a Boca",
+    "text": "Casa 3 é onde rola a comunicação do dia a dia, a fofoca com o vizinho e o deslocamento pro trabalho - tudo que é perto e frequente. É o papo no elevador, a mensagem de áudio, o grupo do condomínio. Boa pra aprender rápido e se conectar com o entorno: você absorve informação como esponja e repassa igual. Ruim quando vira excesso de informação e você não sabe mais o que é importante, afogado em notificação e novidade. Irmãos e vizinhos passam por aqui, aquela rede imediata de contato. É o trânsito entre um ponto e outro, literal e figurado - como você circula no mundo próximo.",
+    "tags": ["comunicação", "irmãos", "aprendizado", "vizinhança", "deslocamento", "informação"]
+  },
+  {
+    "item": "House 4",
+    "category": "house",
+    "title": "A Base do Barraco",
+    "text": "Casa 4 é seu canto, sua família, sua fundação emocional - de onde você veio e pra onde corre quando a merda bate no ventilador. É o cheiro da casa da avó, a cadeira que é sua na mesa de jantar, a memória que você carrega mesmo longe. Boa pra criar raízes e ter chão firme: você sabe de onde veio e isso te ancora. Ruim quando você não consegue largar o passado nem com reza, fica preso em dinâmica familiar que já deveria ter superado. Aqui mora a privacidade, o que você só mostra pra quem é íntimo. É a fundação invisível que sustenta tudo que você constrói lá fora.",
+    "tags": ["lar", "família", "raízes", "privacidade", "segurança", "fundação"]
+  },
+  {
+    "item": "House 5",
+    "category": "house",
+    "title": "O Palco da Diversão",
+    "text": "Casa 5 é onde mora o prazer, a criatividade e os casos de amor que dão história - aquele crush que virou poema, a noite que virou lenda. É hobby, é jogo, é aposta, é filho, é tudo que você cria porque quer, não porque precisa. Boa pra se expressar sem vergonha e arriscar: você coloca a cara no mundo e vê o que volta. Ruim quando vira puro drama romântico ou aposta sem freio, confundindo diversão com estilo de vida. Aqui a vida pede que você brinque, que você se jogue. É o palco onde você não tá trabalhando, tá se divertindo - mesmo que dê trabalho.",
+    "tags": ["criatividade", "romance", "prazer", "filhos", "risco", "diversão"]
+  },
+  {
+    "item": "House 6",
+    "category": "house",
+    "title": "O Expediente Sagrado",
+    "text": "Casa 6 é a rotina de trabalho, a saúde do corpo e aquela lista de tarefas que nunca acaba - o dia a dia que ninguém filma pra rede social. É o café das sete, a academia das seis, a planilha das oito. Boa pra quem curte processo e melhoria contínua: você otimiza, ajusta, aperfeiçoa. Péssima quando vira workaholic que esqueceu que existe vida fora da planilha e mede o próprio valor pela produtividade. Saúde é assunto aqui, não só física, mas os hábitos que constroem ou destroem você aos poucos. É o serviço, não o cargo - o que você faz todo dia que ninguém aplaude mas que faz a máquina rodar.",
+    "tags": ["trabalho", "saúde", "rotina", "serviço", "organização", "eficiência"]
+  },
+  {
+    "item": "House 7",
+    "category": "house",
+    "title": "O Outro Lado do Espelho",
+    "text": "Casa 7 é parceria, casamento, sócio e aquele contrato que você assina junto - tudo que exige duas assinaturas. É o espelho que o outro segura: você se vê através de quem escolhe pra caminhar junto. Boa pra construir alianças e aprender a negociar: você descobre que nem tudo é do seu jeito, e tá tudo bem. Ruim quando você projeta no parceiro tudo que não quer ver em si e aí o relacionamento vira terapia forçada. Aqui mora o compromisso oficial, o 'nós' que substitui o 'eu'. Negociar é o verbo que mora aqui - ceder, ajustar, encontrar o meio do caminho.",
+    "tags": ["parcerias", "casamento", "contratos", "negociação", "cooperação", "projeção"]
+  },
+  {
+    "item": "House 8",
+    "category": "house",
+    "title": "O Cofre e a Crise",
+    "text": "Casa 8 é grana dos outros, herança, imposto e tudo que você prefere não falar no almoço de domingo - o dinheiro que não é seu mas te afeta. É divisão de conta, pensão, financiamento conjunto, aquele assunto chato mas necessário. Boa pra ressurgir das cinzas e lidar com complexidade: você vai fundo onde outros ficam na superfície. Ruim quando vira jogo de poder e controle obsessivo, querendo saber de tudo que o outro tem e faz. Intimidade real mora aqui, não a do Instagram, a que exige vulnerabilidade. É crise, transformação, morte simbólica e renascimento - o ciclo que ninguém quer mas todo mundo passa.",
+    "tags": ["recursos compartilhados", "transformação", "crise", "poder", "intimidade", "dívidas"]
+  },
+  {
+    "item": "House 9",
+    "category": "house",
+    "title": "O Mochileiro Filosófico",
+    "text": "Casa 9 é viagem longa, universidade, crença e tudo que expande sua visão de mundo - o horizonte que você ainda não conhece mas quer conhecer. É intercâmbio, pós-graduação, aquele livro que muda sua cabeça. Boa pra ensinar e aprender de verdade, não decorar, mas entender o porquê das coisas. Ruim quando vira pregação chata ou superioridade intelectual, achando que você sabe mais só porque leu mais. O sentido da vida mora aqui - se é que existe, e a busca já é o ponto. É publicar, é espalhar ideia, é acreditar em algo maior que o próprio umbigo.",
+    "tags": ["educação superior", "viagem", "filosofia", "crenças", "expansão", "publicação"]
+  },
+  {
+    "item": "House 10",
+    "category": "house",
+    "title": "O Topo do Prédio",
+    "text": "Casa 10 é carreira, reputação e aquilo pelo qual você quer ser lembrado - seu nome na porta, sua assinatura no projeto. É o LinkedIn, não o Instagram: o que você construiu de concreto. Boa pra quem quer construir legado e liderar, deixar marca no mundo, ser referência em alguma coisa. Ruim quando o currículo vira identidade e você esquece de ter vida pessoal, medindo sucesso só pelo cargo. Aqui mora autoridade, responsabilidade pública, o peso de ser visto como exemplo. É o topo do prédio que você subiu degrau por degrau - e a vista de lá exige manutenção.",
+    "tags": ["carreira", "reputação", "autoridade", "status", "conquista", "responsabilidade"]
+  },
+  {
+    "item": "House 11",
+    "category": "house",
+    "title": "A Galera do Futuro",
+    "text": "Casa 11 é grupo, rede de contatos e aquele sonho coletivo que você divide com a tribo - a causa que é maior que você sozinho. É o clube, a associação, o movimento, o grupo de amigos que vira família escolhida. Boa pra projetos em equipe e causas maiores: você descobre que junto vai mais longe. Ruim quando você se perde no grupo e esquece de ser indivíduo, virando só mais um no bando sem opinião própria. Aqui mora a amizade que não é íntima feito família, mas sustenta de outro jeito. É o futuro que você imagina, os planos que dependem de gente junto.",
+    "tags": ["amizades", "grupos", "redes", "futuro", "causas", "coletivo"]
+  },
+  {
+    "item": "House 12",
+    "category": "house",
+    "title": "O Porão do Inconsciente",
+    "text": "Casa 12 é retiro, solidão e tudo que você esconde até de si mesmo - o porão onde você joga o que não quer ver. É o tempo sozinho que recarrega, o hospital, o ashram, a terapia, os bastidores que ninguém vê. Boa pra introspecção e trabalho nos bastidores: você processa, digere, encerra ciclos em silêncio. Ruim quando vira fuga da realidade ou autossabotagem no piloto automático, repetindo padrão sem perceber. Aqui se processa o que não se fala, o karma, a conta que você nem lembra que abriu. É encerramento, é soltar, é o fim necessário antes do próximo começo.",
+    "tags": ["isolamento", "inconsciente", "introspecção", "encerramento", "bastidores", "escapismo"]
+  },
+  {
+    "item": "Sun",
+    "category": "planet",
+    "title": "O Protagonista",
+    "text": "O Sol é quem você é quando ninguém tá olhando - e também quando todo mundo tá, porque a essência é a mesma. É vitalidade, propósito, aquela coisa que te faz levantar da cama com algum sentido. É o ego que precisa de direção, senão fica girando em falso querendo aplausos vazios. Brilha bem quando focado: você sabe o que quer e vai atrás, iluminando o caminho. Mas pode virar holofote viciado se não tomar cuidado, querendo ser centro de tudo o tempo todo. É sua assinatura no mundo, o que você deixa quando sai da sala - a marca que é só sua.",
+    "tags": ["identidade", "vitalidade", "propósito", "ego", "liderança", "criatividade"]
+  },
+  {
+    "item": "Moon",
+    "category": "planet",
+    "title": "A Montanha-Russa Interna",
+    "text": "A Lua é seu lado emocional, seus hábitos automáticos e aquela necessidade de segurança que você nem sempre admite - o piloto automático do sentir. É o que você faz quando tá cansado, estressado, com saudade: o padrão que vem sem pensar. Cuida bem de quem ama, com aquele instinto de proteger que nem precisa explicar. Mas toma decisão pelo humor do momento, e aí amanhã já não faz sentido. Raiz familiar pesa aqui, querendo ou não: o jeito que sua mãe fazia, a dinâmica que você herdou sem perceber. É memória emocional, o corpo que lembra o que a cabeça esqueceu.",
+    "tags": ["emoções", "hábitos", "segurança", "família", "instinto", "memória"]
+  },
+  {
+    "item": "Mercury",
+    "category": "planet",
+    "title": "O Mensageiro Acelerado",
+    "text": "Mercúrio é como você pensa, fala e processa informação - a velocidade da sua cabeça e da sua língua. É o email, a reunião, a negociação, o jeito que você organiza ideia e passa pra frente. Bom pra negociar e aprender rápido: você pega no ar, conecta os pontos, articula. Ruim quando a cabeça não para e você fica travado no overthinking, criando problema que não existe. Comunicação é poder - quando usada direito, abre porta; quando usada errado, fecha. É análise, é lógica, é aquele talento de explicar coisa complicada de forma simples - ou de complicar coisa simples, depende do dia.",
+    "tags": ["comunicação", "raciocínio", "aprendizado", "análise", "negociação", "informação"]
+  },
+  {
+    "item": "Venus",
+    "category": "planet",
+    "title": "O Curador de Prazer",
+    "text": "Vênus é o que você valoriza, quem você atrai e como você curte a vida - seu filtro de beleza e prazer. É o restaurante que você escolhe, a roupa que você veste, o tipo de gente que aparece na sua vida. Bom pra relacionar e harmonizar: você sabe criar clima, deixar o ambiente gostoso, fazer o outro se sentir especial. Ruim quando vira dependência de aprovação ou fuga de conversa difícil, só querendo a parte boa. Sabe gastar bem - às vezes bem demais, porque merece, porque tava precisando, porque sim. É atração, é estética, é aquele olho treinado pra reconhecer o que é bonito.",
+    "tags": ["valores", "relacionamentos", "prazer", "estética", "harmonia", "atração"]
+  },
+  {
+    "item": "Mars",
+    "category": "planet",
+    "title": "O Pitbull Interior",
+    "text": "Marte é sua capacidade de agir, brigar pelo que quer e meter a cara - o motor que te faz sair do lugar. É a energia pra competir, pra correr atrás, pra não aceitar não. Bom pra executar e competir: você não fica só no planejamento, você faz. Péssimo quando vira agressividade sem filtro ou pressa que queima etapa, atropelando gente e processo. Todo mundo precisa de Marte, poucos sabem dosar: muito pouco e você vira capacho, muito e você vira ogro. É assertividade, é iniciativa, é aquele pique de resolver agora o que os outros deixam pra depois.",
+    "tags": ["ação", "assertividade", "competição", "iniciativa", "conflito", "energia"]
+  },
+  {
+    "item": "Jupiter",
+    "category": "planet",
+    "title": "O Otimista Expansivo",
+    "text": "Júpiter é crescimento, oportunidade e aquela fé de que vai dar certo - o planeta que abre porta e estica horizonte. É a chance que aparece, a viagem que muda a cabeça, o professor que marca sua vida. Bom pra enxergar o quadro geral e aproveitar chance: você vê possibilidade onde outros veem muro. Ruim quando promete mais do que entrega ou esquece que detalhe existe, achando que entusiasmo substitui planejamento. Generoso, mas tende ao excesso: mais comida, mais festa, mais projeto, mais do que cabe. É expansão, é crença, é aquele otimismo que contagia - mas que precisa de Saturno pra não virar irresponsabilidade.",
+    "tags": ["expansão", "oportunidade", "otimismo", "educação", "excesso", "crença"]
+  },
+  {
+    "item": "Saturn",
+    "category": "planet",
+    "title": "O Professor Durão",
+    "text": "Saturno é limite, tempo e aquela cobrança que você preferia evitar - o planeta que não passa a mão na cabeça. É o prazo, a conta, a consequência, o 'eu avisei'. Bom pra construir estrutura que dura: você faz direito, com fundação, e não cai no primeiro vento. Ruim quando vira medo de errar ou pessimismo crônico, travando antes de tentar porque já espera o pior. Ensina pelo caminho difícil, mas a lição cola de um jeito que atalho nenhum ensina. É disciplina, é paciência, é entender que algumas coisas só vêm com tempo - e que isso não é castigo, é processo.",
+    "tags": ["disciplina", "estrutura", "limite", "responsabilidade", "tempo", "autoridade"]
+  },
+  {
+    "item": "Uranus",
+    "category": "planet",
+    "title": "O Rebelde com Causa",
+    "text": "Urano é ruptura, inovação e aquela mudança que ninguém viu chegar - o planeta que chacoalha o que tava parado demais. É o insight que vem do nada, a reviravolta, o 'foda-se, vou fazer diferente'. Bom pra reinventar e pensar diferente: você não aceita 'sempre foi assim' como resposta. Ruim quando vira instabilidade crônica ou rebeldia só por pirraça, quebrando coisa funcional só pra provar ponto. Quer liberdade - e vai buscar, custe o que custar, mesmo que custe estrutura. É originalidade, é futuro, é aquele incômodo com mesmice que pode ser gênio ou pode ser caos, depende de como você canaliza.",
+    "tags": ["inovação", "ruptura", "independência", "imprevisibilidade", "futuro", "originalidade"]
+  },
+  {
+    "item": "Neptune",
+    "category": "planet",
+    "title": "O Sonhador Nebuloso",
+    "text": "Netuno é imaginação, sensibilidade e aquela linha borrada entre real e ilusão - o planeta que dissolve fronteira. É o sonho, a arte, a intuição que você não sabe explicar mas sente. Bom pra criar arte e captar clima: você percebe o que não tá sendo dito, traduz o intangível. Ruim quando foge da realidade ou se deixa enganar fácil, confundindo desejo com verdade. Inspiração vem daqui - confusão também, porque nem tudo que brilha é ouro e Netuno não ajuda a distinguir. É sensibilidade, é espiritualidade, é aquele véu que pode revelar ou esconder, depende de quão disposto você tá a ver de verdade.",
+    "tags": ["imaginação", "ilusão", "sensibilidade", "arte", "escapismo", "espiritualidade"]
+  },
+  {
+    "item": "Pluto",
+    "category": "planet",
+    "title": "O Destruidor Criativo",
+    "text": "Plutão é poder, transformação e aquele ciclo de morte e renascimento que você não pediu mas recebeu - o planeta que não faz nada pela metade. É a crise que te obriga a mudar, a perda que te força a reconstruir, o fundo do poço que vira fundação. Bom pra ressurgir de crise e ir fundo nos problemas: você não fica na superfície, vai até o osso. Ruim quando vira obsessão por controle ou jogo de poder, querendo manipular porque não aguenta a incerteza. É intensidade, é profundidade, é aquela energia que pode destruir ou regenerar, e geralmente faz os dois antes de terminar.",
+    "tags": ["transformação", "poder", "intensidade", "crise", "controle", "renascimento"]
+  },
+  {
+    "item": "Conjunction",
+    "category": "aspect",
+    "title": "O Pacote Combo",
+    "text": "Conjunção é quando dois planetas viram unha e carne - difícil separar um do outro, tipo dupla de pagode. Um não funciona sem o outro, pra bem ou pra mal. Concentra energia que é uma beleza: foco, potência, intensidade no tema. Mas pode criar ponto cego gigante porque você não consegue ver um sem o outro, perde perspectiva. É tudo junto e misturado, fusão completa, dois virando um. O talento mora aqui, mas a obsessão também - o mesmo lugar que te destaca é o lugar que te cega.",
+    "tags": ["fusão", "intensificação", "foco", "concentração", "identificação", "potência"]
+  },
+  {
+    "item": "Opposition",
+    "category": "aspect",
+    "title": "O Cabo de Guerra",
+    "text": "Oposição é gangorra: quando um lado sobe, o outro desce, e você fica no meio tentando equilibrar. É tensão que puxa pra dois lados, tipo querer ficar e ir embora ao mesmo tempo. Ótimo pra ver os dois lados da moeda: você ganha consciência, percebe o que tava faltando. Péssimo quando você projeta no outro o que não quer ver em si, aí o parceiro vira espelho e você não gosta do reflexo. Equilíbrio vem de aceitar a tensão, não de fugir dela. É relacionamento, é polaridade, é aprender que o oposto não é inimigo, é complemento.",
+    "tags": ["polaridade", "tensão", "projeção", "equilíbrio", "relacionamento", "consciência"]
+  },
+  {
+    "item": "Square",
+    "category": "aspect",
+    "title": "A Pedra no Sapato",
+    "text": "Quadratura é atrito que não te deixa em paz - aquela pedra no sapato que você sente a cada passo. Incomoda, estressa, mas é justamente por isso que você cresce: sem atrito não tem movimento. Quem não tem quadratura no mapa provavelmente também não tem história boa pra contar, porque tudo veio fácil demais. É o famoso 'sem dor, sem ganho', a tensão que força ação. Aqui você é obrigado a resolver, não dá pra fingir que não existe. É desafio, é esforço, é aquele músculo que só desenvolve com carga.",
+    "tags": ["fricção", "desafio", "crescimento", "tensão", "ação", "esforço"]
+  },
+  {
+    "item": "Trine",
+    "category": "aspect",
+    "title": "O Caminho Livre",
+    "text": "Trígono é quando as coisas fluem sem você precisar forçar - a porta que já tá aberta, só passar. Talento natural mora aqui, aquilo que você faz bem sem entender como aprendeu. Mas cuidado: facilidade demais pode virar preguiça de desenvolver, e aí o dom enferruja. É presente de grego se você não usar direito, porque o que vem fácil também vai fácil se você não valorizar. É harmonia, é potencial à espera de ser ativado. A energia tá ali, disponível, mas depende de você fazer algo com ela.",
+    "tags": ["fluidez", "talento", "harmonia", "facilidade", "estabilidade", "potencial"]
+  },
+  {
+    "item": "Sextile",
+    "category": "aspect",
+    "title": "A Porta Entreaberta",
+    "text": "Sextil é oportunidade esperando você levantar da cadeira - a porta tá entreaberta, mas você precisa empurrar. Não é trígono que flui sozinho, exige iniciativa, um passo seu pra render. É o networking astrológico: só funciona se você cultivar, mandar mensagem, manter contato. Tá ali, disponível, mas não vai cair no colo nem fazer o trabalho por você. É colaboração, é potencial que precisa de ação pra virar real. A chance existe, o caminho tá sugerido, mas caminhar é com você.",
+    "tags": ["oportunidade", "colaboração", "potencial", "iniciativa", "conexão", "desenvolvimento"]
+  }
+]

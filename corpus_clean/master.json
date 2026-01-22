@@ -1,0 +1,356 @@
+[
+  {
+    "item": "Aries",
+    "category": "sign",
+    "core_themes": ["initiation and beginnings", "assertion and directness", "competition and drive", "independence and autonomy", "risk-taking/action orientation"],
+    "strengths": ["decisive action under uncertainty", "high activation/energy", "leadership via initiative", "willingness to confront obstacles", "rapid mobilization of resources"],
+    "pitfalls": ["impulsiveness/poor timing", "impatience with process", "conflict escalation from bluntness", "short horizon (starting > finishing)", "over-identification with winning"],
+    "real_life_manifestations": ["entrepreneurial starts and pilots", "competitive sports/metrics-driven settings", "roles needing fast decisions", "direct, unambiguous communication", "preference for autonomy over consensus"],
+    "notes_conflicts": ["Some sources weight 'aggression' more heavily; others frame it primarily as initiative and pioneering."]
+  },
+  {
+    "item": "Taurus",
+    "category": "sign",
+    "core_themes": ["stability and continuity", "material security/resources", "sensory experience/comfort", "persistence and consolidation", "values (what is worth keeping)"],
+    "strengths": ["reliability and follow-through", "patience with long cycles", "practical resource management", "steady productivity", "tolerance for routine"],
+    "pitfalls": ["resistance to change", "stubbornness/inertia", "over-attachment to possessions/comfort", "slow response to emerging risks", "rigidity in preferences"],
+    "real_life_manifestations": ["building savings/assets", "operations with repeatable routines", "craft/quality-focused work", "preference for stable relationships/agreements", "incremental improvement over rapid pivots"],
+    "notes_conflicts": []
+  },
+  {
+    "item": "Gemini",
+    "category": "sign",
+    "core_themes": ["information exchange", "learning and curiosity", "adaptability/variety", "language and messaging", "connections and networking"],
+    "strengths": ["rapid learning", "communication versatility", "context switching", "idea generation", "social/relational agility"],
+    "pitfalls": ["inconsistency", "fragmented attention", "surface-level processing", "nervous overactivity", "difficulty committing to one path"],
+    "real_life_manifestations": ["writing/sales/marketing", "multi-stakeholder coordination", "short projects with varied tasks", "travel/commuting and local mobility", "continuous upskilling"],
+    "notes_conflicts": []
+  },
+  {
+    "item": "Cancer",
+    "category": "sign",
+    "core_themes": ["emotional security", "home/family systems", "care and protection", "memory and attachment", "privacy/containment"],
+    "strengths": ["empathic attunement", "protective leadership", "loyalty and commitment", "pattern memory (what worked before)", "capacity to nurture teams/relationships"],
+    "pitfalls": ["mood-driven decisions", "defensiveness", "over-attachment to the familiar", "difficulty with boundaries", "avoidance of exposure/critique"],
+    "real_life_manifestations": ["family-centered planning", "caregiving roles", "work that relies on trust/containment", "preference for stable, safe environments", "strong ties to roots and place"],
+    "notes_conflicts": []
+  },
+  {
+    "item": "Leo",
+    "category": "sign",
+    "core_themes": ["self-expression and visibility", "creative production", "identity/pride", "leadership and authority display", "play/joy"],
+    "strengths": ["confidence and presence", "creative initiative", "motivating others", "generosity/recognition-giving", "clear personal identity"],
+    "pitfalls": ["need for validation", "ego defensiveness", "dominance/over-control", "status sensitivity", "difficulty sharing spotlight"],
+    "real_life_manifestations": ["public-facing leadership", "performance and creative industries", "brand building", "roles requiring morale/visibility", "ownership of outcomes"],
+    "notes_conflicts": []
+  },
+  {
+    "item": "Virgo",
+    "category": "sign",
+    "core_themes": ["analysis and diagnostics", "service and utility", "process optimization", "precision and detail", "health/routine orientation"],
+    "strengths": ["high-quality execution", "error detection", "systems/process improvement", "practical problem-solving", "reliability in operations"],
+    "pitfalls": ["perfectionism", "over-criticism", "analysis paralysis", "excessive worry", "difficulty delegating due to standards"],
+    "real_life_manifestations": ["QA, auditing, ops excellence", "health/service work", "documentation and workflows", "data cleaning/organization", "continuous improvement initiatives"],
+    "notes_conflicts": []
+  },
+  {
+    "item": "Libra",
+    "category": "sign",
+    "core_themes": ["relationship balancing", "fairness/justice", "negotiation and diplomacy", "aesthetics/harmony", "social reciprocity"],
+    "strengths": ["mediation and compromise", "social intelligence", "partnership-building", "sense of proportion", "ability to see multiple sides"],
+    "pitfalls": ["indecision from over-weighing options", "avoidance of conflict", "people-pleasing", "dependency on external feedback", "difficulty asserting unilateral choices"],
+    "real_life_manifestations": ["contracts/partnerships", "legal/HR mediation", "client-facing roles", "design/curation", "team cohesion management"],
+    "notes_conflicts": []
+  },
+  {
+    "item": "Scorpio",
+    "category": "sign",
+    "core_themes": ["intensity and focus", "transformation/change processes", "control and power dynamics", "depth psychology/investigation", "privacy/secrecy"],
+    "strengths": ["resilience under pressure", "deep research/investigation", "strategic persistence", "capacity for reinvention", "tolerance for taboo/complex topics"],
+    "pitfalls": ["obsessiveness", "power struggles/control issues", "suspicion", "emotional extremity", "difficulty letting go"],
+    "real_life_manifestations": ["crisis management", "forensics/research", "high-stakes negotiations", "turnaround projects", "work with shared resources/confidential data"],
+    "notes_conflicts": ["Some sources foreground sexuality more; others keep emphasis on psychological depth and transformation."]
+  },
+  {
+    "item": "Sagittarius",
+    "category": "sign",
+    "core_themes": ["expansion and growth", "beliefs/meaning-making", "exploration/travel", "higher learning", "future orientation"],
+    "strengths": ["big-picture thinking", "optimism and momentum", "learning through experience", "cultural adaptability", "vision-setting"],
+    "pitfalls": ["overconfidence", "insufficient detail management", "restlessness", "preaching/dogmatism", "unfinished commitments due to next horizon"],
+    "real_life_manifestations": ["international work/travel", "academia/training", "publishing/communications", "strategy and exploration roles", "cross-cultural networking"],
+    "notes_conflicts": []
+  },
+  {
+    "item": "Capricorn",
+    "category": "sign",
+    "core_themes": ["structure and governance", "responsibility and duty", "achievement over time", "authority and hierarchy", "limits/realism"],
+    "strengths": ["discipline and endurance", "strategic planning", "accountability", "institution-building", "risk management via realism"],
+    "pitfalls": ["rigidity", "pessimism", "status fixation", "work-life imbalance", "difficulty showing vulnerability"],
+    "real_life_manifestations": ["management/executive tracks", "long-term projects", "compliance/governance", "career building", "resource allocation and prioritization"],
+    "notes_conflicts": []
+  },
+  {
+    "item": "Aquarius",
+    "category": "sign",
+    "core_themes": ["innovation and reform", "collectives/networks", "systems thinking", "independence from norms", "objectivity/detachment"],
+    "strengths": ["original solutions", "group facilitation", "future-focused thinking", "conceptual/system design", "tolerance for difference"],
+    "pitfalls": ["aloofness", "contrarianism", "over-intellectualization", "difficulty with emotional immediacy", "inflexibility in ideology"],
+    "real_life_manifestations": ["technology and innovation teams", "community/association leadership", "policy/reform projects", "network-based collaboration", "experimental approaches"],
+    "notes_conflicts": []
+  },
+  {
+    "item": "Pisces",
+    "category": "sign",
+    "core_themes": ["integration and dissolution", "imagination and symbolism", "empathy/compassion", "boundary permeability", "retreat/withdrawal cycles"],
+    "strengths": ["creative synthesis", "empathic sensitivity", "pattern recognition via intuition", "adaptability to ambiguity", "supportive/soothing presence"],
+    "pitfalls": ["escapism", "confusion/low structure", "boundary issues", "idealization", "avoidance of concrete constraints"],
+    "real_life_manifestations": ["arts/music/film", "helping professions", "behind-the-scenes support", "work in ambiguous environments", "high sensitivity to group atmosphere"],
+    "notes_conflicts": []
+  },
+
+  {
+    "item": "House 1",
+    "category": "house",
+    "core_themes": ["identity and self-presentation", "physical presence/appearance", "instinctive approach to life", "beginnings and personal initiative", "temperament"],
+    "strengths": ["clear self-definition", "capacity to initiate", "strong first impressions", "self-directed momentum", "rapid engagement with new contexts"],
+    "pitfalls": ["self-focus that reduces collaboration", "over-identification with persona/image", "reactivity", "difficulty adjusting approach when challenged"],
+    "real_life_manifestations": ["how one enters rooms/situations", "personal branding and visibility", "startup energy and first moves", "assertive negotiation stance", "role selection based on autonomy"],
+    "notes_conflicts": ["Some sources emphasize physical body/appearance more; others emphasize psychological approach and self-directed action."]
+  },
+  {
+    "item": "House 2",
+    "category": "house",
+    "core_themes": ["money/income", "possessions/resources", "self-worth and values", "security needs", "skills that generate stability"],
+    "strengths": ["resource stewardship", "value-driven choices", "capacity to build reserves", "practical prioritization", "skill monetization"],
+    "pitfalls": ["materialism", "fear of loss leading to hoarding", "over-attaching identity to assets", "risk aversion that limits growth"],
+    "real_life_manifestations": ["budgeting/saving", "asset acquisition", "pricing and compensation focus", "skill-building for earning power", "security-oriented planning"],
+    "notes_conflicts": []
+  },
+  {
+    "item": "House 3",
+    "category": "house",
+    "core_themes": ["communication and messaging", "learning and basic education", "siblings/peers", "local environment", "short trips and logistics"],
+    "strengths": ["information handling", "quick learning", "connective networking", "tactical problem-solving", "operational coordination"],
+    "pitfalls": ["overload from too much input", "gossip/noise", "fragmented attention", "reactive communication"],
+    "real_life_manifestations": ["writing/speaking", "commuting and local travel", "process handoffs", "daily coordination with peers", "documentation and knowledge transfer"],
+    "notes_conflicts": []
+  },
+  {
+    "item": "House 4",
+    "category": "house",
+    "core_themes": ["home and private life", "family lineage/roots", "emotional foundations", "property/land", "inner security"],
+    "strengths": ["capacity to create stability/containment", "loyalty to core commitments", "protectiveness", "strong internal anchoring", "long-term foundation building"],
+    "pitfalls": ["clinging to past patterns", "family entanglements", "privacy that becomes isolation", "over-protectiveness"],
+    "real_life_manifestations": ["housing/real estate decisions", "family responsibility", "home-based routines", "privacy management", "origin-story as identity anchor"],
+    "notes_conflicts": []
+  },
+  {
+    "item": "House 5",
+    "category": "house",
+    "core_themes": ["creativity and self-expression", "pleasure/leisure", "romance", "children", "risk/speculation"],
+    "strengths": ["creative production", "playfulness", "ability to take measured risks", "confidence in expression", "generativity (creating/teaching)"],
+    "pitfalls": ["self-indulgence", "attention-seeking", "risk without controls", "drama in romance"],
+    "real_life_manifestations": ["arts/performance", "hobbies and passion projects", "dating/romance dynamics", "entrepreneurial speculation", "mentoring/activities with children"],
+    "notes_conflicts": []
+  },
+  {
+    "item": "House 6",
+    "category": "house",
+    "core_themes": ["work routines and service", "health and maintenance", "daily duties", "skills and craftsmanship", "systems for efficiency"],
+    "strengths": ["operational reliability", "process discipline", "continuous improvement", "health management via routine", "service orientation"],
+    "pitfalls": ["overwork", "micromanagement", "worry about imperfections", "health issues from imbalance", "getting stuck in maintenance over strategy"],
+    "real_life_manifestations": ["day-to-day operations", "task management", "health regimens", "support roles", "process documentation and QA"],
+    "notes_conflicts": []
+  },
+  {
+    "item": "House 7",
+    "category": "house",
+    "core_themes": ["partnerships (personal/business)", "contracts and agreements", "one-to-one dynamics", "cooperation/negotiation", "projection via the other"],
+    "strengths": ["alliance building", "negotiation", "collaboration and balancing needs", "client/partner management", "commitment mechanisms"],
+    "pitfalls": ["dependency", "conflict avoidance that delays decisions", "projecting problems onto partners", "over-compromising core needs"],
+    "real_life_manifestations": ["marriage/long-term partnership", "business partnerships", "client contracts", "legal agreements", "structured collaboration"],
+    "notes_conflicts": []
+  },
+  {
+    "item": "House 8",
+    "category": "house",
+    "core_themes": ["shared resources", "debts/taxes/inheritance", "intimacy and trust", "crisis and transformation", "power dynamics"],
+    "strengths": ["capacity to handle complexity and risk", "psychological depth", "strategic management of shared assets", "resilience through change", "confidentiality management"],
+    "pitfalls": ["control struggles", "fear of vulnerability", "obsessive focus on leverage", "entanglement via shared finances", "escalation during crises"],
+    "real_life_manifestations": ["loans, taxes, insurance", "inheritance planning", "turnarounds and crisis response", "confidential negotiations", "deep relationship bonding/trust tests"],
+    "notes_conflicts": []
+  },
+  {
+    "item": "House 9",
+    "category": "house",
+    "core_themes": ["higher education", "belief systems/philosophy", "long-distance travel", "publishing and dissemination", "meaning and worldview"],
+    "strengths": ["big-picture synthesis", "intellectual exploration", "cross-cultural competence", "teaching/mentoring", "strategic perspective"],
+    "pitfalls": ["dogmatism", "over-generalization", "neglect of local details", "ideological rigidity"],
+    "real_life_manifestations": ["university/training paths", "international work", "publishing/content dissemination", "legal/ethical frameworks", "life direction decisions based on worldview"],
+    "notes_conflicts": []
+  },
+  {
+    "item": "House 10",
+    "category": "house",
+    "core_themes": ["career and vocation", "public reputation", "authority structures", "achievement/status", "responsibility and leadership"],
+    "strengths": ["goal orientation", "capacity for leadership/accountability", "reputation building", "strategic career planning", "institutional navigation"],
+    "pitfalls": ["status anxiety", "work-first identity", "public image over authenticity", "rigid definitions of success"],
+    "real_life_manifestations": ["career milestones", "management roles", "public recognition", "industry positioning", "responsibility for outcomes"],
+    "notes_conflicts": []
+  },
+  {
+    "item": "House 11",
+    "category": "house",
+    "core_themes": ["groups/communities", "networks and friendships", "shared goals", "future planning", "social causes/collectives"],
+    "strengths": ["network leverage", "team collaboration", "future-oriented planning", "community contribution", "systems thinking in groups"],
+    "pitfalls": ["detachment in friendships", "over-identification with group ideology", "diffuse goals", "social friction from nonconformity"],
+    "real_life_manifestations": ["associations and communities", "professional networks", "long-range goal setting", "collaborative projects", "social initiatives"],
+    "notes_conflicts": []
+  },
+  {
+    "item": "House 12",
+    "category": "house",
+    "core_themes": ["withdrawal and solitude", "unconscious patterns", "closure/endings", "behind-the-scenes processes", "liminal/hidden matters"],
+    "strengths": ["introspection", "capacity to work privately", "psychological processing", "integration/closure skills", "support roles without visibility"],
+    "pitfalls": ["isolation", "avoidance and escapism", "unconscious self-sabotage patterns", "difficulty articulating internal states"],
+    "real_life_manifestations": ["private work and incubation", "retreat cycles", "confidential/support functions", "end-of-cycle transitions", "processing grief/closure"],
+    "notes_conflicts": ["Some sources stress 'hidden enemies' more (traditional framing); others emphasize inner life, retreat, and behind-the-scenes processes."]
+  },
+
+  {
+    "item": "Sun",
+    "category": "planet",
+    "core_themes": ["core identity", "vitality and life-force", "conscious purpose", "will and agency", "creative self-expression"],
+    "strengths": ["coherence of self-direction", "capacity to lead/define goals", "steady vitality when well supported", "clarity of purpose", "creative output"],
+    "pitfalls": ["ego inflation", "over-identification with role/status", "rigidity of self-concept", "burnout from constant performance"],
+    "real_life_manifestations": ["leadership and decision ownership", "career direction setting", "visibility and recognition dynamics", "identity-driven choices", "creative projects with signature style"],
+    "notes_conflicts": ["Some sources use more spiritual language (e.g., 'true spirit'); normalized here as identity/purpose/vitality."]
+  },
+  {
+    "item": "Moon",
+    "category": "planet",
+    "core_themes": ["emotions and affect regulation", "needs and security", "habits and conditioning", "memory", "home/family imprint"],
+    "strengths": ["emotional responsiveness", "instinctive pattern recognition", "caregiving capacity", "adaptation to environmental cues", "protective motivation"],
+    "pitfalls": ["reactivity", "mood-dependent judgment", "over-attachment to comfort", "avoidance of change that feels unsafe"],
+    "real_life_manifestations": ["daily routines and coping habits", "home/family priorities", "care work and support roles", "emotional tone-setting in groups", "sleep/food rhythms influencing performance"],
+    "notes_conflicts": []
+  },
+  {
+    "item": "Mercury",
+    "category": "planet",
+    "core_themes": ["thinking and cognition", "communication", "learning", "information processing", "trade/exchange"],
+    "strengths": ["analysis and articulation", "learning agility", "translation of complexity", "tactical planning", "networked coordination"],
+    "pitfalls": ["overthinking", "nervousness/mental restlessness", "over-reliance on facts without context", "miscommunication from haste"],
+    "real_life_manifestations": ["writing/speaking", "documentation and teaching", "sales/negotiation messaging", "operations coordination", "data interpretation"],
+    "notes_conflicts": []
+  },
+  {
+    "item": "Venus",
+    "category": "planet",
+    "core_themes": ["values and preference", "relationships/attraction", "aesthetics and harmony", "pleasure", "social bonding"],
+    "strengths": ["relationship maintenance", "taste/aesthetic judgment", "cooperation and smoothing friction", "value alignment", "resource attraction via goodwill"],
+    "pitfalls": ["indulgence", "avoidance of hard conversations", "dependency on approval", "over-prioritizing comfort over truth"],
+    "real_life_manifestations": ["partnership choices", "art/design and curation", "diplomacy in teams", "spending patterns reflecting values", "social capital building"],
+    "notes_conflicts": []
+  },
+  {
+    "item": "Mars",
+    "category": "planet",
+    "core_themes": ["action and drive", "assertion", "conflict and competition", "initiative", "survival/instinct"],
+    "strengths": ["mobilizing effort quickly", "courage under pressure", "direct problem confrontation", "competitive stamina", "boundary-setting"],
+    "pitfalls": ["aggression", "impatience", "burnout from constant push", "conflict escalation", "risk-taking without safeguards"],
+    "real_life_manifestations": ["performance/competition contexts", "startup execution", "crisis response actions", "direct negotiation tactics", "physical activity as outlet"],
+    "notes_conflicts": []
+  },
+  {
+    "item": "Jupiter",
+    "category": "planet",
+    "core_themes": ["expansion and growth", "opportunity and optimism", "meaning-making", "education", "belief systems"],
+    "strengths": ["big-picture synthesis", "confidence to explore", "generosity", "learning/teaching capacity", "ability to spot opportunities"],
+    "pitfalls": ["excess", "overconfidence", "over-promising", "risk amplification", "lack of detail discipline"],
+    "real_life_manifestations": ["higher education and training", "international expansion", "publishing/broadcasting", "growth initiatives", "mentorship and advising"],
+    "notes_conflicts": []
+  },
+  {
+    "item": "Saturn",
+    "category": "planet",
+    "core_themes": ["structure and limits", "discipline", "responsibility", "time and maturation", "authority and rules"],
+    "strengths": ["long-term planning", "endurance", "accountability", "building stable systems", "risk management through constraints"],
+    "pitfalls": ["restriction/fear", "pessimism", "rigidity", "over-identification with duty", "delay/avoidance due to perfectionism"],
+    "real_life_manifestations": ["career building", "compliance/governance", "skill mastery via repetition", "institutional roles", "projects requiring patience and structure"],
+    "notes_conflicts": []
+  },
+  {
+    "item": "Uranus",
+    "category": "planet",
+    "core_themes": ["change and disruption", "innovation", "independence", "nonconformity", "sudden shifts"],
+    "strengths": ["original solutions", "rapid reconfiguration", "future-oriented insight", "freedom from outdated norms", "system redesign"],
+    "pitfalls": ["instability", "reactive rebellion", "difficulty sustaining routines", "unpredictability that harms trust"],
+    "real_life_manifestations": ["technology adoption", "organizational pivots", "breakthrough ideas", "nontraditional career paths", "sudden changes in plans/alliances"],
+    "notes_conflicts": []
+  },
+  {
+    "item": "Neptune",
+    "category": "planet",
+    "core_themes": ["imagination and symbolism", "dissolution/blurred boundaries", "idealization", "collective influence", "sensitivity to atmospheres"],
+    "strengths": ["creative vision", "empathic sensitivity", "ability to work with ambiguity", "symbolic/imagistic thinking", "inspiration for arts"],
+    "pitfalls": ["confusion", "escapism", "idealization leading to disappointment", "poor boundaries", "susceptibility to deception/self-deception"],
+    "real_life_manifestations": ["arts/music/film", "work in intangible domains", "high sensitivity to team mood", "periods of retreat/absorption", "difficulty defining clear limits without structure"],
+    "notes_conflicts": []
+  },
+  {
+    "item": "Pluto",
+    "category": "planet",
+    "core_themes": ["power and control dynamics", "transformation", "intensity and focus", "death-rebirth cycles (endings/beginnings)", "deep change in systems"],
+    "strengths": ["regeneration after loss", "strategic intensity", "capacity to confront taboo/hidden issues", "transformational leadership", "deep research"],
+    "pitfalls": ["obsession", "control struggles", "all-or-nothing thinking", "fear-driven manipulation", "difficulty releasing control"],
+    "real_life_manifestations": ["turnaround and crisis transformation", "high-stakes negotiations", "system reform", "deep psychological work", "exposure of hidden problems and restructuring"],
+    "notes_conflicts": ["Some sources emphasize collective/generational effects more strongly (especially for outer planets); normalized here while keeping 'systemic' emphasis."]
+  },
+
+  {
+    "item": "Conjunction",
+    "category": "aspect",
+    "core_themes": ["fusion of two functions", "intensification through proximity", "single focus/merged agenda", "strong subjective experience of the combined factors"],
+    "strengths": ["high concentration of energy", "clarity via unified direction", "potent activation of the planets involved", "strong identity linkage to the paired themes"],
+    "pitfalls": ["over-identification/imbalance", "blind spots from excessive focus", "difficulty separating functions", "amplification of extremes"],
+    "real_life_manifestations": ["roles where two competencies are inseparable", "single-track obsession on combined goals", "high visibility of the paired traits", "fast activation when triggered"],
+    "notes_conflicts": ["Sources differ mainly on valence: conjunction is described as neutral; outcomes depend on planets involved and broader context."]
+  },
+  {
+    "item": "Opposition",
+    "category": "aspect",
+    "core_themes": ["polarity and tension across an axis", "awareness through contrast", "relationship dynamics/projection", "balancing two competing needs"],
+    "strengths": ["strong perspective-taking", "capacity to negotiate tradeoffs", "awareness of extremes", "motivation to integrate opposites"],
+    "pitfalls": ["projection onto others", "swinging between extremes", "relational conflict", "difficulty holding both sides simultaneously"],
+    "real_life_manifestations": ["push-pull dynamics in partnerships", "external events mirroring internal conflict", "cycles of overcompensation", "learning via negotiation and feedback"],
+    "notes_conflicts": []
+  },
+  {
+    "item": "Square",
+    "category": "aspect",
+    "core_themes": ["friction and challenge", "stress that drives action", "problem-solving pressure", "development through obstacles"],
+    "strengths": ["high motivation to improve", "capacity to build competence through effort", "resilience from repeated challenges", "productive tension for change"],
+    "pitfalls": ["conflict and irritation", "wasted energy in resistance", "reactivity", "burnout if unmanaged"],
+    "real_life_manifestations": ["deadlines forcing growth", "skills forged via obstacles", "recurrent conflicts prompting change", "high effort to reconcile competing demands"],
+    "notes_conflicts": ["Some sources frame squares as primarily difficult; others emphasize their developmental/mobilizing function."]
+  },
+  {
+    "item": "Trine",
+    "category": "aspect",
+    "core_themes": ["ease and flow", "compatibility of functions", "low-friction integration", "natural talent/channel"],
+    "strengths": ["efficient expression of abilities", "stability and confidence", "supportive feedback loops", "reliable access to the combined traits"],
+    "pitfalls": ["complacency", "underdevelopment due to lack of challenge", "taking strengths for granted", "passivity"],
+    "real_life_manifestations": ["skills that feel effortless", "supportive environments", "consistent performance without strain", "default strengths that require conscious use to maximize"],
+    "notes_conflicts": []
+  },
+  {
+    "item": "Sextile",
+    "category": "aspect",
+    "core_themes": ["opportunity through cooperation", "supportive connection that requires activation", "skill-building via engagement", "constructive alignment"],
+    "strengths": ["adaptability", "collaboration", "learning through interaction", "practical opportunities when pursued"],
+    "pitfalls": ["underutilization (missed opportunities)", "diffuse effort if not prioritized", "reliance on potential without execution"],
+    "real_life_manifestations": ["useful connections that pay off with effort", "incremental skill development", "collaborative wins", "doors opening when initiative is applied"],
+    "notes_conflicts": ["Often described as 'easy' but less automatic than trines; benefit typically depends on active use."]
+  }
+]
