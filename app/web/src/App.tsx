@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, type FormEvent } from "react";
 import { useContentMode } from "./content/useContentMode";
 import { ModeToggle } from "./components/ModeToggle";
 import { buildCards, type CardModel, type ContentPack } from "./lib/cards";
@@ -75,6 +75,7 @@ function App() {
   const [chart, setChart] = useState<ChartResult | null>(null);
   const [cards, setCards] = useState<CardModel[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Recalculate cards when mode changes (if chart exists)
   useEffect(() => {
@@ -125,12 +126,17 @@ function App() {
       ? "true"
       : "false";
 
-  async function handleGenerateChart() {
+  async function handleGenerateChart(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
     setLoading(true);
     try {
       const newChart = await generateChart(input);
       setChart(newChart);
       setCards(buildCards(content as ContentPack, newChart, mode));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -237,6 +243,11 @@ function App() {
                   {loading ? "Gerando..." : chart ? "Gerar novo mapa" : "Gerar mapa"}
                 </button>
               </div>
+              {error && (
+                <p style={{ color: "#b91c1c", marginTop: "8px" }}>
+                  Erro ao gerar mapa: {error}
+                </p>
+              )}
             </form>
           </section>
 
