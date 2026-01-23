@@ -3,7 +3,11 @@
     "allow": [
       "Bash(npm create:*)",
       "Bash(npm install)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(git -C /Users/raphaelguerra/dev/apps/stellar log --oneline -10)",
+      "Bash(wc:*)",
+      "Bash(npm run lint)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

@@ -1,8 +1,10 @@
 import { useState, useEffect, useMemo, type FormEvent } from "react";
 import { useContentMode } from "./content/useContentMode";
 import { ModeToggle } from "./components/ModeToggle";
-import { buildCards, type CardModel, type ContentPack } from "./lib/cards";
+import { buildCards, type CardModel } from "./lib/cards";
 import { generateChart } from "./lib/engine";
+import { validateChartInput } from "./lib/validation";
+import { SUPPORTED_CITIES } from "./lib/resolveCity";
 import type { ChartInput, ChartResult } from "./lib/types";
 
 interface CardProps {
@@ -56,9 +58,9 @@ function Section({ icon, title, badge, badgeAccent, children }: SectionProps) {
 
 function LoadingState() {
   return (
-    <div className="loading-state">
-      <div className="spinner" />
-      <p className="loading-text">Calculando posicoes planetarias</p>
+    <div className="loading-state" role="status" aria-live="polite" aria-busy="true">
+      <div className="spinner" aria-hidden="true" />
+      <p className="loading-text">Calculando posições planetárias</p>
     </div>
   );
 }
@@ -80,26 +82,20 @@ function App() {
   // Recalculate cards when mode changes (if chart exists)
   useEffect(() => {
     if (chart) {
-      setCards(buildCards(content as ContentPack, chart, mode));
+      setCards(buildCards(content, chart, mode));
     }
   }, [mode, content, chart]);
 
-  // Separate cards into sections
+  // Separate cards into sections using category field
   const { big3Cards, aspectCards } = useMemo(() => {
+    const BIG3_PLANETS = new Set(["Sun", "Moon"]);
     const big3: CardModel[] = [];
     const aspects: CardModel[] = [];
 
     for (const card of cards) {
-      if (card.key.startsWith("aspect-")) {
+      if (card.category === "aspect") {
         aspects.push(card);
-      } else if (
-        card.key.includes("-Sun") ||
-        card.key.includes("-Moon") ||
-        card.key.startsWith("planet-Sun") ||
-        card.key.startsWith("planet-Moon") ||
-        card.key.startsWith("planet-sign-Sun") ||
-        card.key.startsWith("planet-sign-Moon")
-      ) {
+      } else if (card.planet && BIG3_PLANETS.has(card.planet)) {
         big3.push(card);
       }
     }
@@ -129,11 +125,18 @@ function App() {
   async function handleGenerateChart(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+
+    const validation = validateChartInput(input);
+    if (!validation.valid) {
+      setError(validation.errors.join(". "));
+      return;
+    }
+
     setLoading(true);
     try {
       const newChart = await generateChart(input);
       setChart(newChart);
-      setCards(buildCards(content as ContentPack, newChart, mode));
+      setCards(buildCards(content, newChart, mode));
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       setError(message);
@@ -147,10 +150,10 @@ function App() {
   return (
     <div className="app">
       <div className="container">
-        <header className="header">
+        <header className="header" role="banner">
           <div className="header__brand">
             <h1 className="header__title">stellar</h1>
-            <div className="header__meta">
+            <div className="header__meta" aria-label="Informações do mapa atual">
               <span>Modo {modeLabel}</span>
               {chartMeta && (
                 <>
@@ -165,9 +168,9 @@ function App() {
           <ModeToggle mode={mode} setMode={setMode} />
         </header>
 
-        <main>
+        <main role="main" aria-label="Gerador de mapa astral">
           <section className={`action-section ${cards.length > 0 ? "action-section--compact" : ""}`}>
-            <form className="form" onSubmit={handleGenerateChart}>
+            <form className="form" onSubmit={handleGenerateChart} aria-label="Formulário de dados de nascimento">
               <div className="form__row">
                 <label className="form__label">
                   Data
@@ -202,7 +205,14 @@ function App() {
                       setInput((prev) => ({ ...prev, city: event.target.value }))
                     }
                     required
+                    list="supported-cities"
+                    aria-describedby="city-hint"
                   />
+                  <datalist id="supported-cities">
+                    {SUPPORTED_CITIES.map((city) => (
+                      <option key={city} value={city.split(" (")[0]} />
+                    ))}
+                  </datalist>
                 </label>
                 <label className="form__label">
                   País
@@ -216,9 +226,14 @@ function App() {
                       }))
                     }
                     required
+                    placeholder="Ex: BR, US, PT"
+                    maxLength={3}
                   />
                 </label>
               </div>
+              <p id="city-hint" className="form__hint">
+                Cidades suportadas: {SUPPORTED_CITIES.join(", ")}
+              </p>
               <div className="form__row">
                 <label className="form__label">
                   Horário de verão
@@ -244,7 +259,7 @@ function App() {
                 </button>
               </div>
               {error && (
-                <p style={{ color: "#b91c1c", marginTop: "8px" }}>
+                <p className="form__error" role="alert">
                   Erro ao gerar mapa: {error}
                 </p>
               )}

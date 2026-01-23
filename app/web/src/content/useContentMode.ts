@@ -1,11 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { PT_HOT, PT_LIGHT } from "./index";
+import type { ContentPack } from "../lib/cards";
 
 export type Mode = "normal" | "carioca";
 
 const STORAGE_KEY = "stellar-mode";
 
-export function useContentMode() {
+interface UseContentModeReturn {
+  mode: Mode;
+  setMode: (mode: Mode) => void;
+  content: ContentPack;
+}
+
+export function useContentMode(): UseContentModeReturn {
   const [mode, setMode] = useState<Mode>(() => {
     if (typeof window === "undefined") return "normal";
     const saved = window.localStorage.getItem(STORAGE_KEY);
@@ -17,7 +24,7 @@ export function useContentMode() {
     localStorage.setItem(STORAGE_KEY, mode);
   }, [mode]);
 
-  const content = useMemo(() => {
+  const content = useMemo((): ContentPack => {
     return mode === "carioca" ? PT_HOT : PT_LIGHT;
   }, [mode]);
 

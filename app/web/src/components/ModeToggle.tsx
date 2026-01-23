@@ -7,7 +7,7 @@ interface ModeToggleProps {
 
 export function ModeToggle({ mode, setMode }: ModeToggleProps) {
   return (
-    <div className="mode-toggle" role="group" aria-label="Modo de conteudo">
+    <div className="mode-toggle" role="group" aria-label="Modo de conteúdo">
       <button
         type="button"
         className={`mode-toggle__btn ${mode === "normal" ? "mode-toggle__btn--active" : ""}`}

@@ -1,6 +1,8 @@
 import { aspectSymbol, formatPairLine, type Mode } from "./aspectContext";
 import type { ChartResult, PlanetName } from "./types";
 
+export type CardCategory = "planet" | "sign" | "planet-sign" | "aspect";
+
 export interface Entry {
   title: string;
   text: string;
@@ -16,10 +18,12 @@ export interface ContentPack {
 
 export interface CardModel {
   key: string;
+  category: CardCategory;
   title: string;
   subtitle?: string;
   text: string;
   tags: readonly string[];
+  planet?: PlanetName;
 }
 
 const PLANET_NAMES: PlanetName[] = [
@@ -45,19 +49,25 @@ export function buildCards(
 
   function addCard(
     key: string,
+    category: CardCategory,
     title: string,
     entry: Entry | undefined,
-    subtitle?: string,
-    textOverride?: string
+    options?: {
+      subtitle?: string;
+      textOverride?: string;
+      planet?: PlanetName;
+    }
   ) {
     if (!entry || usedKeys.has(key)) return;
     usedKeys.add(key);
     cards.push({
       key,
+      category,
       title,
-      subtitle,
-      text: textOverride ?? entry.text,
+      subtitle: options?.subtitle,
+      text: options?.textOverride ?? entry.text,
       tags: entry.tags,
+      planet: options?.planet,
     });
   }
 
@@ -73,8 +83,10 @@ export function buildCards(
     if (planetEntry) {
       addCard(
         `planet-${planet}`,
+        "planet",
         `${planet} - ${planetEntry.title}`,
-        planetEntry
+        planetEntry,
+        { planet }
       );
     }
 
@@ -82,8 +94,10 @@ export function buildCards(
     if (signEntry) {
       addCard(
         `planet-sign-${planet}-${placement.sign}`,
+        "planet-sign",
         `${planet} em ${placement.sign} - ${signEntry.title}`,
-        signEntry
+        signEntry,
+        { planet }
       );
     }
   }
@@ -103,13 +117,10 @@ export function buildCards(
     const pairLine = formatPairLine(aspect.a, aspect.b, aspect.type, mode);
     const text = `${aspectEntry.text}\n\n${pairLine}`;
 
-    addCard(
-      key,
-      aspectEntry.title,
-      aspectEntry,
-      `${aspect.a} ${symbol} ${aspect.b}`,
-      text
-    );
+    addCard(key, "aspect", aspectEntry.title, aspectEntry, {
+      subtitle: `${aspect.a} ${symbol} ${aspect.b}`,
+      textOverride: text,
+    });
     aspectCount++;
   }
 
