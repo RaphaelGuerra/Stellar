@@ -1,12 +1,5 @@
-import type {
-  Aspect,
-  AspectName,
-  ChartInput,
-  ChartResult,
-  HousePlacement,
-  PlanetName,
-  ZodiacSign,
-} from "./types";
+import { Body, Ecliptic, GeoVector, MakeTime } from "astronomy-engine";
+import type { Aspect, AspectName, ChartInput, ChartResult, PlanetName, ZodiacSign } from "./types";
 import { resolveCity } from "./resolveCity";
 
 interface LocalDateTimeParts {
@@ -46,7 +39,26 @@ const PLANETS: PlanetName[] = [
   "Pluto",
 ];
 
-const ASPECT_TYPES: AspectName[] = ["Conjunction", "Opposition", "Square", "Trine", "Sextile"];
+const PLANET_BODIES: Record<PlanetName, Body> = {
+  Sun: Body.Sun,
+  Moon: Body.Moon,
+  Mercury: Body.Mercury,
+  Venus: Body.Venus,
+  Mars: Body.Mars,
+  Jupiter: Body.Jupiter,
+  Saturn: Body.Saturn,
+  Uranus: Body.Uranus,
+  Neptune: Body.Neptune,
+  Pluto: Body.Pluto,
+};
+
+const ASPECT_DEFS: Array<{ type: AspectName; angle: number; orb: number }> = [
+  { type: "Conjunction", angle: 0, orb: 8 },
+  { type: "Opposition", angle: 180, orb: 8 },
+  { type: "Square", angle: 90, orb: 6 },
+  { type: "Trine", angle: 120, orb: 6 },
+  { type: "Sextile", angle: 60, orb: 4 },
+];
 
 const FORMATTER_CACHE = new Map<string, Intl.DateTimeFormat>();
 
@@ -133,72 +145,65 @@ function formatUtcIso(utcMillis: number): string {
   return new Date(utcMillis).toISOString().replace(/\.\d{3}Z$/, "Z");
 }
 
-function hashSeed(value: string): number {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < value.length; i++) {
-    h ^= value.charCodeAt(i);
-    h = Math.imul(h, 0x01000193);
-  }
-  return h >>> 0;
+function normalizeAngle(angle: number): number {
+  return ((angle % 360) + 360) % 360;
 }
 
-function createRng(seed: string) {
-  let state = hashSeed(seed) || 1;
-  return () => {
-    state ^= state << 13;
-    state ^= state >>> 17;
-    state ^= state << 5;
-    return (state >>> 0) / 0xffffffff;
-  };
+function longitudeToSign(longitude: number): { sign: ZodiacSign; degree: number } {
+  const normalized = normalizeAngle(longitude);
+  const index = Math.floor(normalized / 30);
+  const degree = Math.round((normalized % 30) * 10) / 10;
+  return { sign: SIGNS[index] ?? "Aries", degree };
 }
 
-function pickSign(rng: () => number): ZodiacSign {
-  return SIGNS[Math.floor(rng() * SIGNS.length)];
+function getPlanetLongitude(body: Body, time: Date): number {
+  const vector = GeoVector(body, MakeTime(time), true);
+  return normalizeAngle(Ecliptic(vector).elon);
 }
 
-function buildPlanets(rng: () => number) {
-  const result: Record<PlanetName, { sign: ZodiacSign }> = {} as Record<
+function buildPlanets(time: Date) {
+  const result: Record<PlanetName, { sign: ZodiacSign; degree: number }> = {} as Record<
     PlanetName,
-    { sign: ZodiacSign }
+    { sign: ZodiacSign; degree: number }
   >;
   for (const planet of PLANETS) {
-    result[planet] = { sign: pickSign(rng) };
+    const longitude = getPlanetLongitude(PLANET_BODIES[planet], time);
+    const placement = longitudeToSign(longitude);
+    result[planet] = { sign: placement.sign, degree: placement.degree };
   }
   return result;
 }
 
-function buildHouses(rng: () => number): HousePlacement[] {
-  const houses: HousePlacement[] = [];
-  for (let i = 1 as const; i <= 12; i++) {
-    const degree = Math.round(rng() * 29.9 * 10) / 10; // one decimal place
-    houses.push({
-      house: i,
-      sign: pickSign(rng),
-      degree,
-    });
-  }
-  return houses;
-}
-
-function buildAspects(rng: () => number): Aspect[] {
+function buildAspects(time: Date): Aspect[] {
   const aspects: Aspect[] = [];
-  const used = new Set<string>();
-  const total = 4;
-
-  while (aspects.length < total) {
-    const a = PLANETS[Math.floor(rng() * PLANETS.length)];
-    const b = PLANETS[Math.floor(rng() * PLANETS.length)];
-    if (a === b) continue;
-    const key = [a, b].sort().join("-");
-    if (used.has(key)) continue;
-    used.add(key);
-    aspects.push({
-      a,
-      b,
-      type: ASPECT_TYPES[Math.floor(rng() * ASPECT_TYPES.length)],
-    });
+  const longitudes = new Map<PlanetName, number>();
+  for (const planet of PLANETS) {
+    longitudes.set(planet, getPlanetLongitude(PLANET_BODIES[planet], time));
   }
-
+  for (let i = 0; i < PLANETS.length; i++) {
+    const a = PLANETS[i];
+    const lonA = longitudes.get(a);
+    if (lonA === undefined) continue;
+    for (let j = i + 1; j < PLANETS.length; j++) {
+      const b = PLANETS[j];
+      const lonB = longitudes.get(b);
+      if (lonB === undefined) continue;
+      const delta = Math.abs(lonA - lonB);
+      const separation = delta > 180 ? 360 - delta : delta;
+      for (const aspect of ASPECT_DEFS) {
+        const orb = Math.abs(separation - aspect.angle);
+        if (orb <= aspect.orb) {
+          aspects.push({
+            a,
+            b,
+            type: aspect.type,
+            orb: Math.round(orb * 10) / 10,
+          });
+        }
+      }
+    }
+  }
+  aspects.sort((left, right) => (left.orb ?? 0) - (right.orb ?? 0));
   return aspects;
 }
 
@@ -216,12 +221,12 @@ export async function generateChart(input: ChartInput): Promise<ChartResult> {
       ? dstOffset
       : standardOffset;
   const localDateTime = `${input.date}T${input.time}`;
-  const utcDateTime = formatUtcIso(baseUtcMillis(localParts) + offsetMinutes * 60000);
+  const utcMillis = baseUtcMillis(localParts) + offsetMinutes * 60000;
+  const utcDateTime = formatUtcIso(utcMillis);
+  const observationTime = new Date(utcMillis);
 
-  const rng = createRng(`${input.date}|${input.time}|${input.city}|${input.country}`);
-  const planets = buildPlanets(rng);
-  const houses = buildHouses(rng);
-  const aspects = buildAspects(rng);
+  const planets = buildPlanets(observationTime);
+  const aspects = buildAspects(observationTime);
 
   return {
     input,
@@ -237,7 +242,6 @@ export async function generateChart(input: ChartInput): Promise<ChartResult> {
       },
     },
     planets,
-    houses,
     aspects,
   };
 }

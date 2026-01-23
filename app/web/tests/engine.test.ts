@@ -49,4 +49,15 @@ describe("generateChart normalization", () => {
     expect(chart.normalized.daylightSaving).toBe(false);
     expect(chart.normalized.utcDateTime).toBe("2024-02-10T15:00:00Z");
   });
+
+  it("assigns Sagittarius to the Sun on 1990-12-16 in Rio", async () => {
+    const chart = await generateChart({
+      ...baseInput,
+      city: "Rio de Janeiro",
+      country: "BR",
+      date: "1990-12-16",
+      time: "12:00",
+    });
+    expect(chart.planets.Sun.sign).toBe("Sagittarius");
+  });
 });
