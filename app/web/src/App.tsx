@@ -485,19 +485,17 @@ function App() {
     event.preventDefault();
     setError(null);
 
-    const validation = validateChartInput(input);
-    if (!validation.valid) {
-      setError(validation.errors.join(". "));
-      return;
-    }
-
     setLoading(true);
     try {
       let nextInput = input;
       if (!input.location) {
+        if (normalizeQuery(locationInput).length < SEARCH_MIN_CHARS) {
+          setError("Digite pelo menos 3 caracteres para buscar a cidade.");
+          return;
+        }
         const fallback = await resolveLocationFromQuery(locationInput);
         if (!fallback) {
-          setError("Selecione uma cidade sugerida para continuar.");
+          setError("Não foi possível encontrar essa cidade. Tente incluir o país.");
           return;
         }
         nextInput = {
@@ -513,6 +511,11 @@ function App() {
         setSelectedLocationLabel(fallback.label);
         setLocationInput(fallback.label);
         setInput(nextInput);
+      }
+      const validation = validateChartInput(nextInput);
+      if (!validation.valid) {
+        setError(validation.errors.join(". "));
+        return;
       }
       const newChart = await generateChart(nextInput);
       setChart(newChart);
