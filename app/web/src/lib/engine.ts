@@ -208,7 +208,7 @@ function buildAspects(time: Date): Aspect[] {
 }
 
 export async function generateChart(input: ChartInput): Promise<ChartResult> {
-  const resolvedCity = resolveCity({ city: input.city, country: input.country });
+  const resolvedCity = input.location ?? resolveCity({ city: input.city, country: input.country });
   const localParts = parseLocalDateTime(input.date, input.time);
   const { standardOffset, dstOffset } = getOffsetStats(resolvedCity.timezone, localParts.year);
   const autoOffsetMinutes = getOffsetMinutes(resolvedCity.timezone, localParts);

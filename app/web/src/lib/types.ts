@@ -51,6 +51,7 @@ export interface ChartInput {
   time: string; // "HH:mm"
   city: string;
   country: string;
+  location?: CityResolution;
   daylight_saving: boolean | "auto";
 }
 

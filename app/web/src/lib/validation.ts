@@ -40,15 +40,22 @@ export function validateChartInput(input: ChartInput): ValidationResult {
   // Validate city
   const city = input.city?.trim() ?? "";
   const country = input.country?.trim() ?? "";
+  const hasLocation =
+    !!input.location &&
+    Number.isFinite(input.location.lat) &&
+    Number.isFinite(input.location.lon) &&
+    input.location.timezone.trim().length > 0;
+
   if (!city || !country) {
-    errors.push("Cidade e país são obrigatórios (ex: Rio de Janeiro, BR)");
-  } else {
-    if (city.length < 2) {
-      errors.push("Nome da cidade deve ter pelo menos 2 caracteres");
+    if (!hasLocation) {
+      errors.push("Cidade e país são obrigatórios (ex: Rio de Janeiro, BR)");
     }
-    if (country.length < 2) {
-      errors.push("Código do país deve ter pelo menos 2 caracteres");
-    }
+  }
+  if (city && city.length < 2) {
+    errors.push("Nome da cidade deve ter pelo menos 2 caracteres");
+  }
+  if (country && country.length < 2) {
+    errors.push("Código do país deve ter pelo menos 2 caracteres");
   }
 
   return {

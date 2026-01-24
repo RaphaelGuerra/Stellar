@@ -59,7 +59,9 @@ export const SUPPORTED_CITIES = [
 
 export class CityNotFoundError extends Error {
   constructor(city: string, country: string) {
-    super(`Cidade não encontrada: ${city}, ${country}. Cidades suportadas: ${SUPPORTED_CITIES.join(", ")}`);
+    super(
+      `Cidade não encontrada localmente: ${city}, ${country}. Exemplos: ${SUPPORTED_CITIES.join(", ")}`
+    );
     this.name = "CityNotFoundError";
   }
 }

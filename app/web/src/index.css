@@ -465,6 +465,67 @@ body {
   border-color: var(--color-error);
 }
 
+.city-search {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.city-search__list {
+  margin: 0;
+  padding: var(--space-xs);
+  list-style: none;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.city-search__item {
+  margin: 0;
+}
+
+.city-search__option {
+  width: 100%;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: inherit;
+}
+
+.city-search__option:hover,
+.city-search__option:focus-visible {
+  background: var(--color-bg-muted);
+  outline: none;
+}
+
+.city-search__option-label {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.city-search__option-meta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.city-search__status {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.city-search__status--error {
+  color: var(--color-error);
+}
+
 .form__error {
   margin-top: var(--space-sm);
   padding: var(--space-sm) var(--space-md);

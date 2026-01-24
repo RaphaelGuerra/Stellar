@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo, type FormEvent } from "react";
+import { useState, useEffect, useMemo, useRef, type FormEvent } from "react";
+import tzLookup from "tz-lookup";
 import { useContentMode } from "./content/useContentMode";
 import { ModeToggle } from "./components/ModeToggle";
 import { buildCards, type CardModel } from "./lib/cards";
@@ -35,6 +36,80 @@ function parseLocationInput(value: string): { city: string; country: string } {
   }
 
   return { city: trimmed, country: "" };
+}
+
+interface NominatimAddress {
+  city?: string;
+  town?: string;
+  village?: string;
+  municipality?: string;
+  county?: string;
+  state?: string;
+  country_code?: string;
+}
+
+interface NominatimResult {
+  place_id: number;
+  lat: string;
+  lon: string;
+  display_name: string;
+  address?: NominatimAddress;
+}
+
+interface GeoSuggestion {
+  id: string;
+  label: string;
+  city: string;
+  country: string;
+  lat: number;
+  lon: number;
+  timezone: string;
+}
+
+const NOMINATIM_ENDPOINT = "https://nominatim.openstreetmap.org/search";
+const NOMINATIM_EMAIL = "phaelixai@gmail.com";
+const SEARCH_MIN_CHARS = 3;
+const SEARCH_DEBOUNCE_MS = 450;
+
+function normalizeQuery(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function pickCityName(address?: NominatimAddress): string | null {
+  if (!address) return null;
+  return (
+    address.city ||
+    address.town ||
+    address.village ||
+    address.municipality ||
+    address.county ||
+    address.state ||
+    null
+  );
+}
+
+function buildSuggestion(result: NominatimResult): GeoSuggestion | null {
+  const lat = Number(result.lat);
+  const lon = Number(result.lon);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+
+  const city = pickCityName(result.address);
+  const country = result.address?.country_code?.toUpperCase() ?? "";
+  if (!city || !country) return null;
+
+  const region = result.address?.state && result.address.state !== city ? result.address.state : "";
+  const labelParts = [city, region, country].filter(Boolean);
+  const label = labelParts.join(", ");
+
+  return {
+    id: String(result.place_id ?? `${lat},${lon}`),
+    label,
+    city,
+    country,
+    lat,
+    lon,
+    timezone: tzLookup(lat, lon),
+  };
 }
 
 function Card({ title, subtitle, text, tags }: CardProps) {
@@ -100,6 +175,11 @@ function App() {
   const [locationInput, setLocationInput] = useState(
     `${input.city}, ${input.country}`
   );
+  const [suggestions, setSuggestions] = useState<GeoSuggestion[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [selectedLocationLabel, setSelectedLocationLabel] = useState<string | null>(null);
+  const searchCache = useRef(new Map<string, GeoSuggestion[]>());
   const [chart, setChart] = useState<ChartResult | null>(null);
   const [cards, setCards] = useState<CardModel[]>([]);
   const [loading, setLoading] = useState(false);
@@ -118,8 +198,87 @@ function App() {
       ...prev,
       city: parsed.city,
       country: parsed.country,
+      location: selectedLocationLabel === locationInput ? prev.location : undefined,
     }));
-  }, [locationInput]);
+    if (selectedLocationLabel && selectedLocationLabel !== locationInput) {
+      setSelectedLocationLabel(null);
+    }
+  }, [locationInput, selectedLocationLabel]);
+
+  useEffect(() => {
+    const query = locationInput.trim();
+    const normalized = normalizeQuery(query);
+
+    if (selectedLocationLabel && locationInput === selectedLocationLabel) {
+      setSuggestions([]);
+      setSearchError(null);
+      setIsSearching(false);
+      return;
+    }
+
+    if (normalized.length < SEARCH_MIN_CHARS) {
+      setSuggestions([]);
+      setSearchError(null);
+      setIsSearching(false);
+      return;
+    }
+
+    const cached = searchCache.current.get(normalized);
+    if (cached) {
+      setSuggestions(cached);
+      setSearchError(null);
+      setIsSearching(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(async () => {
+      setIsSearching(true);
+      setSearchError(null);
+      try {
+        const params = new URLSearchParams({
+          format: "jsonv2",
+          addressdetails: "1",
+          limit: "6",
+          q: query,
+          email: NOMINATIM_EMAIL,
+        });
+        params.set("accept-language", "pt-BR");
+        const response = await fetch(`${NOMINATIM_ENDPOINT}?${params.toString()}`, {
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          throw new Error(`Nominatim error: ${response.status}`);
+        }
+        const data = (await response.json()) as NominatimResult[];
+        const unique = new Map<string, GeoSuggestion>();
+        for (const item of data) {
+          const suggestion = buildSuggestion(item);
+          if (!suggestion) continue;
+          const key = `${suggestion.label}|${suggestion.lat}|${suggestion.lon}`;
+          if (!unique.has(key)) {
+            unique.set(key, suggestion);
+          }
+        }
+        const results = Array.from(unique.values());
+        searchCache.current.set(normalized, results);
+        setSuggestions(results);
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") return;
+        setSuggestions([]);
+        setSearchError("Não foi possível buscar cidades agora.");
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsSearching(false);
+        }
+      }
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => {
+      controller.abort();
+      clearTimeout(timeout);
+    };
+  }, [locationInput, selectedLocationLabel]);
 
   // Separate cards into sections using category field
   const { big3Cards, aspectCards } = useMemo(() => {
@@ -157,6 +316,59 @@ function App() {
       ? "true"
       : "false";
 
+  const showSuggestions = suggestions.length > 0;
+  const showNoResults =
+    !isSearching &&
+    !searchError &&
+    suggestions.length === 0 &&
+    normalizeQuery(locationInput).length >= SEARCH_MIN_CHARS &&
+    locationInput !== selectedLocationLabel;
+
+  function handleSelectSuggestion(suggestion: GeoSuggestion) {
+    setSelectedLocationLabel(suggestion.label);
+    setLocationInput(suggestion.label);
+    setSuggestions([]);
+    setSearchError(null);
+    setInput((prev) => ({
+      ...prev,
+      city: suggestion.city,
+      country: suggestion.country,
+      location: {
+        lat: suggestion.lat,
+        lon: suggestion.lon,
+        timezone: suggestion.timezone,
+      },
+    }));
+  }
+
+  async function resolveLocationFromQuery(query: string): Promise<GeoSuggestion | null> {
+    const normalized = normalizeQuery(query);
+    const cached = searchCache.current.get(normalized);
+    if (cached && cached.length > 0) return cached[0];
+
+    try {
+      const params = new URLSearchParams({
+        format: "jsonv2",
+        addressdetails: "1",
+        limit: "1",
+        q: query,
+        email: NOMINATIM_EMAIL,
+      });
+      params.set("accept-language", "pt-BR");
+      const response = await fetch(`${NOMINATIM_ENDPOINT}?${params.toString()}`);
+      if (!response.ok) return null;
+      const data = (await response.json()) as NominatimResult[];
+      const suggestion = data.map(buildSuggestion).find(Boolean) as GeoSuggestion | undefined;
+      if (suggestion) {
+        searchCache.current.set(normalized, [suggestion]);
+        return suggestion;
+      }
+      return null;
+    } catch (err) {
+      return null;
+    }
+  }
+
   async function handleGenerateChart(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
@@ -169,7 +381,28 @@ function App() {
 
     setLoading(true);
     try {
-      const newChart = await generateChart(input);
+      let nextInput = input;
+      if (!input.location) {
+        const fallback = await resolveLocationFromQuery(locationInput);
+        if (!fallback) {
+          setError("Selecione uma cidade sugerida para continuar.");
+          return;
+        }
+        nextInput = {
+          ...input,
+          city: fallback.city,
+          country: fallback.country,
+          location: {
+            lat: fallback.lat,
+            lon: fallback.lon,
+            timezone: fallback.timezone,
+          },
+        };
+        setSelectedLocationLabel(fallback.label);
+        setLocationInput(fallback.label);
+        setInput(nextInput);
+      }
+      const newChart = await generateChart(nextInput);
       setChart(newChart);
       setCards(buildCards(content, newChart, mode));
     } catch (err) {
@@ -233,24 +466,53 @@ function App() {
               <div className="form__row">
                 <label className="form__label">
                   Cidade e país
-                  <input
-                    type="text"
-                    value={locationInput}
-                    onChange={(event) => setLocationInput(event.target.value)}
-                    required
-                    list="supported-cities"
-                    aria-describedby="city-hint"
-                    placeholder="Ex: Rio de Janeiro, BR"
-                  />
-                  <datalist id="supported-cities">
-                    {SUPPORTED_CITIES.map((city) => (
-                      <option key={city} value={city} />
-                    ))}
-                  </datalist>
+                  <div className="city-search">
+                    <input
+                      type="text"
+                      value={locationInput}
+                      onChange={(event) => setLocationInput(event.target.value)}
+                      required
+                      aria-describedby="city-hint"
+                      aria-expanded={showSuggestions}
+                      placeholder="Ex: Rio de Janeiro, BR"
+                    />
+                    {isSearching && (
+                      <span className="city-search__status">Buscando cidades...</span>
+                    )}
+                    {searchError && (
+                      <span className="city-search__status city-search__status--error">
+                        {searchError}
+                      </span>
+                    )}
+                    {showNoResults && (
+                      <span className="city-search__status">Nenhuma cidade encontrada.</span>
+                    )}
+                    {showSuggestions && (
+                      <ul className="city-search__list" role="listbox">
+                        {suggestions.map((suggestion) => (
+                          <li key={suggestion.id} className="city-search__item">
+                            <button
+                              type="button"
+                              className="city-search__option"
+                              onClick={() => handleSelectSuggestion(suggestion)}
+                            >
+                              <span className="city-search__option-label">
+                                {suggestion.label}
+                              </span>
+                              <span className="city-search__option-meta">
+                                {suggestion.timezone}
+                              </span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 </label>
               </div>
               <p id="city-hint" className="form__hint">
-                Cidades suportadas: {SUPPORTED_CITIES.join(", ")}
+                Digite para buscar cidades do mundo inteiro ou escolha um exemplo:{" "}
+                {SUPPORTED_CITIES.join(", ")}
               </p>
               <div className="form__row">
                 <label className="form__label">
