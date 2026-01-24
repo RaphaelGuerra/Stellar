@@ -66,10 +66,23 @@ interface GeoSuggestion {
   timezone: string;
 }
 
+interface CacheEntry {
+  ts: number;
+  results: GeoSuggestion[];
+}
+
+interface RequestTimestampRef {
+  current: number;
+}
+
 const NOMINATIM_ENDPOINT = "https://nominatim.openstreetmap.org/search";
 const NOMINATIM_EMAIL = "phaelixai@gmail.com";
 const SEARCH_MIN_CHARS = 3;
 const SEARCH_DEBOUNCE_MS = 450;
+const SEARCH_RATE_LIMIT_MS = 1100;
+const CACHE_KEY = "stellar-city-cache-v1";
+const CACHE_TTL_MS = 1000 * 60 * 60 * 24 * 30;
+const CACHE_LIMIT = 50;
 
 function normalizeQuery(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, " ");
@@ -110,6 +123,128 @@ function buildSuggestion(result: NominatimResult): GeoSuggestion | null {
     lon,
     timezone: tzLookup(lat, lon),
   };
+}
+
+function waitFor(ms: number, signal?: AbortSignal): Promise<void> {
+  if (ms <= 0) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      if (signal) signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    const onAbort = () => {
+      clearTimeout(timeout);
+      if (signal) signal.removeEventListener("abort", onAbort);
+      reject(new DOMException("Aborted", "AbortError"));
+    };
+    if (signal) {
+      if (signal.aborted) {
+        onAbort();
+        return;
+      }
+      signal.addEventListener("abort", onAbort);
+    }
+  });
+}
+
+function pruneCache(cache: Map<string, CacheEntry>) {
+  if (cache.size <= CACHE_LIMIT) return;
+  const entries = Array.from(cache.entries()).sort((a, b) => b[1].ts - a[1].ts);
+  cache.clear();
+  for (const [query, entry] of entries.slice(0, CACHE_LIMIT)) {
+    cache.set(query, entry);
+  }
+}
+
+function persistCache(cache: Map<string, CacheEntry>) {
+  if (typeof window === "undefined") return;
+  pruneCache(cache);
+  const entries = Array.from(cache.entries())
+    .map(([query, entry]) => ({
+      query,
+      ts: entry.ts,
+      results: entry.results,
+    }))
+    .sort((a, b) => b.ts - a.ts);
+  try {
+    window.localStorage.setItem(CACHE_KEY, JSON.stringify(entries));
+  } catch (err) {
+    // Ignore storage failures (quota, disabled).
+  }
+}
+
+function loadCacheFromStorage(): Map<string, CacheEntry> {
+  if (typeof window === "undefined") return new Map();
+  try {
+    const raw = window.localStorage.getItem(CACHE_KEY);
+    if (!raw) return new Map();
+    const parsed = JSON.parse(raw) as Array<{
+      query: string;
+      ts: number;
+      results: GeoSuggestion[];
+    }>;
+    const now = Date.now();
+    const cache = new Map<string, CacheEntry>();
+    if (Array.isArray(parsed)) {
+      for (const entry of parsed) {
+        if (!entry || typeof entry.query !== "string" || typeof entry.ts !== "number") {
+          continue;
+        }
+        if (!Array.isArray(entry.results)) continue;
+        if (now - entry.ts > CACHE_TTL_MS) continue;
+        cache.set(entry.query, { ts: entry.ts, results: entry.results });
+      }
+    }
+    pruneCache(cache);
+    return cache;
+  } catch (err) {
+    return new Map();
+  }
+}
+
+function getCachedResults(query: string, cache: Map<string, CacheEntry>): GeoSuggestion[] | null {
+  const entry = cache.get(query);
+  if (!entry) return null;
+  if (Date.now() - entry.ts > CACHE_TTL_MS) {
+    cache.delete(query);
+    persistCache(cache);
+    return null;
+  }
+  return entry.results;
+}
+
+function setCachedResults(query: string, results: GeoSuggestion[], cache: Map<string, CacheEntry>) {
+  cache.set(query, { ts: Date.now(), results });
+  persistCache(cache);
+}
+
+async function fetchNominatim(
+  query: string,
+  limit: number,
+  lastRequestAt: RequestTimestampRef,
+  signal?: AbortSignal
+): Promise<NominatimResult[]> {
+  const sinceLast = Date.now() - lastRequestAt.current;
+  const waitMs = Math.max(0, SEARCH_RATE_LIMIT_MS - sinceLast);
+  if (waitMs > 0) {
+    await waitFor(waitMs, signal);
+  }
+  lastRequestAt.current = Date.now();
+
+  const params = new URLSearchParams({
+    format: "jsonv2",
+    addressdetails: "1",
+    limit: String(limit),
+    q: query,
+    email: NOMINATIM_EMAIL,
+  });
+  params.set("accept-language", "pt-BR");
+
+  const response = await fetch(`${NOMINATIM_ENDPOINT}?${params.toString()}`, { signal });
+  if (!response.ok) {
+    throw new Error(`Nominatim error: ${response.status}`);
+  }
+  return (await response.json()) as NominatimResult[];
 }
 
 function Card({ title, subtitle, text, tags }: CardProps) {
@@ -179,7 +314,8 @@ function App() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [selectedLocationLabel, setSelectedLocationLabel] = useState<string | null>(null);
-  const searchCache = useRef(new Map<string, GeoSuggestion[]>());
+  const searchCache = useRef<Map<string, CacheEntry>>(loadCacheFromStorage());
+  const lastRequestAt = useRef(0);
   const [chart, setChart] = useState<ChartResult | null>(null);
   const [cards, setCards] = useState<CardModel[]>([]);
   const [loading, setLoading] = useState(false);
@@ -223,8 +359,8 @@ function App() {
       return;
     }
 
-    const cached = searchCache.current.get(normalized);
-    if (cached) {
+    const cached = getCachedResults(normalized, searchCache.current);
+    if (cached !== null) {
       setSuggestions(cached);
       setSearchError(null);
       setIsSearching(false);
@@ -233,24 +369,10 @@ function App() {
 
     const controller = new AbortController();
     const timeout = setTimeout(async () => {
-      setIsSearching(true);
       setSearchError(null);
+      setIsSearching(true);
       try {
-        const params = new URLSearchParams({
-          format: "jsonv2",
-          addressdetails: "1",
-          limit: "6",
-          q: query,
-          email: NOMINATIM_EMAIL,
-        });
-        params.set("accept-language", "pt-BR");
-        const response = await fetch(`${NOMINATIM_ENDPOINT}?${params.toString()}`, {
-          signal: controller.signal,
-        });
-        if (!response.ok) {
-          throw new Error(`Nominatim error: ${response.status}`);
-        }
-        const data = (await response.json()) as NominatimResult[];
+        const data = await fetchNominatim(query, 6, lastRequestAt, controller.signal);
         const unique = new Map<string, GeoSuggestion>();
         for (const item of data) {
           const suggestion = buildSuggestion(item);
@@ -261,7 +383,7 @@ function App() {
           }
         }
         const results = Array.from(unique.values());
-        searchCache.current.set(normalized, results);
+        setCachedResults(normalized, results, searchCache.current);
         setSuggestions(results);
       } catch (err) {
         if (err instanceof Error && err.name === "AbortError") return;
@@ -343,24 +465,14 @@ function App() {
 
   async function resolveLocationFromQuery(query: string): Promise<GeoSuggestion | null> {
     const normalized = normalizeQuery(query);
-    const cached = searchCache.current.get(normalized);
+    const cached = getCachedResults(normalized, searchCache.current);
     if (cached && cached.length > 0) return cached[0];
 
     try {
-      const params = new URLSearchParams({
-        format: "jsonv2",
-        addressdetails: "1",
-        limit: "1",
-        q: query,
-        email: NOMINATIM_EMAIL,
-      });
-      params.set("accept-language", "pt-BR");
-      const response = await fetch(`${NOMINATIM_ENDPOINT}?${params.toString()}`);
-      if (!response.ok) return null;
-      const data = (await response.json()) as NominatimResult[];
+      const data = await fetchNominatim(query, 1, lastRequestAt);
       const suggestion = data.map(buildSuggestion).find(Boolean) as GeoSuggestion | undefined;
       if (suggestion) {
-        searchCache.current.set(normalized, [suggestion]);
+        setCachedResults(normalized, [suggestion], searchCache.current);
         return suggestion;
       }
       return null;
