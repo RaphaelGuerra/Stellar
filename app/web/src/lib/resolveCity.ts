@@ -48,13 +48,13 @@ const CITY_MAP: Record<string, CityResolution> = {
 };
 
 export const SUPPORTED_CITIES = [
-  "Rio de Janeiro (BR)",
-  "São Paulo (BR)",
-  "Nova Iguaçu (BR)",
-  "Lisbon (PT)",
-  "New York (US)",
-  "Montreal (CA)",
-  "Ottawa (CA)",
+  "Rio de Janeiro, BR",
+  "São Paulo, BR",
+  "Nova Iguaçu, BR",
+  "Lisbon, PT",
+  "New York, US",
+  "Montreal, CA",
+  "Ottawa, CA",
 ] as const;
 
 export class CityNotFoundError extends Error {

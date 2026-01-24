@@ -14,6 +14,29 @@ interface CardProps {
   tags: readonly string[];
 }
 
+function parseLocationInput(value: string): { city: string; country: string } {
+  const trimmed = value.trim();
+  if (!trimmed) return { city: "", country: "" };
+
+  const commaMatch = trimmed.match(/^(.+),\s*([A-Za-z]{2,3})$/);
+  if (commaMatch) {
+    return {
+      city: commaMatch[1].trim(),
+      country: commaMatch[2].trim().toUpperCase(),
+    };
+  }
+
+  const parenMatch = trimmed.match(/^(.+)\(([^)]+)\)\s*$/);
+  if (parenMatch) {
+    return {
+      city: parenMatch[1].trim(),
+      country: parenMatch[2].trim().toUpperCase(),
+    };
+  }
+
+  return { city: trimmed, country: "" };
+}
+
 function Card({ title, subtitle, text, tags }: CardProps) {
   return (
     <article className="card">
@@ -74,6 +97,9 @@ function App() {
     country: "BR",
     daylight_saving: "auto",
   });
+  const [locationInput, setLocationInput] = useState(
+    `${input.city}, ${input.country}`
+  );
   const [chart, setChart] = useState<ChartResult | null>(null);
   const [cards, setCards] = useState<CardModel[]>([]);
   const [loading, setLoading] = useState(false);
@@ -85,6 +111,15 @@ function App() {
       setCards(buildCards(content, chart, mode));
     }
   }, [mode, content, chart]);
+
+  useEffect(() => {
+    const parsed = parseLocationInput(locationInput);
+    setInput((prev) => ({
+      ...prev,
+      city: parsed.city,
+      country: parsed.country,
+    }));
+  }, [locationInput]);
 
   // Separate cards into sections using category field
   const { big3Cards, aspectCards } = useMemo(() => {
@@ -197,38 +232,21 @@ function App() {
               </div>
               <div className="form__row">
                 <label className="form__label">
-                  Cidade
+                  Cidade e país
                   <input
                     type="text"
-                    value={input.city}
-                    onChange={(event) =>
-                      setInput((prev) => ({ ...prev, city: event.target.value }))
-                    }
+                    value={locationInput}
+                    onChange={(event) => setLocationInput(event.target.value)}
                     required
                     list="supported-cities"
                     aria-describedby="city-hint"
+                    placeholder="Ex: Rio de Janeiro, BR"
                   />
                   <datalist id="supported-cities">
                     {SUPPORTED_CITIES.map((city) => (
-                      <option key={city} value={city.split(" (")[0]} />
+                      <option key={city} value={city} />
                     ))}
                   </datalist>
-                </label>
-                <label className="form__label">
-                  País
-                  <input
-                    type="text"
-                    value={input.country}
-                    onChange={(event) =>
-                      setInput((prev) => ({
-                        ...prev,
-                        country: event.target.value,
-                      }))
-                    }
-                    required
-                    placeholder="Ex: BR, US, PT"
-                    maxLength={3}
-                  />
                 </label>
               </div>
               <p id="city-hint" className="form__hint">

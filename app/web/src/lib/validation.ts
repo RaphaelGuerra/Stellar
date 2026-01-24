@@ -38,17 +38,17 @@ export function validateChartInput(input: ChartInput): ValidationResult {
   }
 
   // Validate city
-  if (!input.city || input.city.trim().length === 0) {
-    errors.push("Cidade é obrigatória");
-  } else if (input.city.trim().length < 2) {
-    errors.push("Nome da cidade deve ter pelo menos 2 caracteres");
-  }
-
-  // Validate country
-  if (!input.country || input.country.trim().length === 0) {
-    errors.push("País é obrigatório");
-  } else if (input.country.trim().length < 2) {
-    errors.push("Código do país deve ter pelo menos 2 caracteres");
+  const city = input.city?.trim() ?? "";
+  const country = input.country?.trim() ?? "";
+  if (!city || !country) {
+    errors.push("Cidade e país são obrigatórios (ex: Rio de Janeiro, BR)");
+  } else {
+    if (city.length < 2) {
+      errors.push("Nome da cidade deve ter pelo menos 2 caracteres");
+    }
+    if (country.length < 2) {
+      errors.push("Código do país deve ter pelo menos 2 caracteres");
+    }
   }
 
   return {
