@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { PT_HOT, PT_LIGHT } from "./index";
+import { EN, PT_HOT } from "./index";
 import type { ContentPack } from "../lib/cards";
 
 export type Mode = "normal" | "carioca";
@@ -25,7 +25,7 @@ export function useContentMode(): UseContentModeReturn {
   }, [mode]);
 
   const content = useMemo((): ContentPack => {
-    return mode === "carioca" ? PT_HOT : PT_LIGHT;
+    return mode === "carioca" ? PT_HOT : EN;
   }, [mode]);
 
   return { mode, setMode, content };

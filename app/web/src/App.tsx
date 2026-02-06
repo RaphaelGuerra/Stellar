@@ -168,7 +168,7 @@ function persistCache(cache: Map<string, CacheEntry>) {
     .sort((a, b) => b.ts - a.ts);
   try {
     window.localStorage.setItem(CACHE_KEY, JSON.stringify(entries));
-  } catch (err) {
+  } catch {
     // Ignore storage failures (quota, disabled).
   }
 }
@@ -197,7 +197,7 @@ function loadCacheFromStorage(): Map<string, CacheEntry> {
     }
     pruneCache(cache);
     return cache;
-  } catch (err) {
+  } catch {
     return new Map();
   }
 }
@@ -289,11 +289,11 @@ function Section({ icon, title, badge, badgeAccent, children }: SectionProps) {
   );
 }
 
-function LoadingState() {
+function LoadingState({ label }: { label: string }) {
   return (
     <div className="loading-state" role="status" aria-live="polite" aria-busy="true">
       <div className="spinner" aria-hidden="true" />
-      <p className="loading-text">Calculando posições planetárias</p>
+      <p className="loading-text">{label}</p>
     </div>
   );
 }
@@ -388,7 +388,7 @@ function App() {
       } catch (err) {
         if (err instanceof Error && err.name === "AbortError") return;
         setSuggestions([]);
-        setSearchError("Não foi possível buscar cidades agora.");
+        setSearchError("Could not search cities right now.");
       } finally {
         if (!controller.signal.aborted) {
           setIsSearching(false);
@@ -476,7 +476,7 @@ function App() {
         return suggestion;
       }
       return null;
-    } catch (err) {
+    } catch {
       return null;
     }
   }
@@ -490,12 +490,16 @@ function App() {
       let nextInput = input;
       if (!input.location) {
         if (normalizeQuery(locationInput).length < SEARCH_MIN_CHARS) {
-          setError("Digite pelo menos 3 caracteres para buscar a cidade.");
+          setError(mode === "carioca"
+            ? "Digite pelo menos 3 caracteres para buscar a cidade."
+            : "Type at least 3 characters to search for a city.");
           return;
         }
         const fallback = await resolveLocationFromQuery(locationInput);
         if (!fallback) {
-          setError("Não foi possível encontrar essa cidade. Tente incluir o país.");
+          setError(mode === "carioca"
+            ? "Não foi possível encontrar essa cidade. Tente incluir o país."
+            : "Couldn't find that city. Try including the country code.");
           return;
         }
         nextInput = {
@@ -528,7 +532,34 @@ function App() {
     }
   }
 
-  const modeLabel = mode === "carioca" ? "Carioca" : "Normal";
+  const isCarioca = mode === "carioca";
+  const t = {
+    modeLabel: isCarioca ? "Carioca" : "English",
+    date: isCarioca ? "Data" : "Date",
+    time: isCarioca ? "Hora" : "Time",
+    cityAndCountry: isCarioca ? "Cidade e país" : "City & country",
+    searchPlaceholder: isCarioca ? "Ex: Rio de Janeiro, BR" : "e.g. New York, US",
+    searching: isCarioca ? "Buscando cidades..." : "Searching cities...",
+    noResults: isCarioca ? "Nenhuma cidade encontrada." : "No cities found.",
+    cityHint: isCarioca
+      ? `Digite para buscar cidades do mundo inteiro ou escolha um exemplo: ${SUPPORTED_CITIES.join(", ")}`
+      : `Type to search cities worldwide or try: ${SUPPORTED_CITIES.join(", ")}`,
+    daylightSaving: isCarioca ? "Horário de verão" : "Daylight saving",
+    yes: isCarioca ? "Sim" : "Yes",
+    no: isCarioca ? "Não" : "No",
+    generating: isCarioca ? "Gerando..." : "Generating...",
+    generateNew: isCarioca ? "Gerar novo mapa" : "New chart",
+    generate: isCarioca ? "Gerar mapa" : "Generate chart",
+    error: isCarioca ? "Erro ao gerar mapa" : "Error generating chart",
+    normalizedTitle: isCarioca ? "Dados normalizados" : "Normalized data",
+    dstLabel: isCarioca ? "Horário de verão" : "Daylight saving",
+    emptyState: isCarioca
+      ? 'Clique em "Gerar mapa" para ver os cards do mapa astral.'
+      : 'Click "Generate chart" to see your birth chart cards.',
+    loading: isCarioca ? "Calculando posições planetárias" : "Calculating planetary positions",
+    aspectsTitle: isCarioca ? "Aspectos" : "Aspects",
+    aspectsBadge: (n: number) => isCarioca ? `${n} conexoes` : `${n} connections`,
+  };
 
   return (
     <>
@@ -544,11 +575,11 @@ function App() {
             <h1 className="header__title">stellar</h1>
             <div
               className="header__meta"
-              aria-label="Informações do mapa atual"
+              aria-label="Current chart info"
               aria-live="polite"
               aria-atomic="true"
             >
-              <span>Modo {modeLabel}</span>
+              <span>{t.modeLabel}</span>
               {chartMeta && (
                 <>
                   <span className="header__meta-divider" />
@@ -562,12 +593,12 @@ function App() {
           <ModeToggle mode={mode} setMode={setMode} />
         </header>
 
-        <main role="main" aria-label="Gerador de mapa astral">
+        <main role="main" aria-label="Birth chart generator">
           <section className={`action-section ${cards.length > 0 ? "action-section--compact" : ""}`}>
-            <form className="form" onSubmit={handleGenerateChart} aria-label="Formulário de dados de nascimento">
+            <form className="form" onSubmit={handleGenerateChart} aria-label="Birth data form">
               <div className="form__row">
                 <label className="form__label">
-                  Data
+                  {t.date}
                   <input
                     type="date"
                     name="birth-date"
@@ -580,7 +611,7 @@ function App() {
                   />
                 </label>
                 <label className="form__label">
-                  Hora
+                  {t.time}
                   <input
                     type="time"
                     name="birth-time"
@@ -595,7 +626,7 @@ function App() {
               </div>
               <div className="form__row">
                 <label className="form__label">
-                  Cidade e país
+                  {t.cityAndCountry}
                   <div className="city-search">
                     <input
                       type="text"
@@ -609,11 +640,11 @@ function App() {
                       aria-expanded={showSuggestions}
                       autoComplete="off"
                       inputMode="search"
-                      placeholder="Ex: Rio de Janeiro, BR"
+                      placeholder={t.searchPlaceholder}
                     />
                     <div className="city-search__status-area" role="status" aria-live="polite">
                       {isSearching && (
-                        <span className="city-search__status">Buscando cidades...</span>
+                        <span className="city-search__status">{t.searching}</span>
                       )}
                       {searchError && (
                         <span className="city-search__status city-search__status--error">
@@ -621,7 +652,7 @@ function App() {
                         </span>
                       )}
                       {showNoResults && (
-                        <span className="city-search__status">Nenhuma cidade encontrada.</span>
+                        <span className="city-search__status">{t.noResults}</span>
                       )}
                     </div>
                     {showSuggestions && (
@@ -648,12 +679,11 @@ function App() {
                 </label>
               </div>
               <p id="city-hint" className="form__hint">
-                Digite para buscar cidades do mundo inteiro ou escolha um exemplo:{" "}
-                {SUPPORTED_CITIES.join(", ")}
+                {t.cityHint}
               </p>
               <div className="form__row">
                 <label className="form__label">
-                  Horário de verão
+                  {t.daylightSaving}
                   <select
                     name="daylight-saving"
                     value={daylightSavingValue}
@@ -668,24 +698,24 @@ function App() {
                     }}
                   >
                     <option value="auto">Auto</option>
-                    <option value="true">Sim</option>
-                    <option value="false">Não</option>
+                    <option value="true">{t.yes}</option>
+                    <option value="false">{t.no}</option>
                   </select>
                 </label>
                 <button type="submit" className="btn-primary" disabled={loading}>
-                  {loading ? "Gerando..." : chart ? "Gerar novo mapa" : "Gerar mapa"}
+                  {loading ? t.generating : chart ? t.generateNew : t.generate}
                 </button>
               </div>
               {error && (
                 <p className="form__error" role="alert">
-                  Erro ao gerar mapa: {error}
+                  {t.error}: {error}
                 </p>
               )}
             </form>
           </section>
 
           {!loading && chart && (
-            <Section icon="🧭" title="Dados normalizados">
+            <Section icon="🧭" title={t.normalizedTitle}>
               <div className="normalized">
                 <p>Timezone: {chart.normalized.timezone}</p>
                 <p>UTC: {chart.normalized.utcDateTime}</p>
@@ -696,17 +726,17 @@ function App() {
                   {chart.normalized.location.lon}
                 </p>
                 <p>
-                  Horário de verão: {chart.normalized.daylightSaving ? "Sim" : "Não"}
+                  {t.dstLabel}: {chart.normalized.daylightSaving ? t.yes : t.no}
                 </p>
               </div>
             </Section>
           )}
 
-          {loading && <LoadingState />}
+          {loading && <LoadingState label={t.loading} />}
 
           {!loading && cards.length === 0 && (
             <p className="empty-state">
-              Clique em "Gerar mapa" para ver os cards do mapa astral.
+              {t.emptyState}
             </p>
           )}
 
@@ -729,8 +759,8 @@ function App() {
           {!loading && aspectCards.length > 0 && (
             <Section
               icon="🔗"
-              title="Aspectos"
-              badge={`${aspectCards.length} conexoes`}
+              title={t.aspectsTitle}
+              badge={t.aspectsBadge(aspectCards.length)}
               badgeAccent
             >
               <div className="cards-grid">

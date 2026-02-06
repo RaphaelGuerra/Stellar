@@ -92,10 +92,11 @@ export function buildCards(
 
     // Add sign card for this planet
     if (signEntry) {
+      const inWord = mode === "carioca" ? "em" : "in";
       addCard(
         `planet-sign-${planet}-${placement.sign}`,
         "planet-sign",
-        `${planet} em ${placement.sign} - ${signEntry.title}`,
+        `${planet} ${inWord} ${placement.sign} - ${signEntry.title}`,
         signEntry,
         { planet }
       );
