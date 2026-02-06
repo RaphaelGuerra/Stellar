@@ -71,6 +71,7 @@ export interface ChartInputNormalized {
 export interface PlanetPlacement {
   sign: ZodiacSign;
   degree?: number; // 0-29.999 within the sign
+  longitude?: number; // 0-359.999 ecliptic longitude
 }
 
 export interface HousePlacement {

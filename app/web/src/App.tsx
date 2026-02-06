@@ -3,7 +3,9 @@ import tzLookup from "tz-lookup";
 import { useContentMode } from "./content/useContentMode";
 import { ModeToggle } from "./components/ModeToggle";
 import { buildCards, buildPlacementsSummary, type CardModel, type PlacementSummary } from "./lib/cards";
+import { aspectSymbol } from "./lib/aspectContext";
 import { generateChart } from "./lib/engine";
+import { buildChartComparison } from "./lib/synastry";
 import { validateChartInput } from "./lib/validation";
 import { SUPPORTED_CITIES } from "./lib/resolveCity";
 import type { ChartInput, ChartResult } from "./lib/types";
@@ -18,6 +20,8 @@ interface CardProps {
   degree?: number;
   orb?: number;
 }
+
+type AnalysisMode = "single" | "compatibility";
 
 function parseLocationInput(value: string): { city: string; country: string } {
   const trimmed = value.trim();
@@ -127,6 +131,19 @@ function buildSuggestion(result: NominatimResult): GeoSuggestion | null {
     lon,
     timezone: tzLookup(lat, lon),
   };
+}
+
+function toUniqueSuggestions(results: NominatimResult[]): GeoSuggestion[] {
+  const unique = new Map<string, GeoSuggestion>();
+  for (const item of results) {
+    const suggestion = buildSuggestion(item);
+    if (!suggestion) continue;
+    const key = `${suggestion.label}|${suggestion.lat}|${suggestion.lon}`;
+    if (!unique.has(key)) {
+      unique.set(key, suggestion);
+    }
+  }
+  return Array.from(unique.values());
 }
 
 function waitFor(ms: number, signal?: AbortSignal): Promise<void> {
@@ -340,6 +357,8 @@ function LoadingState({ label }: { label: string }) {
 
 function App() {
   const { mode, setMode, content } = useContentMode();
+  const isCarioca = mode === "carioca";
+  const [analysisMode, setAnalysisMode] = useState<AnalysisMode>("single");
   const [input, setInput] = useState<ChartInput>({
     date: "1990-01-01",
     time: "12:00",
@@ -347,16 +366,31 @@ function App() {
     country: "BR",
     daylight_saving: "auto",
   });
+  const [inputB, setInputB] = useState<ChartInput>({
+    date: "1990-01-01",
+    time: "12:00",
+    city: "New York",
+    country: "US",
+    daylight_saving: "auto",
+  });
   const [locationInput, setLocationInput] = useState(
     `${input.city}, ${input.country}`
   );
+  const [locationInputB, setLocationInputB] = useState(
+    `${inputB.city}, ${inputB.country}`
+  );
   const [suggestions, setSuggestions] = useState<GeoSuggestion[]>([]);
+  const [suggestionsB, setSuggestionsB] = useState<GeoSuggestion[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [isSearchingB, setIsSearchingB] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [searchErrorB, setSearchErrorB] = useState<string | null>(null);
   const [selectedLocationLabel, setSelectedLocationLabel] = useState<string | null>(null);
+  const [selectedLocationLabelB, setSelectedLocationLabelB] = useState<string | null>(null);
   const searchCache = useRef<Map<string, CacheEntry>>(loadCacheFromStorage());
   const lastRequestAt = useRef(0);
   const [chart, setChart] = useState<ChartResult | null>(null);
+  const [chartB, setChartB] = useState<ChartResult | null>(null);
   const [cards, setCards] = useState<CardModel[]>([]);
   const [placements, setPlacements] = useState<PlacementSummary[]>([]);
   const [loading, setLoading] = useState(false);
@@ -382,6 +416,19 @@ function App() {
       setSelectedLocationLabel(null);
     }
   }, [locationInput, selectedLocationLabel]);
+
+  useEffect(() => {
+    const parsed = parseLocationInput(locationInputB);
+    setInputB((prev) => ({
+      ...prev,
+      city: parsed.city,
+      country: parsed.country,
+      location: selectedLocationLabelB === locationInputB ? prev.location : undefined,
+    }));
+    if (selectedLocationLabelB && selectedLocationLabelB !== locationInputB) {
+      setSelectedLocationLabelB(null);
+    }
+  }, [locationInputB, selectedLocationLabelB]);
 
   useEffect(() => {
     const query = locationInput.trim();
@@ -415,22 +462,15 @@ function App() {
       setIsSearching(true);
       try {
         const data = await fetchNominatim(query, 6, lastRequestAt, controller.signal);
-        const unique = new Map<string, GeoSuggestion>();
-        for (const item of data) {
-          const suggestion = buildSuggestion(item);
-          if (!suggestion) continue;
-          const key = `${suggestion.label}|${suggestion.lat}|${suggestion.lon}`;
-          if (!unique.has(key)) {
-            unique.set(key, suggestion);
-          }
-        }
-        const results = Array.from(unique.values());
+        const results = toUniqueSuggestions(data);
         setCachedResults(normalized, results, searchCache.current);
         setSuggestions(results);
       } catch (err) {
         if (err instanceof Error && err.name === "AbortError") return;
         setSuggestions([]);
-        setSearchError("Could not search cities right now.");
+        setSearchError(
+          isCarioca ? "Nao foi possivel buscar cidades agora." : "Could not search cities right now."
+        );
       } finally {
         if (!controller.signal.aborted) {
           setIsSearching(false);
@@ -442,7 +482,68 @@ function App() {
       controller.abort();
       clearTimeout(timeout);
     };
-  }, [locationInput, selectedLocationLabel]);
+  }, [isCarioca, locationInput, selectedLocationLabel]);
+
+  useEffect(() => {
+    if (analysisMode !== "compatibility") {
+      setSuggestionsB([]);
+      setSearchErrorB(null);
+      setIsSearchingB(false);
+      return;
+    }
+
+    const query = locationInputB.trim();
+    const normalized = normalizeQuery(query);
+
+    if (selectedLocationLabelB && locationInputB === selectedLocationLabelB) {
+      setSuggestionsB([]);
+      setSearchErrorB(null);
+      setIsSearchingB(false);
+      return;
+    }
+
+    if (normalized.length < SEARCH_MIN_CHARS) {
+      setSuggestionsB([]);
+      setSearchErrorB(null);
+      setIsSearchingB(false);
+      return;
+    }
+
+    const cached = getCachedResults(normalized, searchCache.current);
+    if (cached !== null) {
+      setSuggestionsB(cached);
+      setSearchErrorB(null);
+      setIsSearchingB(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(async () => {
+      setSearchErrorB(null);
+      setIsSearchingB(true);
+      try {
+        const data = await fetchNominatim(query, 6, lastRequestAt, controller.signal);
+        const results = toUniqueSuggestions(data);
+        setCachedResults(normalized, results, searchCache.current);
+        setSuggestionsB(results);
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") return;
+        setSuggestionsB([]);
+        setSearchErrorB(
+          isCarioca ? "Nao foi possivel buscar cidades agora." : "Could not search cities right now."
+        );
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsSearchingB(false);
+        }
+      }
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => {
+      controller.abort();
+      clearTimeout(timeout);
+    };
+  }, [analysisMode, isCarioca, locationInputB, selectedLocationLabelB]);
 
   // Separate cards into hero / planet / aspect sections
   const { heroCards, planetCards, aspectCards } = useMemo(() => {
@@ -476,10 +577,52 @@ function App() {
     return { location: city, datetime: `${formattedDate}, ${time}` };
   }, [chart]);
 
+  const chartMetaB = useMemo(() => {
+    if (!chartB?.input) return null;
+    const { city, date, time } = chartB.input;
+    const formattedDate = new Date(`${date}T${time}`).toLocaleDateString("pt-BR", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+    return { location: city, datetime: `${formattedDate}, ${time}` };
+  }, [chartB]);
+
+  const placementsB = useMemo(() => {
+    if (!chartB) return [];
+    return buildPlacementsSummary(chartB);
+  }, [chartB]);
+
+  const comparison = useMemo(() => {
+    if (analysisMode !== "compatibility" || !chart || !chartB) return null;
+    return buildChartComparison(chart, chartB, isCarioca ? "pt" : "en");
+  }, [analysisMode, chart, chartB, isCarioca]);
+
+  const comparisonCards = useMemo(() => {
+    if (!comparison) return [];
+    return comparison.highlights.map((highlight) => ({
+      key: highlight.key,
+      title: highlight.title,
+      text: highlight.text,
+      tags: highlight.tags,
+      subtitle: highlight.related?.aspect
+        ? `${highlight.related.aspect.a.planet} ${aspectSymbol(highlight.related.aspect.type)} ${highlight.related.aspect.b.planet}`
+        : undefined,
+      orb: highlight.related?.aspect?.orb,
+    }));
+  }, [comparison]);
+
   const daylightSavingValue =
     input.daylight_saving === "auto"
       ? "auto"
       : input.daylight_saving
+      ? "true"
+      : "false";
+
+  const daylightSavingValueB =
+    inputB.daylight_saving === "auto"
+      ? "auto"
+      : inputB.daylight_saving
       ? "true"
       : "false";
 
@@ -490,6 +633,13 @@ function App() {
     suggestions.length === 0 &&
     normalizeQuery(locationInput).length >= SEARCH_MIN_CHARS &&
     locationInput !== selectedLocationLabel;
+  const showSuggestionsB = suggestionsB.length > 0;
+  const showNoResultsB =
+    !isSearchingB &&
+    !searchErrorB &&
+    suggestionsB.length === 0 &&
+    normalizeQuery(locationInputB).length >= SEARCH_MIN_CHARS &&
+    locationInputB !== selectedLocationLabelB;
 
   function handleSelectSuggestion(suggestion: GeoSuggestion) {
     setSelectedLocationLabel(suggestion.label);
@@ -508,22 +658,118 @@ function App() {
     }));
   }
 
-  async function resolveLocationFromQuery(query: string): Promise<GeoSuggestion | null> {
+  function handleSelectSuggestionB(suggestion: GeoSuggestion) {
+    setSelectedLocationLabelB(suggestion.label);
+    setLocationInputB(suggestion.label);
+    setSuggestionsB([]);
+    setSearchErrorB(null);
+    setInputB((prev) => ({
+      ...prev,
+      city: suggestion.city,
+      country: suggestion.country,
+      location: {
+        lat: suggestion.lat,
+        lon: suggestion.lon,
+        timezone: suggestion.timezone,
+      },
+    }));
+  }
+
+  async function resolveLocationCandidates(query: string, limit = 6): Promise<GeoSuggestion[] | null> {
     const normalized = normalizeQuery(query);
     const cached = getCachedResults(normalized, searchCache.current);
-    if (cached && cached.length > 0) return cached[0];
+    if (cached && cached.length > 0) {
+      if (limit <= 1 || cached.length > 1) {
+        return cached.slice(0, limit);
+      }
+    }
 
     try {
-      const data = await fetchNominatim(query, 1, lastRequestAt);
-      const suggestion = data.map(buildSuggestion).find(Boolean) as GeoSuggestion | undefined;
-      if (suggestion) {
-        setCachedResults(normalized, [suggestion], searchCache.current);
-        return suggestion;
+      const data = await fetchNominatim(query, limit, lastRequestAt);
+      const results = toUniqueSuggestions(data);
+      if (results.length > 0) {
+        setCachedResults(normalized, results, searchCache.current);
       }
-      return null;
+      return results;
     } catch {
       return null;
     }
+  }
+
+  async function ensureResolvedInput(
+    currentInput: ChartInput,
+    currentLocationInput: string,
+    options?: {
+      personLabel?: string;
+      onResolved?: (suggestion: GeoSuggestion, resolvedInput: ChartInput) => void;
+      onAmbiguous?: (candidates: GeoSuggestion[]) => void;
+    }
+  ): Promise<ChartInput | null> {
+    const withPrefix = (message: string) =>
+      options?.personLabel ? `${options.personLabel}: ${message}` : message;
+
+    let nextInput = currentInput;
+    if (!currentInput.location) {
+      if (normalizeQuery(currentLocationInput).length < SEARCH_MIN_CHARS) {
+        setError(
+          withPrefix(
+            isCarioca
+              ? "Digite pelo menos 3 caracteres para buscar a cidade."
+              : "Type at least 3 characters to search for a city."
+          )
+        );
+        return null;
+      }
+      const candidates = await resolveLocationCandidates(currentLocationInput, 6);
+      if (candidates === null) {
+        setError(
+          withPrefix(
+            isCarioca ? "Nao foi possivel buscar cidades agora." : "Could not search cities right now."
+          )
+        );
+        return null;
+      }
+      if (candidates.length === 0) {
+        setError(
+          withPrefix(
+            isCarioca
+              ? "Nao foi possivel encontrar essa cidade. Tente incluir o pais."
+              : "Couldn't find that city. Try including the country code."
+          )
+        );
+        return null;
+      }
+      if (candidates.length > 1) {
+        options?.onAmbiguous?.(candidates);
+        setError(
+          withPrefix(
+            isCarioca
+              ? "Cidade ambigua. Selecione uma opcao da lista de cidades."
+              : "Ambiguous city. Please select one option from the city suggestions list."
+          )
+        );
+        return null;
+      }
+      const fallback = candidates[0];
+      nextInput = {
+        ...currentInput,
+        city: fallback.city,
+        country: fallback.country,
+        location: {
+          lat: fallback.lat,
+          lon: fallback.lon,
+          timezone: fallback.timezone,
+        },
+      };
+      options?.onResolved?.(fallback, nextInput);
+    }
+
+    const validation = validateChartInput(nextInput);
+    if (!validation.valid) {
+      setError(withPrefix(validation.errors.join(". ")));
+      return null;
+    }
+    return nextInput;
   }
 
   async function handleGenerateChart(event: FormEvent<HTMLFormElement>) {
@@ -532,44 +778,55 @@ function App() {
 
     setLoading(true);
     try {
-      let nextInput = input;
-      if (!input.location) {
-        if (normalizeQuery(locationInput).length < SEARCH_MIN_CHARS) {
-          setError(mode === "carioca"
-            ? "Digite pelo menos 3 caracteres para buscar a cidade."
-            : "Type at least 3 characters to search for a city.");
-          return;
-        }
-        const fallback = await resolveLocationFromQuery(locationInput);
-        if (!fallback) {
-          setError(mode === "carioca"
-            ? "Não foi possível encontrar essa cidade. Tente incluir o país."
-            : "Couldn't find that city. Try including the country code.");
-          return;
-        }
-        nextInput = {
-          ...input,
-          city: fallback.city,
-          country: fallback.country,
-          location: {
-            lat: fallback.lat,
-            lon: fallback.lon,
-            timezone: fallback.timezone,
-          },
-        };
-        setSelectedLocationLabel(fallback.label);
-        setLocationInput(fallback.label);
-        setInput(nextInput);
-      }
-      const validation = validateChartInput(nextInput);
-      if (!validation.valid) {
-        setError(validation.errors.join(". "));
+      const inputA = await ensureResolvedInput(input, locationInput, {
+        personLabel: analysisMode === "compatibility" ? (isCarioca ? "Pessoa A" : "Person A") : undefined,
+        onResolved: (fallback, resolvedInput) => {
+          setSelectedLocationLabel(fallback.label);
+          setLocationInput(fallback.label);
+          setSuggestions([]);
+          setSearchError(null);
+          setInput(resolvedInput);
+        },
+        onAmbiguous: (candidates) => {
+          setSuggestions(candidates);
+          setSearchError(null);
+        },
+      });
+      if (!inputA) return;
+
+      if (analysisMode === "single") {
+        const newChart = await generateChart(inputA);
+        setChart(newChart);
+        setChartB(null);
+        setCards(buildCards(content, newChart, mode));
+        setPlacements(buildPlacementsSummary(newChart));
         return;
       }
-      const newChart = await generateChart(nextInput);
-      setChart(newChart);
-      setCards(buildCards(content, newChart, mode));
-      setPlacements(buildPlacementsSummary(newChart));
+
+      const inputResolvedB = await ensureResolvedInput(inputB, locationInputB, {
+        personLabel: isCarioca ? "Pessoa B" : "Person B",
+        onResolved: (fallback, resolvedInput) => {
+          setSelectedLocationLabelB(fallback.label);
+          setLocationInputB(fallback.label);
+          setSuggestionsB([]);
+          setSearchErrorB(null);
+          setInputB(resolvedInput);
+        },
+        onAmbiguous: (candidates) => {
+          setSuggestionsB(candidates);
+          setSearchErrorB(null);
+        },
+      });
+      if (!inputResolvedB) return;
+
+      const [newChartA, newChartB] = await Promise.all([
+        generateChart(inputA),
+        generateChart(inputResolvedB),
+      ]);
+      setChart(newChartA);
+      setChartB(newChartB);
+      setCards(buildCards(content, newChartA, mode));
+      setPlacements(buildPlacementsSummary(newChartA));
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       setError(message);
@@ -578,9 +835,12 @@ function App() {
     }
   }
 
-  const isCarioca = mode === "carioca";
   const t = {
     modeLabel: isCarioca ? "Carioca" : "English",
+    singleMode: isCarioca ? "Mapa solo" : "Single chart",
+    compatibilityMode: isCarioca ? "Compatibilidade" : "Compatibility",
+    personA: isCarioca ? "Pessoa A" : "Person A",
+    personB: isCarioca ? "Pessoa B" : "Person B",
     date: isCarioca ? "Data" : "Date",
     time: isCarioca ? "Hora" : "Time",
     cityAndCountry: isCarioca ? "Cidade e país" : "City & country",
@@ -606,6 +866,11 @@ function App() {
     planetsTitle: isCarioca ? "Planetas" : "Planets",
     aspectsTitle: isCarioca ? "Aspectos" : "Aspects",
     aspectsBadge: (n: number) => isCarioca ? `${n} conexoes` : `${n} connections`,
+    compatibilityTitle: isCarioca ? "Sinastria" : "Synastry",
+    compatibilityBadge: (n: number) => isCarioca ? `${n} aspectos` : `${n} aspects`,
+    compatibilityEmpty: isCarioca
+      ? 'Clique em "Gerar mapa" para ver os aspectos entre Pessoa A e Pessoa B.'
+      : 'Click "Generate chart" to see aspects between Person A and Person B.',
   };
 
   return (
@@ -643,116 +908,265 @@ function App() {
         <main role="main" aria-label="Birth chart generator">
           <section className={`action-section ${cards.length > 0 ? "action-section--compact" : ""}`}>
             <form className="form" onSubmit={handleGenerateChart} aria-label="Birth data form">
-              <div className="form__row">
-                <label className="form__label">
-                  {t.date}
-                  <input
-                    type="date"
-                    name="birth-date"
-                    autoComplete="bday"
-                    value={input.date}
-                    onChange={(event) =>
-                      setInput((prev) => ({ ...prev, date: event.target.value }))
-                    }
-                    required
-                  />
-                </label>
-                <label className="form__label">
-                  {t.time}
-                  <input
-                    type="time"
-                    name="birth-time"
-                    autoComplete="off"
-                    value={input.time}
-                    onChange={(event) =>
-                      setInput((prev) => ({ ...prev, time: event.target.value }))
-                    }
-                    required
-                  />
-                </label>
-              </div>
-              <div className="form__row">
-                <label className="form__label">
-                  {t.cityAndCountry}
-                  <div className="city-search">
-                    <input
-                      type="text"
-                      name="birth-location"
-                      value={locationInput}
-                      onChange={(event) => setLocationInput(event.target.value)}
-                      required
-                      aria-describedby="city-hint"
-                      aria-autocomplete="list"
-                      aria-controls="city-suggestions"
-                      aria-expanded={showSuggestions}
-                      autoComplete="off"
-                      inputMode="search"
-                      placeholder={t.searchPlaceholder}
-                    />
-                    <div className="city-search__status-area" role="status" aria-live="polite">
-                      {isSearching && (
-                        <span className="city-search__status">{t.searching}</span>
-                      )}
-                      {searchError && (
-                        <span className="city-search__status city-search__status--error">
-                          {searchError}
-                        </span>
-                      )}
-                      {showNoResults && (
-                        <span className="city-search__status">{t.noResults}</span>
-                      )}
-                    </div>
-                    {showSuggestions && (
-                      <ul className="city-search__list" role="listbox" id="city-suggestions">
-                        {suggestions.map((suggestion) => (
-                          <li key={suggestion.id} className="city-search__item">
-                            <button
-                              type="button"
-                              className="city-search__option"
-                              onClick={() => handleSelectSuggestion(suggestion)}
-                            >
-                              <span className="city-search__option-label">
-                                {suggestion.label}
-                              </span>
-                              <span className="city-search__option-meta">
-                                {suggestion.timezone}
-                              </span>
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                </label>
-              </div>
-              <p id="city-hint" className="form__hint">
-                {t.cityHint}
-              </p>
-              <div className="form__row">
-                <label className="form__label">
-                  {t.daylightSaving}
-                  <select
-                    name="daylight-saving"
-                    value={daylightSavingValue}
-                    onChange={(event) => {
-                      const value = event.target.value;
-                      const nextValue =
-                        value === "auto" ? "auto" : value === "true";
-                      setInput((prev) => ({
-                        ...prev,
-                        daylight_saving: nextValue,
-                      }));
-                    }}
-                  >
-                    <option value="auto">Auto</option>
-                    <option value="true">{t.yes}</option>
-                    <option value="false">{t.no}</option>
-                  </select>
-                </label>
-                <button type="submit" className="btn-primary" disabled={loading}>
-                  {loading ? t.generating : chart ? t.generateNew : t.generate}
+              <div className="analysis-mode" role="group" aria-label="Analysis mode">
+                <button
+                  type="button"
+                  className={`analysis-mode__btn ${analysisMode === "single" ? "analysis-mode__btn--active" : ""}`}
+                  onClick={() => {
+                    setError(null);
+                    setAnalysisMode("single");
+                  }}
+                >
+                  {t.singleMode}
+                </button>
+                <button
+                  type="button"
+                  className={`analysis-mode__btn ${analysisMode === "compatibility" ? "analysis-mode__btn--active" : ""}`}
+                  onClick={() => {
+                    setError(null);
+                    setAnalysisMode("compatibility");
+                  }}
+                >
+                  {t.compatibilityMode}
                 </button>
               </div>
+
+              <div className={`form__person ${analysisMode === "compatibility" ? "form__person--framed" : ""}`}>
+                {analysisMode === "compatibility" && <h3 className="form__person-title">{t.personA}</h3>}
+                <div className="form__row">
+                  <label className="form__label">
+                    {t.date}
+                    <input
+                      type="date"
+                      name="birth-date"
+                      autoComplete="bday"
+                      value={input.date}
+                      onChange={(event) =>
+                        setInput((prev) => ({ ...prev, date: event.target.value }))
+                      }
+                      required
+                    />
+                  </label>
+                  <label className="form__label">
+                    {t.time}
+                    <input
+                      type="time"
+                      name="birth-time"
+                      autoComplete="off"
+                      value={input.time}
+                      onChange={(event) =>
+                        setInput((prev) => ({ ...prev, time: event.target.value }))
+                      }
+                      required
+                    />
+                  </label>
+                </div>
+                <div className="form__row">
+                  <label className="form__label">
+                    {t.cityAndCountry}
+                    <div className="city-search">
+                      <input
+                        type="text"
+                        name="birth-location"
+                        value={locationInput}
+                        onChange={(event) => setLocationInput(event.target.value)}
+                        required
+                        aria-describedby="city-hint-a"
+                        aria-autocomplete="list"
+                        aria-controls="city-suggestions-a"
+                        aria-expanded={showSuggestions}
+                        autoComplete="off"
+                        inputMode="search"
+                        placeholder={t.searchPlaceholder}
+                      />
+                      <div className="city-search__status-area" role="status" aria-live="polite">
+                        {isSearching && (
+                          <span className="city-search__status">{t.searching}</span>
+                        )}
+                        {searchError && (
+                          <span className="city-search__status city-search__status--error">
+                            {searchError}
+                          </span>
+                        )}
+                        {showNoResults && (
+                          <span className="city-search__status">{t.noResults}</span>
+                        )}
+                      </div>
+                      {showSuggestions && (
+                        <ul className="city-search__list" role="listbox" id="city-suggestions-a">
+                          {suggestions.map((suggestion) => (
+                            <li key={suggestion.id} className="city-search__item">
+                              <button
+                                type="button"
+                                className="city-search__option"
+                                onClick={() => handleSelectSuggestion(suggestion)}
+                              >
+                                <span className="city-search__option-label">
+                                  {suggestion.label}
+                                </span>
+                                <span className="city-search__option-meta">
+                                  {suggestion.timezone}
+                                </span>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </label>
+                </div>
+                <p id="city-hint-a" className="form__hint">
+                  {t.cityHint}
+                </p>
+                <div className="form__row">
+                  <label className="form__label">
+                    {t.daylightSaving}
+                    <select
+                      name="daylight-saving"
+                      value={daylightSavingValue}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        const nextValue =
+                          value === "auto" ? "auto" : value === "true";
+                        setInput((prev) => ({
+                          ...prev,
+                          daylight_saving: nextValue,
+                        }));
+                      }}
+                    >
+                      <option value="auto">Auto</option>
+                      <option value="true">{t.yes}</option>
+                      <option value="false">{t.no}</option>
+                    </select>
+                  </label>
+                  {analysisMode === "single" && (
+                    <button type="submit" className="btn-primary" disabled={loading}>
+                      {loading ? t.generating : chart ? t.generateNew : t.generate}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {analysisMode === "compatibility" && (
+                <div className="form__person form__person--framed">
+                  <h3 className="form__person-title">{t.personB}</h3>
+                  <div className="form__row">
+                    <label className="form__label">
+                      {t.date}
+                      <input
+                        type="date"
+                        name="birth-date-b"
+                        autoComplete="bday"
+                        value={inputB.date}
+                        onChange={(event) =>
+                          setInputB((prev) => ({ ...prev, date: event.target.value }))
+                        }
+                        required
+                      />
+                    </label>
+                    <label className="form__label">
+                      {t.time}
+                      <input
+                        type="time"
+                        name="birth-time-b"
+                        autoComplete="off"
+                        value={inputB.time}
+                        onChange={(event) =>
+                          setInputB((prev) => ({ ...prev, time: event.target.value }))
+                        }
+                        required
+                      />
+                    </label>
+                  </div>
+                  <div className="form__row">
+                    <label className="form__label">
+                      {t.cityAndCountry}
+                      <div className="city-search">
+                        <input
+                          type="text"
+                          name="birth-location-b"
+                          value={locationInputB}
+                          onChange={(event) => setLocationInputB(event.target.value)}
+                          required
+                          aria-describedby="city-hint-b"
+                          aria-autocomplete="list"
+                          aria-controls="city-suggestions-b"
+                          aria-expanded={showSuggestionsB}
+                          autoComplete="off"
+                          inputMode="search"
+                          placeholder={t.searchPlaceholder}
+                        />
+                        <div className="city-search__status-area" role="status" aria-live="polite">
+                          {isSearchingB && (
+                            <span className="city-search__status">{t.searching}</span>
+                          )}
+                          {searchErrorB && (
+                            <span className="city-search__status city-search__status--error">
+                              {searchErrorB}
+                            </span>
+                          )}
+                          {showNoResultsB && (
+                            <span className="city-search__status">{t.noResults}</span>
+                          )}
+                        </div>
+                        {showSuggestionsB && (
+                          <ul className="city-search__list" role="listbox" id="city-suggestions-b">
+                            {suggestionsB.map((suggestion) => (
+                              <li key={suggestion.id} className="city-search__item">
+                                <button
+                                  type="button"
+                                  className="city-search__option"
+                                  onClick={() => handleSelectSuggestionB(suggestion)}
+                                >
+                                  <span className="city-search__option-label">
+                                    {suggestion.label}
+                                  </span>
+                                  <span className="city-search__option-meta">
+                                    {suggestion.timezone}
+                                  </span>
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    </label>
+                  </div>
+                  <p id="city-hint-b" className="form__hint">
+                    {t.cityHint}
+                  </p>
+                  <div className="form__row">
+                    <label className="form__label">
+                      {t.daylightSaving}
+                      <select
+                        name="daylight-saving-b"
+                        value={daylightSavingValueB}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          const nextValue =
+                            value === "auto" ? "auto" : value === "true";
+                          setInputB((prev) => ({
+                            ...prev,
+                            daylight_saving: nextValue,
+                          }));
+                        }}
+                      >
+                        <option value="auto">Auto</option>
+                        <option value="true">{t.yes}</option>
+                        <option value="false">{t.no}</option>
+                      </select>
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {analysisMode === "compatibility" && (
+                <div className="form__row form__row--actions">
+                  <button type="submit" className="btn-primary" disabled={loading}>
+                    {loading ? t.generating : chart && chartB ? t.generateNew : t.generate}
+                  </button>
+                </div>
+              )}
               {error && (
                 <p className="form__error" role="alert">
                   {t.error}: {error}
@@ -761,7 +1175,7 @@ function App() {
             </form>
           </section>
 
-          {!loading && chart && (
+          {!loading && analysisMode === "single" && chart && (
             <Section icon="🧭" title={t.normalizedTitle}>
               <div className="normalized">
                 <p>Timezone: {chart.normalized.timezone}</p>
@@ -779,19 +1193,58 @@ function App() {
             </Section>
           )}
 
+          {!loading && analysisMode === "compatibility" && chart && chartB && (
+            <Section icon="🧭" title={t.normalizedTitle}>
+              <div className="normalized normalized--comparison">
+                <div className="normalized__card">
+                  <h3 className="normalized__title">{t.personA}</h3>
+                  <p>{chartMeta?.location}</p>
+                  <p>{chartMeta?.datetime}</p>
+                  <p>Timezone: {chart.normalized.timezone}</p>
+                  <p>UTC: {chart.normalized.utcDateTime}</p>
+                  <p>{t.dstLabel}: {chart.normalized.daylightSaving ? t.yes : t.no}</p>
+                </div>
+                <div className="normalized__card">
+                  <h3 className="normalized__title">{t.personB}</h3>
+                  <p>{chartMetaB?.location}</p>
+                  <p>{chartMetaB?.datetime}</p>
+                  <p>Timezone: {chartB.normalized.timezone}</p>
+                  <p>UTC: {chartB.normalized.utcDateTime}</p>
+                  <p>{t.dstLabel}: {chartB.normalized.daylightSaving ? t.yes : t.no}</p>
+                </div>
+              </div>
+              <div className="comparison-placements">
+                <div>
+                  <h3 className="comparison-placements__title">{t.personA}</h3>
+                  <PlacementsSummary placements={placements} />
+                </div>
+                <div>
+                  <h3 className="comparison-placements__title">{t.personB}</h3>
+                  <PlacementsSummary placements={placementsB} />
+                </div>
+              </div>
+            </Section>
+          )}
+
           {loading && <LoadingState label={t.loading} />}
 
-          {!loading && cards.length === 0 && (
+          {!loading && analysisMode === "single" && cards.length === 0 && (
             <p className="empty-state">
               {t.emptyState}
             </p>
           )}
 
-          {!loading && placements.length > 0 && (
+          {!loading && analysisMode === "compatibility" && !comparison && (
+            <p className="empty-state">
+              {t.compatibilityEmpty}
+            </p>
+          )}
+
+          {!loading && analysisMode === "single" && placements.length > 0 && (
             <PlacementsSummary placements={placements} />
           )}
 
-          {!loading && heroCards.length > 0 && (
+          {!loading && analysisMode === "single" && heroCards.length > 0 && (
             <Section icon="☀️" title="Big 3" badge={`${heroCards.length} cards`}>
               <div className="cards-grid--hero">
                 {heroCards.map((card) => (
@@ -810,7 +1263,7 @@ function App() {
             </Section>
           )}
 
-          {!loading && planetCards.length > 0 && (
+          {!loading && analysisMode === "single" && planetCards.length > 0 && (
             <Section
               icon="🪐"
               title={t.planetsTitle}
@@ -833,7 +1286,7 @@ function App() {
             </Section>
           )}
 
-          {!loading && aspectCards.length > 0 && (
+          {!loading && analysisMode === "single" && aspectCards.length > 0 && (
             <Section
               icon="🔗"
               title={t.aspectsTitle}
@@ -842,6 +1295,29 @@ function App() {
             >
               <div className="cards-grid--aspects">
                 {aspectCards.map((card) => (
+                  <Card
+                    key={card.key}
+                    title={card.title}
+                    subtitle={card.subtitle}
+                    text={card.text}
+                    tags={card.tags}
+                    variant="aspect"
+                    orb={card.orb}
+                  />
+                ))}
+              </div>
+            </Section>
+          )}
+
+          {!loading && analysisMode === "compatibility" && comparison && comparisonCards.length > 0 && (
+            <Section
+              icon="🤝"
+              title={t.compatibilityTitle}
+              badge={t.compatibilityBadge(comparisonCards.length)}
+              badgeAccent
+            >
+              <div className="cards-grid--aspects">
+                {comparisonCards.map((card) => (
                   <Card
                     key={card.key}
                     title={card.title}

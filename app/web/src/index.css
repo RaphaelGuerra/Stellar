@@ -302,6 +302,34 @@ body {
   box-shadow: var(--shadow-sm), 0 0 12px rgba(244, 114, 182, 0.15);
 }
 
+/* ===== Analysis Mode Toggle ===== */
+.analysis-mode {
+  display: flex;
+  gap: var(--space-xs);
+  background: var(--color-bg-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  padding: var(--space-xs);
+  width: fit-content;
+}
+
+.analysis-mode__btn {
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  border-radius: var(--radius-full);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.analysis-mode__btn--active {
+  color: var(--color-text);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow-sm);
+}
+
 /* ===== Action Section ===== */
 .action-section {
   text-align: center;
@@ -606,6 +634,30 @@ body {
   flex-wrap: wrap;
 }
 
+.form__row--actions {
+  justify-content: flex-end;
+}
+
+.form__person {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.form__person--framed {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.form__person-title {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  text-align: left;
+  color: var(--color-text-secondary);
+}
+
 .form__label {
   display: flex;
   flex-direction: column;
@@ -758,6 +810,47 @@ body {
 
 .normalized p {
   margin: 0;
+}
+
+.normalized--comparison {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.normalized__card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.normalized__title {
+  margin: 0 0 var(--space-xs);
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+}
+
+.normalized__card p {
+  margin: 0;
+}
+
+.comparison-placements {
+  margin-top: var(--space-lg);
+  display: grid;
+  gap: var(--space-md);
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.comparison-placements__title {
+  margin: 0 0 var(--space-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.comparison-placements .placements-strip {
+  margin-bottom: 0;
 }
 
 /* ===== Error Boundary ===== */

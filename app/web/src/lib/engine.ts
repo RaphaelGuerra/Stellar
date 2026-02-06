@@ -66,6 +66,7 @@ const ASPECT_DEFS: Array<{ type: AspectName; angle: number; orb: number }> = [
 ];
 
 const FORMATTER_CACHE = new Map<string, Intl.DateTimeFormat>();
+const OFFSET_STATS_CACHE = new Map<string, { standardOffset: number; dstOffset: number }>();
 
 function getFormatter(timeZone: string) {
   const cached = FORMATTER_CACHE.get(timeZone);
@@ -167,26 +168,37 @@ function getOffsetMinutes(timeZone: string, localParts: LocalDateTimeParts): num
 }
 
 function getOffsetStats(timeZone: string, year: number) {
+  const cacheKey = `${timeZone}|${year}`;
+  const cached = OFFSET_STATS_CACHE.get(cacheKey);
+  if (cached) return cached;
+
   const offsets = new Set<number>();
   for (let month = 1; month <= 12; month++) {
-    offsets.add(
-      getOffsetMinutes(timeZone, {
-        year,
-        month,
-        day: 15,
-        hour: 12,
-        minute: 0,
-        second: 0,
-      })
-    );
+    const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+    for (let day = 1; day <= daysInMonth; day++) {
+      offsets.add(
+        getOffsetMinutes(timeZone, {
+          year,
+          month,
+          day,
+          hour: 12,
+          minute: 0,
+          second: 0,
+        })
+      );
+    }
   }
   const values = Array.from(offsets.values());
   if (values.length === 0) {
-    return { standardOffset: 0, dstOffset: 0 };
+    const emptyResult = { standardOffset: 0, dstOffset: 0 };
+    OFFSET_STATS_CACHE.set(cacheKey, emptyResult);
+    return emptyResult;
   }
   const standardOffset = Math.max(...values);
   const dstOffset = Math.min(...values);
-  return { standardOffset, dstOffset };
+  const result = { standardOffset, dstOffset };
+  OFFSET_STATS_CACHE.set(cacheKey, result);
+  return result;
 }
 
 function formatUtcIso(utcMillis: number): string {
@@ -210,14 +222,14 @@ function getPlanetLongitude(body: Body, time: Date): number {
 }
 
 function buildPlanets(time: Date) {
-  const result: Record<PlanetName, { sign: ZodiacSign; degree: number }> = {} as Record<
+  const result: Record<PlanetName, { sign: ZodiacSign; degree: number; longitude: number }> = {} as Record<
     PlanetName,
-    { sign: ZodiacSign; degree: number }
+    { sign: ZodiacSign; degree: number; longitude: number }
   >;
   for (const planet of PLANETS) {
     const longitude = getPlanetLongitude(PLANET_BODIES[planet], time);
     const placement = longitudeToSign(longitude);
-    result[planet] = { sign: placement.sign, degree: placement.degree };
+    result[planet] = { sign: placement.sign, degree: placement.degree, longitude };
   }
   return result;
 }
