@@ -531,12 +531,23 @@ function App() {
   const modeLabel = mode === "carioca" ? "Carioca" : "Normal";
 
   return (
-    <div className="app">
+    <>
+      <div className="starfield" aria-hidden="true">
+        <div className="starfield__layer starfield__layer--1" />
+        <div className="starfield__layer starfield__layer--2" />
+        <div className="starfield__layer starfield__layer--3" />
+      </div>
+      <div className="app">
       <div className="container">
         <header className="header" role="banner">
           <div className="header__brand">
             <h1 className="header__title">stellar</h1>
-            <div className="header__meta" aria-label="Informações do mapa atual">
+            <div
+              className="header__meta"
+              aria-label="Informações do mapa atual"
+              aria-live="polite"
+              aria-atomic="true"
+            >
               <span>Modo {modeLabel}</span>
               {chartMeta && (
                 <>
@@ -559,6 +570,8 @@ function App() {
                   Data
                   <input
                     type="date"
+                    name="birth-date"
+                    autoComplete="bday"
                     value={input.date}
                     onChange={(event) =>
                       setInput((prev) => ({ ...prev, date: event.target.value }))
@@ -570,6 +583,8 @@ function App() {
                   Hora
                   <input
                     type="time"
+                    name="birth-time"
+                    autoComplete="off"
                     value={input.time}
                     onChange={(event) =>
                       setInput((prev) => ({ ...prev, time: event.target.value }))
@@ -584,26 +599,33 @@ function App() {
                   <div className="city-search">
                     <input
                       type="text"
+                      name="birth-location"
                       value={locationInput}
                       onChange={(event) => setLocationInput(event.target.value)}
                       required
                       aria-describedby="city-hint"
+                      aria-autocomplete="list"
+                      aria-controls="city-suggestions"
                       aria-expanded={showSuggestions}
+                      autoComplete="off"
+                      inputMode="search"
                       placeholder="Ex: Rio de Janeiro, BR"
                     />
-                    {isSearching && (
-                      <span className="city-search__status">Buscando cidades...</span>
-                    )}
-                    {searchError && (
-                      <span className="city-search__status city-search__status--error">
-                        {searchError}
-                      </span>
-                    )}
-                    {showNoResults && (
-                      <span className="city-search__status">Nenhuma cidade encontrada.</span>
-                    )}
+                    <div className="city-search__status-area" role="status" aria-live="polite">
+                      {isSearching && (
+                        <span className="city-search__status">Buscando cidades...</span>
+                      )}
+                      {searchError && (
+                        <span className="city-search__status city-search__status--error">
+                          {searchError}
+                        </span>
+                      )}
+                      {showNoResults && (
+                        <span className="city-search__status">Nenhuma cidade encontrada.</span>
+                      )}
+                    </div>
                     {showSuggestions && (
-                      <ul className="city-search__list" role="listbox">
+                      <ul className="city-search__list" role="listbox" id="city-suggestions">
                         {suggestions.map((suggestion) => (
                           <li key={suggestion.id} className="city-search__item">
                             <button
@@ -633,6 +655,7 @@ function App() {
                 <label className="form__label">
                   Horário de verão
                   <select
+                    name="daylight-saving"
                     value={daylightSavingValue}
                     onChange={(event) => {
                       const value = event.target.value;
@@ -726,6 +749,7 @@ function App() {
         </main>
       </div>
     </div>
+    </>
   );
 }
 
