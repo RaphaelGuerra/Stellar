@@ -135,4 +135,44 @@ describe("buildChartComparison", () => {
     );
     expect(sunSextile?.orb).toBe(0);
   });
+
+  it("adds plain-language life areas to highlights for easier reading", () => {
+    const chartA = buildChart({ Uranus: 0 });
+    const chartB = buildChart({ Mars: 60 });
+    const comparison = buildChartComparison(chartA, chartB, "en");
+
+    const uranusMarsSextile = comparison.highlights.find(
+      (highlight) =>
+        highlight.related?.aspect?.a.planet === "Uranus" &&
+        highlight.related?.aspect?.b.planet === "Mars" &&
+        highlight.related?.aspect?.type === "Sextile"
+    );
+
+    expect(uranusMarsSextile).toBeDefined();
+    expect(uranusMarsSextile?.title).toContain("Work");
+    expect(uranusMarsSextile?.title).toContain("Friends");
+    expect(uranusMarsSextile?.text).toContain("Main areas:");
+    expect(uranusMarsSextile?.tags).toContain("work");
+    expect(uranusMarsSextile?.tags).toContain("friends");
+  });
+
+  it("adds plain-language life areas in Portuguese output too", () => {
+    const chartA = buildChart({ Uranus: 0 });
+    const chartB = buildChart({ Mars: 60 });
+    const comparison = buildChartComparison(chartA, chartB, "pt");
+
+    const uranusMarsSextile = comparison.highlights.find(
+      (highlight) =>
+        highlight.related?.aspect?.a.planet === "Uranus" &&
+        highlight.related?.aspect?.b.planet === "Mars" &&
+        highlight.related?.aspect?.type === "Sextile"
+    );
+
+    expect(uranusMarsSextile).toBeDefined();
+    expect(uranusMarsSextile?.title).toContain("trampo");
+    expect(uranusMarsSextile?.title).toContain("amizades");
+    expect(uranusMarsSextile?.text).toContain("Areas mais mexidas:");
+    expect(uranusMarsSextile?.tags).toContain("trampo");
+    expect(uranusMarsSextile?.tags).toContain("amizades");
+  });
 });

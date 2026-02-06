@@ -31,10 +31,10 @@ export class ErrorBoundary extends Component<Props, State> {
       }
       return (
         <div className="error-boundary" role="alert">
-          <h2>Algo deu errado</h2>
-          <p>Ocorreu um erro inesperado. Por favor, recarregue a página.</p>
+          <h2>Something went wrong</h2>
+          <p>An unexpected error occurred. Please reload the page.</p>
           <details>
-            <summary>Detalhes do erro</summary>
+            <summary>Error details</summary>
             <pre>{this.state.error?.message}</pre>
           </details>
           <button
@@ -42,7 +42,7 @@ export class ErrorBoundary extends Component<Props, State> {
             className="btn-primary"
             onClick={() => window.location.reload()}
           >
-            Recarregar página
+            Reload page
           </button>
         </div>
       );

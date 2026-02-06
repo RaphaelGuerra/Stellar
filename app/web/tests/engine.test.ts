@@ -25,16 +25,16 @@ describe("generateChart normalization", () => {
     expect(chart.normalized.utcDateTime).toBe("2024-07-01T16:00:00Z");
   });
 
-  it("respects manual daylight saving override", async () => {
+  it("keeps a valid local-time candidate when manual DST offset is unavailable", async () => {
     const chart = await generateChart({
       ...baseInput,
       date: "2024-01-15",
       time: "12:00",
       daylight_saving: true,
     });
-    expect(chart.normalized.offsetMinutes).toBe(240);
-    expect(chart.normalized.daylightSaving).toBe(true);
-    expect(chart.normalized.utcDateTime).toBe("2024-01-15T16:00:00Z");
+    expect(chart.normalized.offsetMinutes).toBe(300);
+    expect(chart.normalized.daylightSaving).toBe(false);
+    expect(chart.normalized.utcDateTime).toBe("2024-01-15T17:00:00Z");
   });
 
   it("reports no DST for Sao Paulo in 2024", async () => {
@@ -71,6 +71,52 @@ describe("generateChart normalization", () => {
     expect(manualNoDstChart.normalized.utcDateTime).toBe("2020-12-30T09:00:00Z");
     expect(manualNoDstChart.normalized.offsetMinutes).toBe(-180);
     expect(manualNoDstChart.normalized.daylightSaving).toBe(false);
+  });
+
+  it("avoids synthetic UTC shift when manual no-DST offset is unavailable", async () => {
+    const input: ChartInput = {
+      ...baseInput,
+      city: "Volgograd",
+      country: "RU",
+      date: "2020-09-30",
+      time: "12:00",
+      location: {
+        lat: 48.708,
+        lon: 44.513,
+        timezone: "Europe/Volgograd",
+      },
+    };
+
+    const autoChart = await generateChart({ ...input, daylight_saving: "auto" });
+    const manualNoDstChart = await generateChart({ ...input, daylight_saving: false });
+
+    expect(autoChart.normalized.utcDateTime).toBe("2020-09-30T08:00:00Z");
+    expect(manualNoDstChart.normalized.utcDateTime).toBe("2020-09-30T08:00:00Z");
+    expect(manualNoDstChart.normalized.offsetMinutes).toBe(-240);
+    expect(manualNoDstChart.normalized.daylightSaving).toBe(true);
+  });
+
+  it("avoids synthetic UTC shift when manual DST offset is unavailable", async () => {
+    const input: ChartInput = {
+      ...baseInput,
+      city: "Volgograd",
+      country: "RU",
+      date: "2020-12-30",
+      time: "12:00",
+      location: {
+        lat: 48.708,
+        lon: 44.513,
+        timezone: "Europe/Volgograd",
+      },
+    };
+
+    const autoChart = await generateChart({ ...input, daylight_saving: "auto" });
+    const manualDstChart = await generateChart({ ...input, daylight_saving: true });
+
+    expect(autoChart.normalized.utcDateTime).toBe("2020-12-30T09:00:00Z");
+    expect(manualDstChart.normalized.utcDateTime).toBe("2020-12-30T09:00:00Z");
+    expect(manualDstChart.normalized.offsetMinutes).toBe(-180);
+    expect(manualDstChart.normalized.daylightSaving).toBe(false);
   });
 
   it("assigns Sagittarius to the Sun on 1990-12-16 in Rio", async () => {

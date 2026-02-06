@@ -92,6 +92,21 @@ const CACHE_KEY = "stellar-city-cache-v1";
 const CACHE_TTL_MS = 1000 * 60 * 60 * 24 * 30;
 const CACHE_LIMIT = 50;
 
+const EN_VALIDATION_MESSAGES: Record<string, string> = {
+  "Data é obrigatória": "Date is required.",
+  "Formato de data inválido (esperado: YYYY-MM-DD)": "Invalid date format (expected: YYYY-MM-DD).",
+  "Data inválida": "Invalid calendar date.",
+  "Data deve ser posterior a 1900": "Date must be later than 1900.",
+  "Hora é obrigatória": "Time is required.",
+  "Formato de hora inválido (esperado: HH:mm)": "Invalid time format (expected: HH:mm).",
+  "Cidade e país são obrigatórios (ex: Rio de Janeiro, BR)":
+    "City and country are required (e.g. New York, US).",
+  "Nome da cidade deve ter pelo menos 2 caracteres": "City name must have at least 2 characters.",
+  "Código do país deve ter pelo menos 2 caracteres": "Country code must have at least 2 characters.",
+  "Data não pode ser no futuro": "Date/time cannot be in the future.",
+  "Timezone inválido para a localização informada": "Invalid timezone for the selected location.",
+};
+
 const CARIOCA_VALIDATION_MESSAGES: Record<string, string> = {
   "Data é obrigatória": "Sem data nao rola, porra.",
   "Formato de data inválido (esperado: YYYY-MM-DD)":
@@ -117,25 +132,39 @@ function normalizeQuery(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
+function getSearchLanguage(isCarioca: boolean): string {
+  return isCarioca ? "pt-BR" : "en";
+}
+
+function buildCacheKey(normalizedQuery: string, language: string): string {
+  return `${language}|${normalizedQuery}`;
+}
+
 function formatValidationMessages(errors: readonly string[], isCarioca: boolean): string[] {
-  if (!isCarioca) return [...errors];
-  return errors.map((message) => CARIOCA_VALIDATION_MESSAGES[message] ?? `Papo reto: ${message}`);
+  const dictionary = isCarioca ? CARIOCA_VALIDATION_MESSAGES : EN_VALIDATION_MESSAGES;
+  return errors.map((message) => dictionary[message] ?? message);
 }
 
 function formatRuntimeError(error: unknown, isCarioca: boolean): string {
-  if (!isCarioca) {
-    return error instanceof Error ? error.message : String(error);
-  }
   if (error instanceof NonexistentLocalTimeError) {
-    return "Esse horario nem existe nessa cidade, porra. Ajusta a hora e tenta de novo.";
+    return isCarioca
+      ? "Esse horario nem existe nessa cidade, porra. Ajusta a hora e tenta de novo."
+      : "That local time does not exist in this timezone. Please adjust the time and try again.";
   }
   if (error instanceof AmbiguousLocalTimeError) {
-    return "Esse horario ficou duplicado por causa de horario de verao. Escolhe Sim ou Nao e manda brasa.";
+    return isCarioca
+      ? "Esse horario ficou duplicado por causa de horario de verao. Escolhe Sim ou Nao e manda brasa."
+      : "That local time is ambiguous due to daylight saving time. Choose Yes or No for daylight saving and try again.";
   }
   if (error instanceof Error && error.message.startsWith("Nominatim error:")) {
-    return "A busca de cidade travou aqui. Espera um tiquinho e tenta de novo.";
+    return isCarioca
+      ? "A busca de cidade travou aqui. Espera um tiquinho e tenta de novo."
+      : "City search is temporarily unavailable. Please try again in a moment.";
   }
   const fallback = error instanceof Error ? error.message : String(error);
+  if (!isCarioca) {
+    return fallback || "Something went wrong. Please try again.";
+  }
   return fallback ? `Deu ruim: ${fallback}` : "Deu merda aqui. Tenta de novo.";
 }
 
@@ -286,6 +315,7 @@ async function fetchNominatim(
   query: string,
   limit: number,
   lastRequestAt: RequestTimestampRef,
+  language: string,
   signal?: AbortSignal
 ): Promise<NominatimResult[]> {
   const sinceLast = Date.now() - lastRequestAt.current;
@@ -302,7 +332,7 @@ async function fetchNominatim(
     q: query,
     email: NOMINATIM_EMAIL,
   });
-  params.set("accept-language", "pt-BR");
+  params.set("accept-language", language);
 
   const response = await fetch(`${NOMINATIM_ENDPOINT}?${params.toString()}`, { signal });
   if (!response.ok) {
@@ -476,6 +506,8 @@ function App() {
   useEffect(() => {
     const query = locationInput.trim();
     const normalized = normalizeQuery(query);
+    const language = getSearchLanguage(isCarioca);
+    const cacheKey = buildCacheKey(normalized, language);
 
     if (selectedLocationLabel && locationInput === selectedLocationLabel) {
       setSuggestions([]);
@@ -491,7 +523,7 @@ function App() {
       return;
     }
 
-    const cached = getCachedResults(normalized, searchCache.current);
+    const cached = getCachedResults(cacheKey, searchCache.current);
     if (cached !== null) {
       setSuggestions(cached);
       setSearchError(null);
@@ -504,9 +536,9 @@ function App() {
       setSearchError(null);
       setIsSearching(true);
       try {
-        const data = await fetchNominatim(query, 6, lastRequestAt, controller.signal);
+        const data = await fetchNominatim(query, 6, lastRequestAt, language, controller.signal);
         const results = toUniqueSuggestions(data);
-        setCachedResults(normalized, results, searchCache.current);
+        setCachedResults(cacheKey, results, searchCache.current);
         setSuggestions(results);
       } catch (err) {
         if (err instanceof Error && err.name === "AbortError") return;
@@ -537,6 +569,8 @@ function App() {
 
     const query = locationInputB.trim();
     const normalized = normalizeQuery(query);
+    const language = getSearchLanguage(isCarioca);
+    const cacheKey = buildCacheKey(normalized, language);
 
     if (selectedLocationLabelB && locationInputB === selectedLocationLabelB) {
       setSuggestionsB([]);
@@ -552,7 +586,7 @@ function App() {
       return;
     }
 
-    const cached = getCachedResults(normalized, searchCache.current);
+    const cached = getCachedResults(cacheKey, searchCache.current);
     if (cached !== null) {
       setSuggestionsB(cached);
       setSearchErrorB(null);
@@ -565,9 +599,9 @@ function App() {
       setSearchErrorB(null);
       setIsSearchingB(true);
       try {
-        const data = await fetchNominatim(query, 6, lastRequestAt, controller.signal);
+        const data = await fetchNominatim(query, 6, lastRequestAt, language, controller.signal);
         const results = toUniqueSuggestions(data);
-        setCachedResults(normalized, results, searchCache.current);
+        setCachedResults(cacheKey, results, searchCache.current);
         setSuggestionsB(results);
       } catch (err) {
         if (err instanceof Error && err.name === "AbortError") return;
@@ -609,27 +643,29 @@ function App() {
   }, [cards]);
 
   // Format chart meta info
+  const chartLocale = isCarioca ? "pt-BR" : "en-US";
+
   const chartMeta = useMemo(() => {
     if (!chart?.input) return null;
     const { city, date, time } = chart.input;
-    const formattedDate = new Date(`${date}T${time}`).toLocaleDateString("pt-BR", {
+    const formattedDate = new Date(`${date}T${time}`).toLocaleDateString(chartLocale, {
       day: "numeric",
       month: "short",
       year: "numeric",
     });
     return { location: city, datetime: `${formattedDate}, ${time}` };
-  }, [chart]);
+  }, [chart, chartLocale]);
 
   const chartMetaB = useMemo(() => {
     if (!chartB?.input) return null;
     const { city, date, time } = chartB.input;
-    const formattedDate = new Date(`${date}T${time}`).toLocaleDateString("pt-BR", {
+    const formattedDate = new Date(`${date}T${time}`).toLocaleDateString(chartLocale, {
       day: "numeric",
       month: "short",
       year: "numeric",
     });
     return { location: city, datetime: `${formattedDate}, ${time}` };
-  }, [chartB]);
+  }, [chartB, chartLocale]);
 
   const placementsB = useMemo(() => {
     if (!chartB) return [];
@@ -720,7 +756,9 @@ function App() {
 
   async function resolveLocationCandidates(query: string, limit = 6): Promise<GeoSuggestion[] | null> {
     const normalized = normalizeQuery(query);
-    const cached = getCachedResults(normalized, searchCache.current);
+    const language = getSearchLanguage(isCarioca);
+    const cacheKey = buildCacheKey(normalized, language);
+    const cached = getCachedResults(cacheKey, searchCache.current);
     if (cached && cached.length > 0) {
       if (limit <= 1 || cached.length > 1) {
         return cached.slice(0, limit);
@@ -728,10 +766,10 @@ function App() {
     }
 
     try {
-      const data = await fetchNominatim(query, limit, lastRequestAt);
+      const data = await fetchNominatim(query, limit, lastRequestAt, language);
       const results = toUniqueSuggestions(data);
       if (results.length > 0) {
-        setCachedResults(normalized, results, searchCache.current);
+        setCachedResults(cacheKey, results, searchCache.current);
       }
       return results;
     } catch {

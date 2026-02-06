@@ -285,7 +285,6 @@ export async function generateChart(input: ChartInput): Promise<ChartResult> {
     throw new AmbiguousLocalTimeError(localDateTime, resolvedCity.timezone);
   }
 
-  const localBaseUtc = baseUtcMillis(localParts);
   let offsetMinutes: number;
   let daylightSaving: boolean;
   let utcMillis: number;
@@ -298,9 +297,19 @@ export async function generateChart(input: ChartInput): Promise<ChartResult> {
   } else {
     const preferredOffset = input.daylight_saving ? dstOffset : standardOffset;
     const selected = candidates.find((candidate) => candidate.offsetMinutes === preferredOffset);
-    offsetMinutes = selected?.offsetMinutes ?? preferredOffset;
-    daylightSaving = input.daylight_saving;
-    utcMillis = selected?.utcMillis ?? localBaseUtc + preferredOffset * 60000;
+    if (selected) {
+      offsetMinutes = selected.offsetMinutes;
+      daylightSaving = input.daylight_saving;
+      utcMillis = selected.utcMillis;
+    } else {
+      // For non-ambiguous local times where the requested manual offset is unavailable,
+      // keep a valid UTC candidate instead of synthesizing a shifted instant.
+      const fallback =
+        candidates.find((candidate) => candidate.offsetMinutes === autoOffsetMinutes) ?? candidates[0];
+      offsetMinutes = fallback.offsetMinutes;
+      daylightSaving = offsetMinutes !== standardOffset;
+      utcMillis = fallback.utcMillis;
+    }
   }
   const utcDateTime = formatUtcIso(utcMillis);
   const observationTime = new Date(utcMillis);
