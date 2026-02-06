@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, type FormEvent } from "react";
 import tzLookup from "tz-lookup";
 import { useContentMode } from "./content/useContentMode";
 import { ModeToggle } from "./components/ModeToggle";
-import { buildCards, type CardModel } from "./lib/cards";
+import { buildCards, buildPlacementsSummary, type CardModel, type PlacementSummary } from "./lib/cards";
 import { generateChart } from "./lib/engine";
 import { validateChartInput } from "./lib/validation";
 import { SUPPORTED_CITIES } from "./lib/resolveCity";
@@ -13,6 +13,10 @@ interface CardProps {
   subtitle?: string;
   text: string;
   tags: readonly string[];
+  element?: string;
+  variant?: "hero" | "planet" | "aspect";
+  degree?: number;
+  orb?: number;
 }
 
 function parseLocationInput(value: string): { city: string; country: string } {
@@ -247,10 +251,30 @@ async function fetchNominatim(
   return (await response.json()) as NominatimResult[];
 }
 
-function Card({ title, subtitle, text, tags }: CardProps) {
+function Card({ title, subtitle, text, tags, element, variant, degree, orb }: CardProps) {
+  const classes = [
+    "card",
+    element ? `card--${element}` : "",
+    variant ? `card--${variant}` : "",
+  ].filter(Boolean).join(" ");
+
+  const hasBadge = (degree != null) || (orb != null);
+
   return (
-    <article className="card">
-      <h3 className="card__title">{title}</h3>
+    <article className={classes}>
+      {hasBadge ? (
+        <div className="card__header">
+          <h3 className="card__title">{title}</h3>
+          {degree != null && (
+            <span className="card__degree-badge">{degree.toFixed(1)}&deg;</span>
+          )}
+          {orb != null && (
+            <span className="card__orb-badge">{orb.toFixed(1)}&deg; orb</span>
+          )}
+        </div>
+      ) : (
+        <h3 className="card__title">{title}</h3>
+      )}
       {subtitle && <p className="card__subtitle">{subtitle}</p>}
       <p className="card__text">{text}</p>
       <div className="card__tags">
@@ -261,6 +285,22 @@ function Card({ title, subtitle, text, tags }: CardProps) {
         ))}
       </div>
     </article>
+  );
+}
+
+function PlacementsSummary({ placements }: { placements: PlacementSummary[] }) {
+  if (placements.length === 0) return null;
+  return (
+    <div className="placements-strip">
+      {placements.map((p) => (
+        <span key={p.planet} className={`placements-strip__item placements-strip__item--${p.element}`}>
+          {p.planetSymbol} {p.signSymbol}
+          {p.degree != null && (
+            <span className="placements-strip__degree">{p.degree.toFixed(1)}&deg;</span>
+          )}
+        </span>
+      ))}
+    </div>
   );
 }
 
@@ -318,13 +358,15 @@ function App() {
   const lastRequestAt = useRef(0);
   const [chart, setChart] = useState<ChartResult | null>(null);
   const [cards, setCards] = useState<CardModel[]>([]);
+  const [placements, setPlacements] = useState<PlacementSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Recalculate cards when mode changes (if chart exists)
+  // Recalculate cards and placements when mode changes (if chart exists)
   useEffect(() => {
     if (chart) {
       setCards(buildCards(content, chart, mode));
+      setPlacements(buildPlacementsSummary(chart));
     }
   }, [mode, content, chart]);
 
@@ -402,21 +444,24 @@ function App() {
     };
   }, [locationInput, selectedLocationLabel]);
 
-  // Separate cards into sections using category field
-  const { big3Cards, aspectCards } = useMemo(() => {
-    const BIG3_PLANETS = new Set(["Sun", "Moon"]);
-    const big3: CardModel[] = [];
+  // Separate cards into hero / planet / aspect sections
+  const { heroCards, planetCards, aspectCards } = useMemo(() => {
+    const HERO_PLANETS = new Set(["Sun", "Moon"]);
+    const hero: CardModel[] = [];
+    const planets: CardModel[] = [];
     const aspects: CardModel[] = [];
 
     for (const card of cards) {
       if (card.category === "aspect") {
         aspects.push(card);
-      } else if (card.planet && BIG3_PLANETS.has(card.planet)) {
-        big3.push(card);
+      } else if (card.planet && HERO_PLANETS.has(card.planet)) {
+        hero.push(card);
+      } else if (card.planet) {
+        planets.push(card);
       }
     }
 
-    return { big3Cards: big3, aspectCards: aspects };
+    return { heroCards: hero, planetCards: planets, aspectCards: aspects };
   }, [cards]);
 
   // Format chart meta info
@@ -524,6 +569,7 @@ function App() {
       const newChart = await generateChart(nextInput);
       setChart(newChart);
       setCards(buildCards(content, newChart, mode));
+      setPlacements(buildPlacementsSummary(newChart));
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       setError(message);
@@ -557,6 +603,7 @@ function App() {
       ? 'Clique em "Gerar mapa" para ver os cards do mapa astral.'
       : 'Click "Generate chart" to see your birth chart cards.',
     loading: isCarioca ? "Calculando posições planetárias" : "Calculating planetary positions",
+    planetsTitle: isCarioca ? "Planetas" : "Planets",
     aspectsTitle: isCarioca ? "Aspectos" : "Aspects",
     aspectsBadge: (n: number) => isCarioca ? `${n} conexoes` : `${n} connections`,
   };
@@ -740,16 +787,46 @@ function App() {
             </p>
           )}
 
-          {!loading && big3Cards.length > 0 && (
-            <Section icon="☀️" title="Big 3" badge={`${big3Cards.length} cards`}>
-              <div className="cards-grid">
-                {big3Cards.map((card) => (
+          {!loading && placements.length > 0 && (
+            <PlacementsSummary placements={placements} />
+          )}
+
+          {!loading && heroCards.length > 0 && (
+            <Section icon="☀️" title="Big 3" badge={`${heroCards.length} cards`}>
+              <div className="cards-grid--hero">
+                {heroCards.map((card) => (
                   <Card
                     key={card.key}
                     title={card.title}
                     subtitle={card.subtitle}
                     text={card.text}
                     tags={card.tags}
+                    element={card.element}
+                    variant="hero"
+                    degree={card.degree}
+                  />
+                ))}
+              </div>
+            </Section>
+          )}
+
+          {!loading && planetCards.length > 0 && (
+            <Section
+              icon="🪐"
+              title={t.planetsTitle}
+              badge={`${planetCards.length} cards`}
+            >
+              <div className="cards-grid--planets">
+                {planetCards.map((card) => (
+                  <Card
+                    key={card.key}
+                    title={card.title}
+                    subtitle={card.subtitle}
+                    text={card.text}
+                    tags={card.tags}
+                    element={card.element}
+                    variant="planet"
+                    degree={card.degree}
                   />
                 ))}
               </div>
@@ -763,7 +840,7 @@ function App() {
               badge={t.aspectsBadge(aspectCards.length)}
               badgeAccent
             >
-              <div className="cards-grid">
+              <div className="cards-grid--aspects">
                 {aspectCards.map((card) => (
                   <Card
                     key={card.key}
@@ -771,6 +848,8 @@ function App() {
                     subtitle={card.subtitle}
                     text={card.text}
                     tags={card.tags}
+                    variant="aspect"
+                    orb={card.orb}
                   />
                 ))}
               </div>

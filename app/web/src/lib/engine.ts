@@ -11,6 +11,11 @@ interface LocalDateTimeParts {
   second: number;
 }
 
+interface UtcCandidate {
+  utcMillis: number;
+  offsetMinutes: number;
+}
+
 const SIGNS: ZodiacSign[] = [
   "Aries",
   "Taurus",
@@ -109,6 +114,49 @@ function getZonedParts(date: Date, timeZone: string): LocalDateTimeParts {
 
 function baseUtcMillis(parts: LocalDateTimeParts): number {
   return Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second);
+}
+
+function isSameLocalDateTime(left: LocalDateTimeParts, right: LocalDateTimeParts): boolean {
+  return (
+    left.year === right.year &&
+    left.month === right.month &&
+    left.day === right.day &&
+    left.hour === right.hour &&
+    left.minute === right.minute &&
+    left.second === right.second
+  );
+}
+
+function findMatchingUtcCandidates(
+  timeZone: string,
+  localParts: LocalDateTimeParts,
+  candidateOffsets: readonly number[]
+): UtcCandidate[] {
+  const deduped = new Map<number, UtcCandidate>();
+  const localBaseUtc = baseUtcMillis(localParts);
+  for (const offsetMinutes of candidateOffsets) {
+    const utcMillis = localBaseUtc + offsetMinutes * 60000;
+    const zonedParts = getZonedParts(new Date(utcMillis), timeZone);
+    if (!isSameLocalDateTime(zonedParts, localParts)) continue;
+    deduped.set(utcMillis, { utcMillis, offsetMinutes });
+  }
+  return Array.from(deduped.values()).sort((left, right) => left.utcMillis - right.utcMillis);
+}
+
+export class NonexistentLocalTimeError extends Error {
+  constructor(localDateTime: string, timeZone: string) {
+    super(`Horario local inexistente: ${localDateTime} em ${timeZone}. Escolha outro horario.`);
+    this.name = "NonexistentLocalTimeError";
+  }
+}
+
+export class AmbiguousLocalTimeError extends Error {
+  constructor(localDateTime: string, timeZone: string) {
+    super(
+      `Horario local ambiguo: ${localDateTime} em ${timeZone}. Selecione horario de verao como Sim ou Nao.`
+    );
+    this.name = "AmbiguousLocalTimeError";
+  }
 }
 
 function getOffsetMinutes(timeZone: string, localParts: LocalDateTimeParts): number {
@@ -210,18 +258,38 @@ function buildAspects(time: Date): Aspect[] {
 export async function generateChart(input: ChartInput): Promise<ChartResult> {
   const resolvedCity = input.location ?? resolveCity({ city: input.city, country: input.country });
   const localParts = parseLocalDateTime(input.date, input.time);
+  const localDateTime = `${input.date}T${input.time}`;
   const { standardOffset, dstOffset } = getOffsetStats(resolvedCity.timezone, localParts.year);
   const autoOffsetMinutes = getOffsetMinutes(resolvedCity.timezone, localParts);
-  const daylightSaving =
-    input.daylight_saving === "auto" ? autoOffsetMinutes !== standardOffset : input.daylight_saving;
-  const offsetMinutes =
-    input.daylight_saving === "auto"
-      ? autoOffsetMinutes
-      : input.daylight_saving
-      ? dstOffset
-      : standardOffset;
-  const localDateTime = `${input.date}T${input.time}`;
-  const utcMillis = baseUtcMillis(localParts) + offsetMinutes * 60000;
+  const candidates = findMatchingUtcCandidates(resolvedCity.timezone, localParts, [
+    standardOffset,
+    dstOffset,
+    autoOffsetMinutes,
+  ]);
+  if (candidates.length === 0) {
+    throw new NonexistentLocalTimeError(localDateTime, resolvedCity.timezone);
+  }
+  if (input.daylight_saving === "auto" && candidates.length > 1) {
+    throw new AmbiguousLocalTimeError(localDateTime, resolvedCity.timezone);
+  }
+
+  const localBaseUtc = baseUtcMillis(localParts);
+  let offsetMinutes: number;
+  let daylightSaving: boolean;
+  let utcMillis: number;
+  if (input.daylight_saving === "auto") {
+    const selected =
+      candidates.find((candidate) => candidate.offsetMinutes === autoOffsetMinutes) ?? candidates[0];
+    offsetMinutes = selected.offsetMinutes;
+    daylightSaving = offsetMinutes !== standardOffset;
+    utcMillis = selected.utcMillis;
+  } else {
+    const preferredOffset = input.daylight_saving ? dstOffset : standardOffset;
+    const selected = candidates.find((candidate) => candidate.offsetMinutes === preferredOffset);
+    offsetMinutes = selected?.offsetMinutes ?? preferredOffset;
+    daylightSaving = input.daylight_saving;
+    utcMillis = selected?.utcMillis ?? localBaseUtc + preferredOffset * 60000;
+  }
   const utcDateTime = formatUtcIso(utcMillis);
   const observationTime = new Date(utcMillis);
 

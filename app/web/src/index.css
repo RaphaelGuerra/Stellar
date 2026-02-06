@@ -24,6 +24,16 @@
   --color-error: #f87171;
   --color-error-light: rgba(248, 113, 113, 0.1);
 
+  /* Element Colors */
+  --color-fire: #f59e0b;
+  --color-fire-light: rgba(245, 158, 11, 0.12);
+  --color-earth: #10b981;
+  --color-earth-light: rgba(16, 185, 129, 0.12);
+  --color-air: #22d3ee;
+  --color-air-light: rgba(34, 211, 238, 0.12);
+  --color-water: #a78bfa;
+  --color-water-light: rgba(167, 139, 250, 0.12);
+
   /* Spacing */
   --space-xs: 4px;
   --space-sm: 8px;
@@ -185,7 +195,7 @@ body {
 }
 
 .container {
-  max-width: 800px;
+  max-width: 1000px;
   margin: 0 auto;
 }
 
@@ -795,6 +805,222 @@ body {
   white-space: pre-wrap;
   word-break: break-word;
   color: var(--color-error);
+}
+
+/* ===== Placements Summary Strip ===== */
+.placements-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  margin-bottom: var(--space-xl);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  justify-content: center;
+}
+
+.placements-strip__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  border-radius: var(--radius-full);
+  border: 1px solid transparent;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.placements-strip__item:hover {
+  transform: translateY(-1px);
+}
+
+.placements-strip__item--fire {
+  color: var(--color-fire);
+  background: var(--color-fire-light);
+  border-color: rgba(245, 158, 11, 0.15);
+}
+
+.placements-strip__item--earth {
+  color: var(--color-earth);
+  background: var(--color-earth-light);
+  border-color: rgba(16, 185, 129, 0.15);
+}
+
+.placements-strip__item--air {
+  color: var(--color-air);
+  background: var(--color-air-light);
+  border-color: rgba(34, 211, 238, 0.15);
+}
+
+.placements-strip__item--water {
+  color: var(--color-water);
+  background: var(--color-water-light);
+  border-color: rgba(167, 139, 250, 0.15);
+}
+
+.placements-strip__degree {
+  font-size: var(--font-size-xs);
+  opacity: 0.7;
+}
+
+/* ===== Card Element Modifiers ===== */
+.card--fire::before {
+  background: linear-gradient(90deg, transparent, rgba(245, 158, 11, 0.5), rgba(245, 158, 11, 0.3), transparent);
+}
+.card--fire:hover {
+  border-color: rgba(245, 158, 11, 0.25);
+  box-shadow: var(--shadow-md), 0 0 30px rgba(245, 158, 11, 0.1);
+}
+
+.card--earth::before {
+  background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.5), rgba(16, 185, 129, 0.3), transparent);
+}
+.card--earth:hover {
+  border-color: rgba(16, 185, 129, 0.25);
+  box-shadow: var(--shadow-md), 0 0 30px rgba(16, 185, 129, 0.1);
+}
+
+.card--air::before {
+  background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.5), rgba(34, 211, 238, 0.3), transparent);
+}
+.card--air:hover {
+  border-color: rgba(34, 211, 238, 0.25);
+  box-shadow: var(--shadow-md), 0 0 30px rgba(34, 211, 238, 0.1);
+}
+
+.card--water::before {
+  background: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.5), rgba(167, 139, 250, 0.3), transparent);
+}
+.card--water:hover {
+  border-color: rgba(167, 139, 250, 0.25);
+  box-shadow: var(--shadow-md), 0 0 30px rgba(167, 139, 250, 0.1);
+}
+
+/* Element cards always show top-edge gradient */
+.card--fire::before,
+.card--earth::before,
+.card--air::before,
+.card--water::before {
+  opacity: 1;
+}
+
+/* ===== Card Variant: Hero (Sun & Moon) ===== */
+.card--hero .card__title {
+  font-size: var(--font-size-xl);
+}
+
+.card--hero .card__text {
+  font-size: var(--font-size-base);
+}
+
+/* ===== Card Variant: Planet ===== */
+.card--planet .card__text {
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ===== Card Variant: Aspect ===== */
+.card--aspect {
+  padding: var(--space-md);
+}
+
+.card--aspect .card__text {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ===== Card Header (title + badge row) ===== */
+.card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xs);
+}
+
+.card__header .card__title {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ===== Degree Badge (gold pill) ===== */
+.card__degree-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--space-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-gold);
+  background: var(--color-gold-light);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ===== Orb Badge (purple pill) ===== */
+.card__orb-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--space-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+  border: 1px solid rgba(124, 106, 239, 0.2);
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ===== Grid Variants ===== */
+.cards-grid--hero {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-lg);
+}
+
+.cards-grid--planets {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-lg);
+}
+
+.cards-grid--aspects {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-lg);
+}
+
+@media (min-width: 640px) {
+  .cards-grid--hero {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .cards-grid--planets {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .cards-grid--aspects {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 900px) {
+  .cards-grid--planets {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .cards-grid--aspects {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 /* ===== Reduced Motion ===== */
