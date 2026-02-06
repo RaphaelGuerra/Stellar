@@ -4,7 +4,7 @@ import { useContentMode } from "./content/useContentMode";
 import { ModeToggle } from "./components/ModeToggle";
 import { buildCards, buildPlacementsSummary, type CardModel, type PlacementSummary } from "./lib/cards";
 import { aspectSymbol } from "./lib/aspectContext";
-import { generateChart } from "./lib/engine";
+import { AmbiguousLocalTimeError, NonexistentLocalTimeError, generateChart } from "./lib/engine";
 import { buildChartComparison } from "./lib/synastry";
 import { validateChartInput } from "./lib/validation";
 import { SUPPORTED_CITIES } from "./lib/resolveCity";
@@ -92,8 +92,51 @@ const CACHE_KEY = "stellar-city-cache-v1";
 const CACHE_TTL_MS = 1000 * 60 * 60 * 24 * 30;
 const CACHE_LIMIT = 50;
 
+const CARIOCA_VALIDATION_MESSAGES: Record<string, string> = {
+  "Data é obrigatória": "Sem data nao rola, porra.",
+  "Formato de data inválido (esperado: YYYY-MM-DD)":
+    "A data ta zoada, mermão. Usa YYYY-MM-DD sem inventar moda.",
+  "Data inválida": "Essa data ai ta errada pra caralho.",
+  "Data deve ser posterior a 1900": "Ta puxando data jurassica demais. Manda depois de 1900.",
+  "Hora é obrigatória": "Sem hora nao tem mapa, caralho.",
+  "Formato de hora inválido (esperado: HH:mm)":
+    "Hora toda cagada. Usa HH:mm certinho.",
+  "Cidade e país são obrigatórios (ex: Rio de Janeiro, BR)":
+    "Manda cidade e pais direito, porra. Ex: Rio de Janeiro, BR.",
+  "Nome da cidade deve ter pelo menos 2 caracteres":
+    "Nome de cidade com 1 letra e sacanagem. Bota pelo menos 2.",
+  "Código do país deve ter pelo menos 2 caracteres":
+    "Codigo do pais ta curto pra cacete. Usa pelo menos 2 letras.",
+  "Data não pode ser no futuro":
+    "Nascer no futuro nao da, ne porra.",
+  "Timezone inválido para a localização informada":
+    "Timezone dessa localizacao veio toda errada.",
+};
+
 function normalizeQuery(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function formatValidationMessages(errors: readonly string[], isCarioca: boolean): string[] {
+  if (!isCarioca) return [...errors];
+  return errors.map((message) => CARIOCA_VALIDATION_MESSAGES[message] ?? `Papo reto: ${message}`);
+}
+
+function formatRuntimeError(error: unknown, isCarioca: boolean): string {
+  if (!isCarioca) {
+    return error instanceof Error ? error.message : String(error);
+  }
+  if (error instanceof NonexistentLocalTimeError) {
+    return "Esse horario nem existe nessa cidade, porra. Ajusta a hora e tenta de novo.";
+  }
+  if (error instanceof AmbiguousLocalTimeError) {
+    return "Esse horario ficou duplicado por causa de horario de verao. Escolhe Sim ou Nao e manda brasa.";
+  }
+  if (error instanceof Error && error.message.startsWith("Nominatim error:")) {
+    return "A busca de cidade travou aqui. Espera um tiquinho e tenta de novo.";
+  }
+  const fallback = error instanceof Error ? error.message : String(error);
+  return fallback ? `Deu ruim: ${fallback}` : "Deu merda aqui. Tenta de novo.";
 }
 
 function pickCityName(address?: NominatimAddress): string | null {
@@ -469,7 +512,7 @@ function App() {
         if (err instanceof Error && err.name === "AbortError") return;
         setSuggestions([]);
         setSearchError(
-          isCarioca ? "Nao foi possivel buscar cidades agora." : "Could not search cities right now."
+          isCarioca ? "Nao deu pra buscar cidade agora, mermão. Tenta de novo ja ja." : "Could not search cities right now."
         );
       } finally {
         if (!controller.signal.aborted) {
@@ -530,7 +573,7 @@ function App() {
         if (err instanceof Error && err.name === "AbortError") return;
         setSuggestionsB([]);
         setSearchErrorB(
-          isCarioca ? "Nao foi possivel buscar cidades agora." : "Could not search cities right now."
+          isCarioca ? "Nao deu pra buscar cidade agora, mermão. Tenta de novo ja ja." : "Could not search cities right now."
         );
       } finally {
         if (!controller.signal.aborted) {
@@ -714,7 +757,7 @@ function App() {
         setError(
           withPrefix(
             isCarioca
-              ? "Digite pelo menos 3 caracteres para buscar a cidade."
+              ? "Manda pelo menos 3 letras da cidade, porra."
               : "Type at least 3 characters to search for a city."
           )
         );
@@ -724,7 +767,9 @@ function App() {
       if (candidates === null) {
         setError(
           withPrefix(
-            isCarioca ? "Nao foi possivel buscar cidades agora." : "Could not search cities right now."
+            isCarioca
+              ? "Nao deu pra buscar cidade agora, mermão. Tenta de novo ja ja."
+              : "Could not search cities right now."
           )
         );
         return null;
@@ -733,7 +778,7 @@ function App() {
         setError(
           withPrefix(
             isCarioca
-              ? "Nao foi possivel encontrar essa cidade. Tente incluir o pais."
+              ? "Nao achei essa cidade nem fudendo. Tenta botar cidade + pais certinho."
               : "Couldn't find that city. Try including the country code."
           )
         );
@@ -744,7 +789,7 @@ function App() {
         setError(
           withPrefix(
             isCarioca
-              ? "Cidade ambigua. Selecione uma opcao da lista de cidades."
+              ? "Cidade ambigua pra caralho. Escolhe uma opcao da lista ai."
               : "Ambiguous city. Please select one option from the city suggestions list."
           )
         );
@@ -766,7 +811,7 @@ function App() {
 
     const validation = validateChartInput(nextInput);
     if (!validation.valid) {
-      setError(withPrefix(validation.errors.join(". ")));
+      setError(withPrefix(formatValidationMessages(validation.errors, isCarioca).join(". ")));
       return null;
     }
     return nextInput;
@@ -828,48 +873,47 @@ function App() {
       setCards(buildCards(content, newChartA, mode));
       setPlacements(buildPlacementsSummary(newChartA));
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      setError(message);
+      setError(formatRuntimeError(err, isCarioca));
     } finally {
       setLoading(false);
     }
   }
 
   const t = {
-    modeLabel: isCarioca ? "Carioca" : "English",
-    singleMode: isCarioca ? "Mapa solo" : "Single chart",
-    compatibilityMode: isCarioca ? "Compatibilidade" : "Compatibility",
-    personA: isCarioca ? "Pessoa A" : "Person A",
-    personB: isCarioca ? "Pessoa B" : "Person B",
+    modeLabel: isCarioca ? "Carioca raiz, porra" : "English",
+    singleMode: isCarioca ? "Mapa solo bolado" : "Single chart",
+    compatibilityMode: isCarioca ? "Sinastria braba" : "Compatibility",
+    personA: isCarioca ? "Pessoa A (tu)" : "Person A",
+    personB: isCarioca ? "Pessoa B (o outro)" : "Person B",
     date: isCarioca ? "Data" : "Date",
     time: isCarioca ? "Hora" : "Time",
-    cityAndCountry: isCarioca ? "Cidade e país" : "City & country",
+    cityAndCountry: isCarioca ? "Cidade e pais, sem caozada" : "City & country",
     searchPlaceholder: isCarioca ? "Ex: Rio de Janeiro, BR" : "e.g. New York, US",
-    searching: isCarioca ? "Buscando cidades..." : "Searching cities...",
-    noResults: isCarioca ? "Nenhuma cidade encontrada." : "No cities found.",
+    searching: isCarioca ? "Caçando cidade..." : "Searching cities...",
+    noResults: isCarioca ? "Nao achei porra nenhuma." : "No cities found.",
     cityHint: isCarioca
-      ? `Digite para buscar cidades do mundo inteiro ou escolha um exemplo: ${SUPPORTED_CITIES.join(", ")}`
+      ? `Manda a cidade com pais certinho, mermão. Ou usa um exemplo: ${SUPPORTED_CITIES.join(", ")}`
       : `Type to search cities worldwide or try: ${SUPPORTED_CITIES.join(", ")}`,
-    daylightSaving: isCarioca ? "Horário de verão" : "Daylight saving",
-    yes: isCarioca ? "Sim" : "Yes",
-    no: isCarioca ? "Não" : "No",
-    generating: isCarioca ? "Gerando..." : "Generating...",
-    generateNew: isCarioca ? "Gerar novo mapa" : "New chart",
-    generate: isCarioca ? "Gerar mapa" : "Generate chart",
-    error: isCarioca ? "Erro ao gerar mapa" : "Error generating chart",
-    normalizedTitle: isCarioca ? "Dados normalizados" : "Normalized data",
-    dstLabel: isCarioca ? "Horário de verão" : "Daylight saving",
+    daylightSaving: isCarioca ? "Horario de verao" : "Daylight saving",
+    yes: isCarioca ? "Sim, porra" : "Yes",
+    no: isCarioca ? "Nao, porra" : "No",
+    generating: isCarioca ? "Gerando essa porra..." : "Generating...",
+    generateNew: isCarioca ? "Gerar outro mapa, caralho" : "New chart",
+    generate: isCarioca ? "Gerar mapa, porra" : "Generate chart",
+    error: isCarioca ? "Deu merda no mapa" : "Error generating chart",
+    normalizedTitle: isCarioca ? "Dados no papo reto" : "Normalized data",
+    dstLabel: isCarioca ? "Horario de verao" : "Daylight saving",
     emptyState: isCarioca
-      ? 'Clique em "Gerar mapa" para ver os cards do mapa astral.'
+      ? 'Clica em "Gerar mapa, porra" pra ver os cards desse mapa.'
       : 'Click "Generate chart" to see your birth chart cards.',
-    loading: isCarioca ? "Calculando posições planetárias" : "Calculating planetary positions",
-    planetsTitle: isCarioca ? "Planetas" : "Planets",
-    aspectsTitle: isCarioca ? "Aspectos" : "Aspects",
-    aspectsBadge: (n: number) => isCarioca ? `${n} conexoes` : `${n} connections`,
-    compatibilityTitle: isCarioca ? "Sinastria" : "Synastry",
-    compatibilityBadge: (n: number) => isCarioca ? `${n} aspectos` : `${n} aspects`,
+    loading: isCarioca ? "Calculando os planetas nessa porra" : "Calculating planetary positions",
+    planetsTitle: isCarioca ? "Planetas no caos" : "Planets",
+    aspectsTitle: isCarioca ? "Aspectos na porrada" : "Aspects",
+    aspectsBadge: (n: number) => isCarioca ? `${n} conexoes brabas` : `${n} connections`,
+    compatibilityTitle: isCarioca ? "Sinastria de cria" : "Synastry",
+    compatibilityBadge: (n: number) => isCarioca ? `${n} aspectos brabos` : `${n} aspects`,
     compatibilityEmpty: isCarioca
-      ? 'Clique em "Gerar mapa" para ver os aspectos entre Pessoa A e Pessoa B.'
+      ? 'Clica em "Gerar mapa, porra" pra ver a treta entre Pessoa A e Pessoa B.'
       : 'Click "Generate chart" to see aspects between Person A and Person B.',
   };
 

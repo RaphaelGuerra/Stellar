@@ -72,11 +72,11 @@ const ASPECT_TEXT: Record<SynastryLocale, Record<AspectName, string>> = {
     Sextile: "Constructive opportunity. Works best with conscious initiative.",
   },
   pt: {
-    Conjunction: "Fusao intensa de energias. Alta identificacao e alto impacto.",
-    Opposition: "Tensao polar e atracao. Equilibrio e a chave desse eixo.",
-    Square: "Atrito que gera crescimento. Exige ajuste dos dois lados.",
-    Trine: "Fluxo natural e facilidade. Talentos cooperam com menos esforco.",
-    Sextile: "Oportunidade construtiva. Funciona melhor com iniciativa consciente.",
+    Conjunction: "Gruda energia dos dois sem freio. Se vacilar vira bagunca do caralho.",
+    Opposition: "Um puxa pra cada lado, mermão. Sem equilibrio essa porra vira treta.",
+    Square: "Atrito na lata. Se os dois nao se mexerem, trava e da merda.",
+    Trine: "Flui facil pra cacete. Bom demais, mas pode dar moleza se largar.",
+    Sextile: "Tem chance boa pra caralho, mas so rende se os dois correrem atras.",
   },
 };
 
