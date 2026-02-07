@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import type { DetailBlock } from "../lib/types";
 
 interface CardProps {
@@ -15,7 +15,6 @@ interface CardProps {
     more: string;
     less: string;
   };
-  expandThreshold?: number;
   details?: readonly DetailBlock[];
 }
 
@@ -30,10 +29,9 @@ export function Card({
   degree,
   orb,
   expandLabels,
-  expandThreshold = 220,
   details,
 }: CardProps) {
-  const classes = [
+  const baseClasses = [
     "card",
     element ? `card--${element}` : "",
     tone ? `card--tone-${tone}` : "",
@@ -42,12 +40,60 @@ export function Card({
 
   const hasBadge = (degree != null) || (orb != null);
   const [expanded, setExpanded] = useState(false);
+  const [textOverflows, setTextOverflows] = useState(false);
+  const textRef = useRef<HTMLParagraphElement>(null);
   const contentId = useId();
   const hasDetails = (details?.length ?? 0) > 0;
-  const canExpand = text.length > expandThreshold || hasDetails;
+  const detailsSignature = (details ?? [])
+    .map((detail) => `${detail.title}|${detail.text}`)
+    .join("||");
+  const canExpand = hasDetails || textOverflows;
+  const shouldClampText = textOverflows && !expanded;
+  const classes = canExpand ? `${baseClasses} card--expandable` : baseClasses;
+
+  function toggleExpanded() {
+    if (!canExpand) return;
+    setExpanded((prev) => !prev);
+  }
+
+  function handleCardKeyDown(event: KeyboardEvent<HTMLElement>) {
+    if (!canExpand) return;
+    if (event.target !== event.currentTarget) return;
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    toggleExpanded();
+  }
+
+  useEffect(() => {
+    const textElement = textRef.current;
+    if (!textElement) return;
+
+    const measureOverflow = () => {
+      const wasClamped = textElement.classList.contains("card__text--clamped");
+      if (!wasClamped) textElement.classList.add("card__text--clamped");
+      const overflows = textElement.scrollHeight - textElement.clientHeight > 1;
+      if (!wasClamped) textElement.classList.remove("card__text--clamped");
+      setTextOverflows((prev) => (prev === overflows ? prev : overflows));
+    };
+
+    measureOverflow();
+
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => measureOverflow());
+    observer.observe(textElement);
+    return () => observer.disconnect();
+  }, [text, detailsSignature]);
 
   return (
-    <article className={classes}>
+    <article
+      className={classes}
+      onClick={canExpand ? toggleExpanded : undefined}
+      onKeyDown={canExpand ? handleCardKeyDown : undefined}
+      role={canExpand ? "button" : undefined}
+      tabIndex={canExpand ? 0 : undefined}
+      aria-expanded={canExpand ? expanded : undefined}
+      aria-controls={canExpand ? contentId : undefined}
+    >
       {hasBadge ? (
         <div className="card__header">
           <h3 className="card__title">{title}</h3>
@@ -63,7 +109,10 @@ export function Card({
       )}
       {subtitle && <p className="card__subtitle">{subtitle}</p>}
       <div id={contentId}>
-        <p className={`card__text ${canExpand && !expanded ? "card__text--clamped" : ""}`}>
+        <p
+          ref={textRef}
+          className={`card__text ${shouldClampText ? "card__text--clamped" : ""}`}
+        >
           {text}
         </p>
         {expanded && hasDetails && (
@@ -83,7 +132,10 @@ export function Card({
           className="card__expand-btn"
           aria-expanded={expanded}
           aria-controls={contentId}
-          onClick={() => setExpanded((prev) => !prev)}
+          onClick={(event) => {
+            event.stopPropagation();
+            toggleExpanded();
+          }}
         >
           {expanded ? (expandLabels?.less ?? "Show less") : (expandLabels?.more ?? "Show more")}
         </button>

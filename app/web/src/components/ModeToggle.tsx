@@ -3,11 +3,12 @@ import type { Mode } from "../content/useContentMode";
 interface ModeToggleProps {
   mode: Mode;
   setMode: (mode: Mode) => void;
+  ariaLabel?: string;
 }
 
-export function ModeToggle({ mode, setMode }: ModeToggleProps) {
+export function ModeToggle({ mode, setMode, ariaLabel = "Content mode" }: ModeToggleProps) {
   return (
-    <div className="mode-toggle" role="group" aria-label="Content mode">
+    <div className="mode-toggle" role="group" aria-label={ariaLabel}>
       <button
         type="button"
         className={`mode-toggle__btn ${mode === "normal" ? "mode-toggle__btn--active" : ""}`}

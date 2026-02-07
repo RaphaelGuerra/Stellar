@@ -7,7 +7,20 @@
       "Bash(git -C /Users/raphaelguerra/dev/apps/stellar log --oneline -10)",
       "Bash(wc:*)",
       "Bash(npm run lint)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(./node_modules/.bin/tsc:*)",
+      "Bash(node_modules/.bin/tsc:*)",
+      "Bash(ls:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git config:*)",
+      "Bash(git push:*)",
+      "Bash(gh auth status:*)",
+      "Bash(brew install:*)",
+      "Bash(gh auth login:*)",
+      "Bash(gh auth setup-git:*)",
+      "Bash(npx vitest:*)",
+      "Bash(npx vite build:*)"
     ]
   }
 }

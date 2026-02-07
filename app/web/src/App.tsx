@@ -143,6 +143,7 @@ function App() {
   const [chart, setChart] = useState<ChartResult | null>(null);
   const [chartB, setChartB] = useState<ChartResult | null>(null);
   const [cards, setCards] = useState<CardModel[]>([]);
+  const [resultVersion, setResultVersion] = useState(0);
   const [placements, setPlacements] = useState<PlacementSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -346,6 +347,7 @@ function App() {
         setChartB(null);
         setCards(buildCards(content, newChart, mode));
         setPlacements(buildPlacementsSummary(newChart));
+        setResultVersion((prev) => prev + 1);
         return;
       }
 
@@ -383,6 +385,7 @@ function App() {
       setChartB(chartBValue);
       setCards(buildCards(content, chartAValue, mode));
       setPlacements(buildPlacementsSummary(chartAValue));
+      setResultVersion((prev) => prev + 1);
     } catch (err) {
       setError(formatRuntimeError(err, isCarioca));
     } finally {
@@ -430,6 +433,13 @@ function App() {
       ? 'Clica em "Gerar mapa, porra" pra ver a treta entre Pessoa A e Pessoa B.'
       : 'Click "Generate chart" to see aspects between Person A and Person B.',
   };
+  const ariaLabels = {
+    chartInfo: isCarioca ? "Dados atuais do mapa" : "Current chart info",
+    chartGenerator: isCarioca ? "Gerador de mapa astral" : "Birth chart generator",
+    birthDataForm: isCarioca ? "Formulario de dados de nascimento" : "Birth data form",
+    analysisMode: isCarioca ? "Modo de analise" : "Analysis mode",
+    contentMode: isCarioca ? "Modo de conteudo" : "Content mode",
+  };
   const cardExpandLabels = isCarioca
     ? { more: "Abrir mais", less: "Fechar" }
     : { more: "Show more", less: "Show less" };
@@ -448,7 +458,7 @@ function App() {
             <h1 className="header__title">stellar</h1>
             <div
               className="header__meta"
-              aria-label="Current chart info"
+              aria-label={ariaLabels.chartInfo}
               aria-live="polite"
               aria-atomic="true"
             >
@@ -463,13 +473,13 @@ function App() {
               )}
             </div>
           </div>
-          <ModeToggle mode={mode} setMode={setMode} />
+          <ModeToggle mode={mode} setMode={setMode} ariaLabel={ariaLabels.contentMode} />
         </header>
 
-        <main role="main" aria-label="Birth chart generator">
+        <main role="main" aria-label={ariaLabels.chartGenerator}>
           <section className={`action-section ${cards.length > 0 ? "action-section--compact" : ""}`}>
-            <form className="form" onSubmit={handleGenerateChart} aria-label="Birth data form">
-              <div className="analysis-mode" role="group" aria-label="Analysis mode">
+            <form className="form" onSubmit={handleGenerateChart} aria-label={ariaLabels.birthDataForm}>
+              <div className="analysis-mode" role="group" aria-label={ariaLabels.analysisMode}>
                 <button
                   type="button"
                   className={`analysis-mode__btn ${analysisMode === "single" ? "analysis-mode__btn--active" : ""}`}
@@ -627,7 +637,7 @@ function App() {
               <div className="cards-grid--hero">
                 {heroCards.map((card) => (
                   <Card
-                    key={card.key}
+                    key={`${resultVersion}-${card.key}`}
                     title={card.title}
                     subtitle={card.subtitle}
                     text={card.text}
@@ -652,7 +662,7 @@ function App() {
               <div className="cards-grid--planets">
                 {planetCards.map((card) => (
                   <Card
-                    key={card.key}
+                    key={`${resultVersion}-${card.key}`}
                     title={card.title}
                     subtitle={card.subtitle}
                     text={card.text}
@@ -678,7 +688,7 @@ function App() {
               <div className="cards-grid--aspects">
                 {aspectCards.map((card) => (
                   <Card
-                    key={card.key}
+                    key={`${resultVersion}-${card.key}`}
                     title={card.title}
                     subtitle={card.subtitle}
                     text={card.text}
@@ -703,7 +713,7 @@ function App() {
               <div className="cards-grid--synastry">
                 {comparisonCards.map((card) => (
                   <Card
-                    key={card.key}
+                    key={`${resultVersion}-${card.key}`}
                     title={card.title}
                     subtitle={card.subtitle}
                     text={card.text}
