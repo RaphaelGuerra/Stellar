@@ -59,17 +59,16 @@ describe("Card interactions", () => {
     expect(screen.queryByText("Deep explanation")).toBeNull();
   });
 
-  it("toggle button changes state once per click", () => {
+  it("expand label reflects state and toggles when clicked", () => {
     renderCard();
 
-    const openButton = screen.getByRole("button", { name: "Show more" });
-    fireEvent.click(openButton);
+    const openLabel = screen.getByText("Show more");
+    fireEvent.click(openLabel);
 
     expect(screen.getByText("Deep explanation")).toBeTruthy();
-    const closeButton = screen.getByRole("button", { name: "Show less" });
-    expect(closeButton).toBeTruthy();
+    expect(screen.getByText("Show less")).toBeTruthy();
 
-    fireEvent.click(closeButton);
+    fireEvent.click(screen.getByText("Show less"));
     expect(screen.queryByText("Deep explanation")).toBeNull();
   });
 
@@ -82,7 +81,7 @@ describe("Card interactions", () => {
       />
     );
 
-    expect(screen.queryByRole("button", { name: "Show more" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Show less" })).toBeNull();
+    expect(screen.queryByText("Show more")).toBeNull();
+    expect(screen.queryByText("Show less")).toBeNull();
   });
 });

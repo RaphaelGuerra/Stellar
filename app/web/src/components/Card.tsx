@@ -127,18 +127,9 @@ export function Card({
         )}
       </div>
       {canExpand && (
-        <button
-          type="button"
-          className="card__expand-btn"
-          aria-expanded={expanded}
-          aria-controls={contentId}
-          onClick={(event) => {
-            event.stopPropagation();
-            toggleExpanded();
-          }}
-        >
+        <span className="card__expand-btn" aria-hidden="true">
           {expanded ? (expandLabels?.less ?? "Show less") : (expandLabels?.more ?? "Show more")}
-        </button>
+        </span>
       )}
       <div className="card__tags">
         {tags.map((tag) => (

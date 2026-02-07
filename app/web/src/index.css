@@ -505,6 +505,7 @@ body {
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--space-lg);
+  align-items: start;
 }
 
 @media (min-width: 640px) {
@@ -775,10 +776,60 @@ body {
   border-color: var(--color-error);
 }
 
-/* Date & time inputs — fix icon colors for dark theme */
+/* Date & time inputs — dark cosmic theme */
+.form__label input[type="date"],
+.form__label input[type="time"] {
+  color-scheme: dark;
+  position: relative;
+}
+
 .form__label input[type="date"]::-webkit-calendar-picker-indicator,
 .form__label input[type="time"]::-webkit-calendar-picker-indicator {
-  filter: invert(0.7);
+  filter: invert(0.6) sepia(0.3) saturate(3) hue-rotate(200deg);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  opacity: 0.7;
+}
+
+.form__label input[type="date"]::-webkit-calendar-picker-indicator:hover,
+.form__label input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  background: rgba(124, 106, 239, 0.15);
+}
+
+.form__label input[type="date"]::-webkit-datetime-edit,
+.form__label input[type="time"]::-webkit-datetime-edit {
+  color: var(--color-text);
+}
+
+.form__label input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+.form__label input[type="time"]::-webkit-datetime-edit-fields-wrapper {
+  padding: 0;
+}
+
+.form__label input[type="date"]::-webkit-datetime-edit-year-field,
+.form__label input[type="date"]::-webkit-datetime-edit-month-field,
+.form__label input[type="date"]::-webkit-datetime-edit-day-field,
+.form__label input[type="time"]::-webkit-datetime-edit-hour-field,
+.form__label input[type="time"]::-webkit-datetime-edit-minute-field {
+  color: var(--color-text);
+  padding: 2px 1px;
+  border-radius: 3px;
+}
+
+.form__label input[type="date"]::-webkit-datetime-edit-year-field:focus,
+.form__label input[type="date"]::-webkit-datetime-edit-month-field:focus,
+.form__label input[type="date"]::-webkit-datetime-edit-day-field:focus,
+.form__label input[type="time"]::-webkit-datetime-edit-hour-field:focus,
+.form__label input[type="time"]::-webkit-datetime-edit-minute-field:focus {
+  background: var(--color-primary-light);
+  color: var(--color-primary-hover);
+}
+
+.form__label input[type="date"]::-webkit-datetime-edit-text {
+  color: var(--color-text-muted);
 }
 
 .city-search {
@@ -1080,11 +1131,8 @@ body {
 }
 
 /* ===== Card Variant: Planet ===== */
-.card--planet .card__text {
-  display: -webkit-box;
+.card--planet .card__text--clamped {
   -webkit-line-clamp: 5;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
 /* ===== Card Variant: Aspect ===== */
@@ -1097,11 +1145,8 @@ body {
   letter-spacing: 0.02em;
 }
 
-.card--aspect .card__text {
-  display: -webkit-box;
+.card--aspect .card__text--clamped {
   -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
 /* ===== Card Variant: Synastry ===== */
@@ -1119,11 +1164,8 @@ body {
   letter-spacing: 0.1em;
 }
 
-.card--synastry .card__text {
-  display: -webkit-box;
+.card--synastry .card__text--clamped {
   -webkit-line-clamp: 5;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
 /* ===== Synastry Tone Modifiers ===== */
@@ -1207,6 +1249,7 @@ body {
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--space-lg);
+  align-items: start;
 }
 
 @media (min-width: 640px) {
