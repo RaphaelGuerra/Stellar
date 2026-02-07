@@ -1,148 +1,52 @@
-import { useState, useEffect, useMemo, useRef, type FormEvent } from "react";
-import tzLookup from "tz-lookup";
+import { useState, useEffect, useMemo, useCallback, type FormEvent } from "react";
 import { useContentMode } from "./content/useContentMode";
 import { ModeToggle } from "./components/ModeToggle";
+import { Card } from "./components/Card";
+import { Section } from "./components/Section";
+import { PlacementsSummary } from "./components/PlacementsSummary";
+import { LoadingState } from "./components/LoadingState";
+import { PersonForm } from "./components/PersonForm";
 import { buildCards, buildPlacementsSummary, type CardModel, type PlacementSummary } from "./lib/cards";
 import { AmbiguousLocalTimeError, NonexistentLocalTimeError, generateChart } from "./lib/engine";
 import { buildChartComparison } from "./lib/synastry";
-import { validateChartInput } from "./lib/validation";
+import { validateChartInput, type ValidationErrorCode } from "./lib/validation";
+import { useGeoSearch, resolveLocationCandidates, type GeoSuggestion } from "./lib/useGeoSearch";
 import { SUPPORTED_CITIES } from "./lib/resolveCity";
 import type { ChartInput, ChartResult } from "./lib/types";
 
-interface CardProps {
-  title: string;
-  subtitle?: string;
-  text: string;
-  tags: readonly string[];
-  element?: string;
-  tone?: string;
-  variant?: "hero" | "planet" | "aspect" | "synastry";
-  degree?: number;
-  orb?: number;
-}
-
 type AnalysisMode = "single" | "compatibility";
 
-function parseLocationInput(value: string): { city: string; country: string } {
-  const trimmed = value.trim();
-  if (!trimmed) return { city: "", country: "" };
-
-  const commaMatch = trimmed.match(/^(.+),\s*([A-Za-z]{2,3})$/);
-  if (commaMatch) {
-    return {
-      city: commaMatch[1].trim(),
-      country: commaMatch[2].trim().toUpperCase(),
-    };
-  }
-
-  const parenMatch = trimmed.match(/^(.+)\(([^)]+)\)\s*$/);
-  if (parenMatch) {
-    return {
-      city: parenMatch[1].trim(),
-      country: parenMatch[2].trim().toUpperCase(),
-    };
-  }
-
-  return { city: trimmed, country: "" };
-}
-
-interface NominatimAddress {
-  city?: string;
-  town?: string;
-  village?: string;
-  municipality?: string;
-  county?: string;
-  state?: string;
-  country_code?: string;
-}
-
-interface NominatimResult {
-  place_id: number;
-  lat: string;
-  lon: string;
-  display_name: string;
-  address?: NominatimAddress;
-}
-
-interface GeoSuggestion {
-  id: string;
-  label: string;
-  city: string;
-  country: string;
-  lat: number;
-  lon: number;
-  timezone: string;
-}
-
-interface CacheEntry {
-  ts: number;
-  results: GeoSuggestion[];
-}
-
-interface RequestTimestampRef {
-  current: number;
-}
-
-const NOMINATIM_ENDPOINT = "https://nominatim.openstreetmap.org/search";
-const NOMINATIM_EMAIL = "phaelixai@gmail.com";
-const SEARCH_MIN_CHARS = 3;
-const SEARCH_DEBOUNCE_MS = 450;
-const SEARCH_RATE_LIMIT_MS = 1100;
-const CACHE_KEY = "stellar-city-cache-v1";
-const CACHE_TTL_MS = 1000 * 60 * 60 * 24 * 30;
-const CACHE_LIMIT = 50;
-
-const EN_VALIDATION_MESSAGES: Record<string, string> = {
-  "Data é obrigatória": "Date is required.",
-  "Formato de data inválido (esperado: YYYY-MM-DD)": "Invalid date format (expected: YYYY-MM-DD).",
-  "Data inválida": "Invalid calendar date.",
-  "Data deve ser posterior a 1900": "Date must be later than 1900.",
-  "Hora é obrigatória": "Time is required.",
-  "Formato de hora inválido (esperado: HH:mm)": "Invalid time format (expected: HH:mm).",
-  "Cidade e país são obrigatórios (ex: Rio de Janeiro, BR)":
-    "City and country are required (e.g. New York, US).",
-  "Nome da cidade deve ter pelo menos 2 caracteres": "City name must have at least 2 characters.",
-  "Código do país deve ter pelo menos 2 caracteres": "Country code must have at least 2 characters.",
-  "Data não pode ser no futuro": "Date/time cannot be in the future.",
-  "Timezone inválido para a localização informada": "Invalid timezone for the selected location.",
+const EN_VALIDATION_MESSAGES: Record<ValidationErrorCode, string> = {
+  DATE_REQUIRED: "Date is required.",
+  DATE_FORMAT_INVALID: "Invalid date format (expected: YYYY-MM-DD).",
+  DATE_INVALID: "Invalid calendar date.",
+  DATE_TOO_OLD: "Date must be later than 1900.",
+  TIME_REQUIRED: "Time is required.",
+  TIME_FORMAT_INVALID: "Invalid time format (expected: HH:mm).",
+  CITY_REQUIRED: "City and country are required (e.g. New York, US).",
+  CITY_TOO_SHORT: "City name must have at least 2 characters.",
+  COUNTRY_TOO_SHORT: "Country code must have at least 2 characters.",
+  DATE_IN_FUTURE: "Date/time cannot be in the future.",
+  TIMEZONE_INVALID: "Invalid timezone for the selected location.",
 };
 
-const CARIOCA_VALIDATION_MESSAGES: Record<string, string> = {
-  "Data é obrigatória": "Sem data nao rola, porra.",
-  "Formato de data inválido (esperado: YYYY-MM-DD)":
-    "A data ta zoada, mermão. Usa YYYY-MM-DD sem inventar moda.",
-  "Data inválida": "Essa data ai ta errada pra caralho.",
-  "Data deve ser posterior a 1900": "Ta puxando data jurassica demais. Manda depois de 1900.",
-  "Hora é obrigatória": "Sem hora nao tem mapa, caralho.",
-  "Formato de hora inválido (esperado: HH:mm)":
-    "Hora toda cagada. Usa HH:mm certinho.",
-  "Cidade e país são obrigatórios (ex: Rio de Janeiro, BR)":
-    "Manda cidade e pais direito, porra. Ex: Rio de Janeiro, BR.",
-  "Nome da cidade deve ter pelo menos 2 caracteres":
-    "Nome de cidade com 1 letra e sacanagem. Bota pelo menos 2.",
-  "Código do país deve ter pelo menos 2 caracteres":
-    "Codigo do pais ta curto pra cacete. Usa pelo menos 2 letras.",
-  "Data não pode ser no futuro":
-    "Nascer no futuro nao da, ne porra.",
-  "Timezone inválido para a localização informada":
-    "Timezone dessa localizacao veio toda errada.",
+const CARIOCA_VALIDATION_MESSAGES: Record<ValidationErrorCode, string> = {
+  DATE_REQUIRED: "Sem data nao rola, porra.",
+  DATE_FORMAT_INVALID: "A data ta zoada, mermão. Usa YYYY-MM-DD sem inventar moda.",
+  DATE_INVALID: "Essa data ai ta errada pra caralho.",
+  DATE_TOO_OLD: "Ta puxando data jurassica demais. Manda depois de 1900.",
+  TIME_REQUIRED: "Sem hora nao tem mapa, caralho.",
+  TIME_FORMAT_INVALID: "Hora toda cagada. Usa HH:mm certinho.",
+  CITY_REQUIRED: "Manda cidade e pais direito, porra. Ex: Rio de Janeiro, BR.",
+  CITY_TOO_SHORT: "Nome de cidade com 1 letra e sacanagem. Bota pelo menos 2.",
+  COUNTRY_TOO_SHORT: "Codigo do pais ta curto pra cacete. Usa pelo menos 2 letras.",
+  DATE_IN_FUTURE: "Nascer no futuro nao da, ne porra.",
+  TIMEZONE_INVALID: "Timezone dessa localizacao veio toda errada.",
 };
 
-function normalizeQuery(value: string): string {
-  return value.trim().toLowerCase().replace(/\s+/g, " ");
-}
-
-function getSearchLanguage(isCarioca: boolean): string {
-  return isCarioca ? "pt-BR" : "en";
-}
-
-function buildCacheKey(normalizedQuery: string, language: string): string {
-  return `${language}|${normalizedQuery}`;
-}
-
-function formatValidationMessages(errors: readonly string[], isCarioca: boolean): string[] {
+function formatValidationMessages(errors: readonly ValidationErrorCode[], isCarioca: boolean): string[] {
   const dictionary = isCarioca ? CARIOCA_VALIDATION_MESSAGES : EN_VALIDATION_MESSAGES;
-  return errors.map((message) => dictionary[message] ?? message);
+  return errors.map((code) => dictionary[code]);
 }
 
 function formatRuntimeError(error: unknown, isCarioca: boolean): string {
@@ -168,301 +72,74 @@ function formatRuntimeError(error: unknown, isCarioca: boolean): string {
   return fallback ? `Deu ruim: ${fallback}` : "Deu merda aqui. Tenta de novo.";
 }
 
-function pickCityName(address?: NominatimAddress): string | null {
-  if (!address) return null;
-  return (
-    address.city ||
-    address.town ||
-    address.village ||
-    address.municipality ||
-    address.county ||
-    address.state ||
-    null
-  );
-}
+function useSuggestionKeyboard(geo: { suggestions: GeoSuggestion[]; selectSuggestion: (s: GeoSuggestion) => void; showSuggestions: boolean }) {
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const currentIndex =
+    activeIndex >= 0 && activeIndex < geo.suggestions.length ? activeIndex : -1;
 
-function buildSuggestion(result: NominatimResult): GeoSuggestion | null {
-  const lat = Number(result.lat);
-  const lon = Number(result.lon);
-  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+  const onKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      if (!geo.showSuggestions) return;
+      const count = geo.suggestions.length;
+      if (count === 0) return;
 
-  const city = pickCityName(result.address);
-  const country = result.address?.country_code?.toUpperCase() ?? "";
-  if (!city || !country) return null;
-
-  const region = result.address?.state && result.address.state !== city ? result.address.state : "";
-  const labelParts = [city, region, country].filter(Boolean);
-  const label = labelParts.join(", ");
-
-  return {
-    id: String(result.place_id ?? `${lat},${lon}`),
-    label,
-    city,
-    country,
-    lat,
-    lon,
-    timezone: tzLookup(lat, lon),
-  };
-}
-
-function toUniqueSuggestions(results: NominatimResult[]): GeoSuggestion[] {
-  const unique = new Map<string, GeoSuggestion>();
-  for (const item of results) {
-    const suggestion = buildSuggestion(item);
-    if (!suggestion) continue;
-    const key = `${suggestion.label}|${suggestion.lat}|${suggestion.lon}`;
-    if (!unique.has(key)) {
-      unique.set(key, suggestion);
-    }
-  }
-  return Array.from(unique.values());
-}
-
-function waitFor(ms: number, signal?: AbortSignal): Promise<void> {
-  if (ms <= 0) return Promise.resolve();
-  return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => {
-      if (signal) signal.removeEventListener("abort", onAbort);
-      resolve();
-    }, ms);
-    const onAbort = () => {
-      clearTimeout(timeout);
-      if (signal) signal.removeEventListener("abort", onAbort);
-      reject(new DOMException("Aborted", "AbortError"));
-    };
-    if (signal) {
-      if (signal.aborted) {
-        onAbort();
-        return;
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        setActiveIndex((prev) => {
+          const base = prev >= 0 && prev < count ? prev : -1;
+          return (base + 1) % count;
+        });
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault();
+        setActiveIndex((prev) => {
+          const base = prev >= 0 && prev < count ? prev : 0;
+          return base <= 0 ? count - 1 : base - 1;
+        });
+      } else if (event.key === "Enter" && currentIndex >= 0) {
+        event.preventDefault();
+        geo.selectSuggestion(geo.suggestions[currentIndex]);
+        setActiveIndex(-1);
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        setActiveIndex(-1);
       }
-      signal.addEventListener("abort", onAbort);
-    }
-  });
-}
-
-function pruneCache(cache: Map<string, CacheEntry>) {
-  if (cache.size <= CACHE_LIMIT) return;
-  const entries = Array.from(cache.entries()).sort((a, b) => b[1].ts - a[1].ts);
-  cache.clear();
-  for (const [query, entry] of entries.slice(0, CACHE_LIMIT)) {
-    cache.set(query, entry);
-  }
-}
-
-function persistCache(cache: Map<string, CacheEntry>) {
-  if (typeof window === "undefined") return;
-  pruneCache(cache);
-  const entries = Array.from(cache.entries())
-    .map(([query, entry]) => ({
-      query,
-      ts: entry.ts,
-      results: entry.results,
-    }))
-    .sort((a, b) => b.ts - a.ts);
-  try {
-    window.localStorage.setItem(CACHE_KEY, JSON.stringify(entries));
-  } catch {
-    // Ignore storage failures (quota, disabled).
-  }
-}
-
-function loadCacheFromStorage(): Map<string, CacheEntry> {
-  if (typeof window === "undefined") return new Map();
-  try {
-    const raw = window.localStorage.getItem(CACHE_KEY);
-    if (!raw) return new Map();
-    const parsed = JSON.parse(raw) as Array<{
-      query: string;
-      ts: number;
-      results: GeoSuggestion[];
-    }>;
-    const now = Date.now();
-    const cache = new Map<string, CacheEntry>();
-    if (Array.isArray(parsed)) {
-      for (const entry of parsed) {
-        if (!entry || typeof entry.query !== "string" || typeof entry.ts !== "number") {
-          continue;
-        }
-        if (!Array.isArray(entry.results)) continue;
-        if (now - entry.ts > CACHE_TTL_MS) continue;
-        cache.set(entry.query, { ts: entry.ts, results: entry.results });
-      }
-    }
-    pruneCache(cache);
-    return cache;
-  } catch {
-    return new Map();
-  }
-}
-
-function getCachedResults(query: string, cache: Map<string, CacheEntry>): GeoSuggestion[] | null {
-  const entry = cache.get(query);
-  if (!entry) return null;
-  if (Date.now() - entry.ts > CACHE_TTL_MS) {
-    cache.delete(query);
-    persistCache(cache);
-    return null;
-  }
-  return entry.results;
-}
-
-function setCachedResults(query: string, results: GeoSuggestion[], cache: Map<string, CacheEntry>) {
-  cache.set(query, { ts: Date.now(), results });
-  persistCache(cache);
-}
-
-async function fetchNominatim(
-  query: string,
-  limit: number,
-  lastRequestAt: RequestTimestampRef,
-  language: string,
-  signal?: AbortSignal
-): Promise<NominatimResult[]> {
-  const sinceLast = Date.now() - lastRequestAt.current;
-  const waitMs = Math.max(0, SEARCH_RATE_LIMIT_MS - sinceLast);
-  if (waitMs > 0) {
-    await waitFor(waitMs, signal);
-  }
-  lastRequestAt.current = Date.now();
-
-  const params = new URLSearchParams({
-    format: "jsonv2",
-    addressdetails: "1",
-    limit: String(limit),
-    q: query,
-    email: NOMINATIM_EMAIL,
-  });
-  params.set("accept-language", language);
-
-  const response = await fetch(`${NOMINATIM_ENDPOINT}?${params.toString()}`, { signal });
-  if (!response.ok) {
-    throw new Error(`Nominatim error: ${response.status}`);
-  }
-  return (await response.json()) as NominatimResult[];
-}
-
-function Card({ title, subtitle, text, tags, element, tone, variant, degree, orb }: CardProps) {
-  const classes = [
-    "card",
-    element ? `card--${element}` : "",
-    tone ? `card--tone-${tone}` : "",
-    variant ? `card--${variant}` : "",
-  ].filter(Boolean).join(" ");
-
-  const hasBadge = (degree != null) || (orb != null);
-
-  return (
-    <article className={classes}>
-      {hasBadge ? (
-        <div className="card__header">
-          <h3 className="card__title">{title}</h3>
-          {degree != null && (
-            <span className="card__degree-badge">{degree.toFixed(1)}&deg;</span>
-          )}
-          {orb != null && (
-            <span className="card__orb-badge">{orb.toFixed(1)}&deg; orb</span>
-          )}
-        </div>
-      ) : (
-        <h3 className="card__title">{title}</h3>
-      )}
-      {subtitle && <p className="card__subtitle">{subtitle}</p>}
-      <p className="card__text">{text}</p>
-      <div className="card__tags">
-        {tags.map((tag) => (
-          <span key={tag} className="tag">
-            {tag}
-          </span>
-        ))}
-      </div>
-    </article>
+    },
+    [currentIndex, geo]
   );
+
+  return { activeIndex: currentIndex, onKeyDown };
 }
 
-function PlacementsSummary({ placements }: { placements: PlacementSummary[] }) {
-  if (placements.length === 0) return null;
-  return (
-    <div className="placements-strip">
-      {placements.map((p) => (
-        <span key={p.planet} className={`placements-strip__item placements-strip__item--${p.element}`}>
-          {p.planetSymbol} {p.signSymbol}
-          {p.degree != null && (
-            <span className="placements-strip__degree">{p.degree.toFixed(1)}&deg;</span>
-          )}
-        </span>
-      ))}
-    </div>
-  );
+function toDaylightSavingValue(ds: boolean | "auto"): string {
+  return ds === "auto" ? "auto" : ds ? "true" : "false";
 }
 
-interface SectionProps {
-  icon: string;
-  title: string;
-  badge?: string;
-  badgeAccent?: boolean;
-  children: React.ReactNode;
-}
-
-function Section({ icon, title, badge, badgeAccent, children }: SectionProps) {
-  return (
-    <section className="section">
-      <div className="section__header">
-        <span className="section__icon">{icon}</span>
-        <h2 className="section__title">{title}</h2>
-        {badge && (
-          <span className={`section__badge ${badgeAccent ? "section__badge--accent" : ""}`}>
-            {badge}
-          </span>
-        )}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function LoadingState({ label }: { label: string }) {
-  return (
-    <div className="loading-state" role="status" aria-live="polite" aria-busy="true">
-      <div className="spinner" aria-hidden="true" />
-      <p className="loading-text">{label}</p>
-    </div>
-  );
+function parseDaylightSavingValue(value: string): boolean | "auto" {
+  return value === "auto" ? "auto" : value === "true";
 }
 
 function App() {
   const { mode, setMode, content } = useContentMode();
   const isCarioca = mode === "carioca";
   const [analysisMode, setAnalysisMode] = useState<AnalysisMode>("single");
-  const [input, setInput] = useState<ChartInput>({
-    date: "1990-01-01",
-    time: "12:00",
-    city: "Rio de Janeiro",
-    country: "BR",
-    daylight_saving: "auto",
-  });
-  const [inputB, setInputB] = useState<ChartInput>({
-    date: "1990-01-01",
-    time: "12:00",
-    city: "New York",
-    country: "US",
-    daylight_saving: "auto",
-  });
-  const [locationInput, setLocationInput] = useState(
-    `${input.city}, ${input.country}`
-  );
-  const [locationInputB, setLocationInputB] = useState(
-    `${inputB.city}, ${inputB.country}`
-  );
-  const [suggestions, setSuggestions] = useState<GeoSuggestion[]>([]);
-  const [suggestionsB, setSuggestionsB] = useState<GeoSuggestion[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [isSearchingB, setIsSearchingB] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
-  const [searchErrorB, setSearchErrorB] = useState<string | null>(null);
-  const [selectedLocationLabel, setSelectedLocationLabel] = useState<string | null>(null);
-  const [selectedLocationLabelB, setSelectedLocationLabelB] = useState<string | null>(null);
-  const searchCache = useRef<Map<string, CacheEntry>>(loadCacheFromStorage());
-  const lastRequestAt = useRef(0);
+
+  // Person A state
+  const [dateA, setDateA] = useState("1990-01-01");
+  const [timeA, setTimeA] = useState("12:00");
+  const [daylightSavingA, setDaylightSavingA] = useState<boolean | "auto">("auto");
+  const geoA = useGeoSearch("Rio de Janeiro, BR", isCarioca);
+
+  // Person B state
+  const [dateB, setDateB] = useState("1990-01-01");
+  const [timeB, setTimeB] = useState("12:00");
+  const [daylightSavingB, setDaylightSavingB] = useState<boolean | "auto">("auto");
+  const geoB = useGeoSearch("New York, US", isCarioca, analysisMode === "compatibility");
+
+  // Keyboard nav for suggestion lists
+  const kbA = useSuggestionKeyboard(geoA);
+  const kbB = useSuggestionKeyboard(geoB);
+
+  // Chart state
   const [chart, setChart] = useState<ChartResult | null>(null);
   const [chartB, setChartB] = useState<ChartResult | null>(null);
   const [cards, setCards] = useState<CardModel[]>([]);
@@ -470,7 +147,14 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Recalculate cards and placements when mode changes (if chart exists)
+  // Clear stale state when switching analysis mode
+  useEffect(() => {
+    if (analysisMode === "single") {
+      setChartB(null);
+    }
+  }, [analysisMode]);
+
+  // Recalculate cards and placements when mode changes
   useEffect(() => {
     if (chart) {
       setCards(buildCards(content, chart, mode));
@@ -478,152 +162,6 @@ function App() {
     }
   }, [mode, content, chart]);
 
-  useEffect(() => {
-    const parsed = parseLocationInput(locationInput);
-    setInput((prev) => ({
-      ...prev,
-      city: parsed.city,
-      country: parsed.country,
-      location: selectedLocationLabel === locationInput ? prev.location : undefined,
-    }));
-    if (selectedLocationLabel && selectedLocationLabel !== locationInput) {
-      setSelectedLocationLabel(null);
-    }
-  }, [locationInput, selectedLocationLabel]);
-
-  useEffect(() => {
-    const parsed = parseLocationInput(locationInputB);
-    setInputB((prev) => ({
-      ...prev,
-      city: parsed.city,
-      country: parsed.country,
-      location: selectedLocationLabelB === locationInputB ? prev.location : undefined,
-    }));
-    if (selectedLocationLabelB && selectedLocationLabelB !== locationInputB) {
-      setSelectedLocationLabelB(null);
-    }
-  }, [locationInputB, selectedLocationLabelB]);
-
-  useEffect(() => {
-    const query = locationInput.trim();
-    const normalized = normalizeQuery(query);
-    const language = getSearchLanguage(isCarioca);
-    const cacheKey = buildCacheKey(normalized, language);
-
-    if (selectedLocationLabel && locationInput === selectedLocationLabel) {
-      setSuggestions([]);
-      setSearchError(null);
-      setIsSearching(false);
-      return;
-    }
-
-    if (normalized.length < SEARCH_MIN_CHARS) {
-      setSuggestions([]);
-      setSearchError(null);
-      setIsSearching(false);
-      return;
-    }
-
-    const cached = getCachedResults(cacheKey, searchCache.current);
-    if (cached !== null) {
-      setSuggestions(cached);
-      setSearchError(null);
-      setIsSearching(false);
-      return;
-    }
-
-    const controller = new AbortController();
-    const timeout = setTimeout(async () => {
-      setSearchError(null);
-      setIsSearching(true);
-      try {
-        const data = await fetchNominatim(query, 6, lastRequestAt, language, controller.signal);
-        const results = toUniqueSuggestions(data);
-        setCachedResults(cacheKey, results, searchCache.current);
-        setSuggestions(results);
-      } catch (err) {
-        if (err instanceof Error && err.name === "AbortError") return;
-        setSuggestions([]);
-        setSearchError(
-          isCarioca ? "Nao deu pra buscar cidade agora, mermão. Tenta de novo ja ja." : "Could not search cities right now."
-        );
-      } finally {
-        if (!controller.signal.aborted) {
-          setIsSearching(false);
-        }
-      }
-    }, SEARCH_DEBOUNCE_MS);
-
-    return () => {
-      controller.abort();
-      clearTimeout(timeout);
-    };
-  }, [isCarioca, locationInput, selectedLocationLabel]);
-
-  useEffect(() => {
-    if (analysisMode !== "compatibility") {
-      setSuggestionsB([]);
-      setSearchErrorB(null);
-      setIsSearchingB(false);
-      return;
-    }
-
-    const query = locationInputB.trim();
-    const normalized = normalizeQuery(query);
-    const language = getSearchLanguage(isCarioca);
-    const cacheKey = buildCacheKey(normalized, language);
-
-    if (selectedLocationLabelB && locationInputB === selectedLocationLabelB) {
-      setSuggestionsB([]);
-      setSearchErrorB(null);
-      setIsSearchingB(false);
-      return;
-    }
-
-    if (normalized.length < SEARCH_MIN_CHARS) {
-      setSuggestionsB([]);
-      setSearchErrorB(null);
-      setIsSearchingB(false);
-      return;
-    }
-
-    const cached = getCachedResults(cacheKey, searchCache.current);
-    if (cached !== null) {
-      setSuggestionsB(cached);
-      setSearchErrorB(null);
-      setIsSearchingB(false);
-      return;
-    }
-
-    const controller = new AbortController();
-    const timeout = setTimeout(async () => {
-      setSearchErrorB(null);
-      setIsSearchingB(true);
-      try {
-        const data = await fetchNominatim(query, 6, lastRequestAt, language, controller.signal);
-        const results = toUniqueSuggestions(data);
-        setCachedResults(cacheKey, results, searchCache.current);
-        setSuggestionsB(results);
-      } catch (err) {
-        if (err instanceof Error && err.name === "AbortError") return;
-        setSuggestionsB([]);
-        setSearchErrorB(
-          isCarioca ? "Nao deu pra buscar cidade agora, mermão. Tenta de novo ja ja." : "Could not search cities right now."
-        );
-      } finally {
-        if (!controller.signal.aborted) {
-          setIsSearchingB(false);
-        }
-      }
-    }, SEARCH_DEBOUNCE_MS);
-
-    return () => {
-      controller.abort();
-      clearTimeout(timeout);
-    };
-  }, [analysisMode, isCarioca, locationInputB, selectedLocationLabelB]);
-
-  // Separate cards into hero / planet / aspect sections
   const { heroCards, planetCards, aspectCards } = useMemo(() => {
     const HERO_PLANETS = new Set(["Sun", "Moon"]);
     const hero: CardModel[] = [];
@@ -643,30 +181,26 @@ function App() {
     return { heroCards: hero, planetCards: planets, aspectCards: aspects };
   }, [cards]);
 
-  // Format chart meta info
   const chartLocale = isCarioca ? "pt-BR" : "en-US";
 
-  const chartMeta = useMemo(() => {
-    if (!chart?.input) return null;
-    const { city, date, time } = chart.input;
-    const formattedDate = new Date(`${date}T${time}`).toLocaleDateString(chartLocale, {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
-    return { location: city, datetime: `${formattedDate}, ${time}` };
-  }, [chart, chartLocale]);
+  const formatChartMeta = useCallback(
+    (c: ChartResult) => {
+      const { city, date, time: t } = c.input;
+      const [year, month, day] = date.split("-").map(Number);
+      const localDate = new Date(Date.UTC(year, month - 1, day));
+      const formattedDate = localDate.toLocaleDateString(chartLocale, {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        timeZone: "UTC",
+      });
+      return { location: city, datetime: `${formattedDate}, ${t}` };
+    },
+    [chartLocale]
+  );
 
-  const chartMetaB = useMemo(() => {
-    if (!chartB?.input) return null;
-    const { city, date, time } = chartB.input;
-    const formattedDate = new Date(`${date}T${time}`).toLocaleDateString(chartLocale, {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
-    return { location: city, datetime: `${formattedDate}, ${time}` };
-  }, [chartB, chartLocale]);
+  const chartMeta = useMemo(() => (chart ? formatChartMeta(chart) : null), [chart, formatChartMeta]);
+  const chartMetaB = useMemo(() => (chartB ? formatChartMeta(chartB) : null), [chartB, formatChartMeta]);
 
   const placementsB = useMemo(() => {
     if (!chartB) return [];
@@ -691,105 +225,45 @@ function App() {
     }));
   }, [comparison]);
 
-  const daylightSavingValue =
-    input.daylight_saving === "auto"
-      ? "auto"
-      : input.daylight_saving
-      ? "true"
-      : "false";
-
-  const daylightSavingValueB =
-    inputB.daylight_saving === "auto"
-      ? "auto"
-      : inputB.daylight_saving
-      ? "true"
-      : "false";
-
-  const showSuggestions = suggestions.length > 0;
-  const showNoResults =
-    !isSearching &&
-    !searchError &&
-    suggestions.length === 0 &&
-    normalizeQuery(locationInput).length >= SEARCH_MIN_CHARS &&
-    locationInput !== selectedLocationLabel;
-  const showSuggestionsB = suggestionsB.length > 0;
-  const showNoResultsB =
-    !isSearchingB &&
-    !searchErrorB &&
-    suggestionsB.length === 0 &&
-    normalizeQuery(locationInputB).length >= SEARCH_MIN_CHARS &&
-    locationInputB !== selectedLocationLabelB;
-
-  function handleSelectSuggestion(suggestion: GeoSuggestion) {
-    setSelectedLocationLabel(suggestion.label);
-    setLocationInput(suggestion.label);
-    setSuggestions([]);
-    setSearchError(null);
-    setInput((prev) => ({
-      ...prev,
-      city: suggestion.city,
-      country: suggestion.country,
-      location: {
-        lat: suggestion.lat,
-        lon: suggestion.lon,
-        timezone: suggestion.timezone,
-      },
-    }));
-  }
-
-  function handleSelectSuggestionB(suggestion: GeoSuggestion) {
-    setSelectedLocationLabelB(suggestion.label);
-    setLocationInputB(suggestion.label);
-    setSuggestionsB([]);
-    setSearchErrorB(null);
-    setInputB((prev) => ({
-      ...prev,
-      city: suggestion.city,
-      country: suggestion.country,
-      location: {
-        lat: suggestion.lat,
-        lon: suggestion.lon,
-        timezone: suggestion.timezone,
-      },
-    }));
-  }
-
-  async function resolveLocationCandidates(query: string, limit = 6): Promise<GeoSuggestion[] | null> {
-    const normalized = normalizeQuery(query);
-    const language = getSearchLanguage(isCarioca);
-    const cacheKey = buildCacheKey(normalized, language);
-    const cached = getCachedResults(cacheKey, searchCache.current);
-    if (cached && cached.length > 0) {
-      return cached.slice(0, limit);
-    }
-
-    try {
-      const data = await fetchNominatim(query, limit, lastRequestAt, language);
-      const results = toUniqueSuggestions(data);
-      if (results.length > 0) {
-        setCachedResults(cacheKey, results, searchCache.current);
-      }
-      return results;
-    } catch {
-      return null;
-    }
+  function buildChartInput(
+    date: string,
+    time: string,
+    daylightSaving: boolean | "auto",
+    geo: { city: string; country: string; location: { lat: number; lon: number; timezone: string } | undefined }
+  ): ChartInput {
+    return {
+      date,
+      time,
+      city: geo.city,
+      country: geo.country,
+      location: geo.location,
+      daylight_saving: daylightSaving,
+    };
   }
 
   async function ensureResolvedInput(
-    currentInput: ChartInput,
-    currentLocationInput: string,
-    options?: {
-      personLabel?: string;
-      onResolved?: (suggestion: GeoSuggestion, resolvedInput: ChartInput) => void;
-      onAmbiguous?: (candidates: GeoSuggestion[]) => void;
-    }
+    date: string,
+    time: string,
+    daylightSaving: boolean | "auto",
+    geo: {
+      city: string;
+      country: string;
+      location: { lat: number; lon: number; timezone: string } | undefined;
+      locationInput: string;
+      applyResolved: (s: GeoSuggestion) => void;
+      setSuggestions: (s: GeoSuggestion[]) => void;
+      setSearchError: (e: string | null) => void;
+    },
+    personLabel?: string
   ): Promise<ChartInput | null> {
     const withPrefix = (message: string) =>
-      options?.personLabel ? `${options.personLabel}: ${message}` : message;
+      personLabel ? `${personLabel}: ${message}` : message;
 
-    let nextInput = currentInput;
-    if (!currentInput.location) {
-      if (normalizeQuery(currentLocationInput).length < SEARCH_MIN_CHARS) {
+    let chartInput = buildChartInput(date, time, daylightSaving, geo);
+
+    if (!geo.location) {
+      const normalized = geo.locationInput.trim().toLowerCase().replace(/\s+/g, " ");
+      if (normalized.length < 3) {
         setError(
           withPrefix(
             isCarioca
@@ -799,7 +273,7 @@ function App() {
         );
         return null;
       }
-      const candidates = await resolveLocationCandidates(currentLocationInput, 6);
+      const candidates = await resolveLocationCandidates(geo.locationInput, isCarioca, 6);
       if (candidates === null) {
         setError(
           withPrefix(
@@ -821,7 +295,8 @@ function App() {
         return null;
       }
       if (candidates.length > 1) {
-        options?.onAmbiguous?.(candidates);
+        geo.setSuggestions(candidates);
+        geo.setSearchError(null);
         setError(
           withPrefix(
             isCarioca
@@ -832,47 +307,36 @@ function App() {
         return null;
       }
       const fallback = candidates[0];
-      nextInput = {
-        ...currentInput,
+      geo.applyResolved(fallback);
+      chartInput = {
+        ...chartInput,
         city: fallback.city,
         country: fallback.country,
-        location: {
-          lat: fallback.lat,
-          lon: fallback.lon,
-          timezone: fallback.timezone,
-        },
+        location: { lat: fallback.lat, lon: fallback.lon, timezone: fallback.timezone },
       };
-      options?.onResolved?.(fallback, nextInput);
     }
 
-    const validation = validateChartInput(nextInput);
+    const validation = validateChartInput(chartInput);
     if (!validation.valid) {
       setError(withPrefix(formatValidationMessages(validation.errors, isCarioca).join(". ")));
       return null;
     }
-    return nextInput;
+    return chartInput;
   }
 
   async function handleGenerateChart(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
-
     setLoading(true);
+
     try {
-      const inputA = await ensureResolvedInput(input, locationInput, {
-        personLabel: analysisMode === "compatibility" ? (isCarioca ? "Pessoa A" : "Person A") : undefined,
-        onResolved: (fallback, resolvedInput) => {
-          setSelectedLocationLabel(fallback.label);
-          setLocationInput(fallback.label);
-          setSuggestions([]);
-          setSearchError(null);
-          setInput(resolvedInput);
-        },
-        onAmbiguous: (candidates) => {
-          setSuggestions(candidates);
-          setSearchError(null);
-        },
-      });
+      const inputA = await ensureResolvedInput(
+        dateA,
+        timeA,
+        daylightSavingA,
+        geoA,
+        analysisMode === "compatibility" ? (isCarioca ? "Pessoa A" : "Person A") : undefined
+      );
       if (!inputA) return;
 
       if (analysisMode === "single") {
@@ -884,20 +348,13 @@ function App() {
         return;
       }
 
-      const inputResolvedB = await ensureResolvedInput(inputB, locationInputB, {
-        personLabel: isCarioca ? "Pessoa B" : "Person B",
-        onResolved: (fallback, resolvedInput) => {
-          setSelectedLocationLabelB(fallback.label);
-          setLocationInputB(fallback.label);
-          setSuggestionsB([]);
-          setSearchErrorB(null);
-          setInputB(resolvedInput);
-        },
-        onAmbiguous: (candidates) => {
-          setSuggestionsB(candidates);
-          setSearchErrorB(null);
-        },
-      });
+      const inputResolvedB = await ensureResolvedInput(
+        dateB,
+        timeB,
+        daylightSavingB,
+        geoB,
+        isCarioca ? "Pessoa B" : "Person B"
+      );
       if (!inputResolvedB) return;
 
       const personALabel = isCarioca ? "Pessoa A" : "Person A";
@@ -907,19 +364,24 @@ function App() {
         generateChart(inputResolvedB),
       ]);
 
+      const errors: string[] = [];
       if (resultA.status === "rejected") {
-        setError(`${personALabel}: ${formatRuntimeError(resultA.reason, isCarioca)}`);
-        return;
+        errors.push(`${personALabel}: ${formatRuntimeError(resultA.reason, isCarioca)}`);
       }
       if (resultB.status === "rejected") {
-        setError(`${personBLabel}: ${formatRuntimeError(resultB.reason, isCarioca)}`);
+        errors.push(`${personBLabel}: ${formatRuntimeError(resultB.reason, isCarioca)}`);
+      }
+      if (errors.length > 0) {
+        setError(errors.join(" "));
         return;
       }
 
-      setChart(resultA.value);
-      setChartB(resultB.value);
-      setCards(buildCards(content, resultA.value, mode));
-      setPlacements(buildPlacementsSummary(resultA.value));
+      const chartAValue = (resultA as PromiseFulfilledResult<ChartResult>).value;
+      const chartBValue = (resultB as PromiseFulfilledResult<ChartResult>).value;
+      setChart(chartAValue);
+      setChartB(chartBValue);
+      setCards(buildCards(content, chartAValue, mode));
+      setPlacements(buildPlacementsSummary(chartAValue));
     } catch (err) {
       setError(formatRuntimeError(err, isCarioca));
     } finally {
@@ -927,12 +389,7 @@ function App() {
     }
   }
 
-  const t = {
-    modeLabel: isCarioca ? "Carioca raiz, porra" : "English",
-    singleMode: isCarioca ? "Mapa solo bolado" : "Single chart",
-    compatibilityMode: isCarioca ? "Sinastria braba" : "Compatibility",
-    personA: isCarioca ? "Pessoa A (tu)" : "Person A",
-    personB: isCarioca ? "Pessoa B (o outro)" : "Person B",
+  const formLabels = {
     date: isCarioca ? "Data" : "Date",
     time: isCarioca ? "Hora" : "Time",
     cityAndCountry: isCarioca ? "Cidade e pais, sem caozada" : "City & country",
@@ -945,6 +402,14 @@ function App() {
     daylightSaving: isCarioca ? "Horario de verao" : "Daylight saving",
     yes: isCarioca ? "Sim, porra" : "Yes",
     no: isCarioca ? "Nao, porra" : "No",
+  };
+
+  const t = {
+    modeLabel: isCarioca ? "Carioca raiz, porra" : "English",
+    singleMode: isCarioca ? "Mapa solo bolado" : "Single chart",
+    compatibilityMode: isCarioca ? "Sinastria braba" : "Compatibility",
+    personA: isCarioca ? "Pessoa A (tu)" : "Person A",
+    personB: isCarioca ? "Pessoa B (o outro)" : "Person B",
     generating: isCarioca ? "Gerando essa porra..." : "Generating...",
     generateNew: isCarioca ? "Gerar outro mapa, caralho" : "New chart",
     generate: isCarioca ? "Gerar mapa, porra" : "Generate chart",
@@ -1023,242 +488,59 @@ function App() {
                 </button>
               </div>
 
-              <div className={`form__person ${analysisMode === "compatibility" ? "form__person--framed" : ""}`}>
-                {analysisMode === "compatibility" && <h3 className="form__person-title">{t.personA}</h3>}
-                <div className="form__row">
-                  <label className="form__label">
-                    {t.date}
-                    <input
-                      type="date"
-                      name="birth-date"
-                      autoComplete="bday"
-                      value={input.date}
-                      onChange={(event) =>
-                        setInput((prev) => ({ ...prev, date: event.target.value }))
-                      }
-                      required
-                    />
-                  </label>
-                  <label className="form__label">
-                    {t.time}
-                    <input
-                      type="time"
-                      name="birth-time"
-                      autoComplete="off"
-                      value={input.time}
-                      onChange={(event) =>
-                        setInput((prev) => ({ ...prev, time: event.target.value }))
-                      }
-                      required
-                    />
-                  </label>
-                </div>
-                <div className="form__row">
-                  <label className="form__label">
-                    {t.cityAndCountry}
-                    <div className="city-search">
-                      <input
-                        type="text"
-                        name="birth-location"
-                        value={locationInput}
-                        onChange={(event) => setLocationInput(event.target.value)}
-                        required
-                        aria-describedby="city-hint-a"
-                        aria-autocomplete="list"
-                        aria-controls="city-suggestions-a"
-                        aria-expanded={showSuggestions}
-                        autoComplete="off"
-                        inputMode="search"
-                        placeholder={t.searchPlaceholder}
-                      />
-                      <div className="city-search__status-area" role="status" aria-live="polite">
-                        {isSearching && (
-                          <span className="city-search__status">{t.searching}</span>
-                        )}
-                        {searchError && (
-                          <span className="city-search__status city-search__status--error">
-                            {searchError}
-                          </span>
-                        )}
-                        {showNoResults && (
-                          <span className="city-search__status">{t.noResults}</span>
-                        )}
-                      </div>
-                      {showSuggestions && (
-                        <ul className="city-search__list" role="listbox" id="city-suggestions-a">
-                          {suggestions.map((suggestion) => (
-                            <li key={suggestion.id} className="city-search__item">
-                              <button
-                                type="button"
-                                className="city-search__option"
-                                onClick={() => handleSelectSuggestion(suggestion)}
-                              >
-                                <span className="city-search__option-label">
-                                  {suggestion.label}
-                                </span>
-                                <span className="city-search__option-meta">
-                                  {suggestion.timezone}
-                                </span>
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  </label>
-                </div>
-                <p id="city-hint-a" className="form__hint">
-                  {t.cityHint}
-                </p>
-                <div className="form__row">
-                  <label className="form__label">
-                    {t.daylightSaving}
-                    <select
-                      name="daylight-saving"
-                      value={daylightSavingValue}
-                      onChange={(event) => {
-                        const value = event.target.value;
-                        const nextValue =
-                          value === "auto" ? "auto" : value === "true";
-                        setInput((prev) => ({
-                          ...prev,
-                          daylight_saving: nextValue,
-                        }));
-                      }}
-                    >
-                      <option value="auto">Auto</option>
-                      <option value="true">{t.yes}</option>
-                      <option value="false">{t.no}</option>
-                    </select>
-                  </label>
-                  {analysisMode === "single" && (
-                    <button type="submit" className="btn-primary" disabled={loading}>
-                      {loading ? t.generating : chart ? t.generateNew : t.generate}
-                    </button>
-                  )}
-                </div>
-              </div>
+              <PersonForm
+                title={analysisMode === "compatibility" ? t.personA : undefined}
+                framed={analysisMode === "compatibility"}
+                date={dateA}
+                time={timeA}
+                daylightSavingValue={toDaylightSavingValue(daylightSavingA)}
+                onDateChange={setDateA}
+                onTimeChange={setTimeA}
+                onDaylightSavingChange={(v) => setDaylightSavingA(parseDaylightSavingValue(v))}
+                geo={geoA}
+                labels={formLabels}
+                hintId="city-hint-a"
+                suggestionsId="city-suggestions-a"
+                namePrefix="birth"
+                activeIndex={kbA.activeIndex}
+                onKeyDown={kbA.onKeyDown}
+              />
 
-              {analysisMode === "compatibility" && (
-                <div className="form__person form__person--framed">
-                  <h3 className="form__person-title">{t.personB}</h3>
-                  <div className="form__row">
-                    <label className="form__label">
-                      {t.date}
-                      <input
-                        type="date"
-                        name="birth-date-b"
-                        autoComplete="bday"
-                        value={inputB.date}
-                        onChange={(event) =>
-                          setInputB((prev) => ({ ...prev, date: event.target.value }))
-                        }
-                        required
-                      />
-                    </label>
-                    <label className="form__label">
-                      {t.time}
-                      <input
-                        type="time"
-                        name="birth-time-b"
-                        autoComplete="off"
-                        value={inputB.time}
-                        onChange={(event) =>
-                          setInputB((prev) => ({ ...prev, time: event.target.value }))
-                        }
-                        required
-                      />
-                    </label>
-                  </div>
-                  <div className="form__row">
-                    <label className="form__label">
-                      {t.cityAndCountry}
-                      <div className="city-search">
-                        <input
-                          type="text"
-                          name="birth-location-b"
-                          value={locationInputB}
-                          onChange={(event) => setLocationInputB(event.target.value)}
-                          required
-                          aria-describedby="city-hint-b"
-                          aria-autocomplete="list"
-                          aria-controls="city-suggestions-b"
-                          aria-expanded={showSuggestionsB}
-                          autoComplete="off"
-                          inputMode="search"
-                          placeholder={t.searchPlaceholder}
-                        />
-                        <div className="city-search__status-area" role="status" aria-live="polite">
-                          {isSearchingB && (
-                            <span className="city-search__status">{t.searching}</span>
-                          )}
-                          {searchErrorB && (
-                            <span className="city-search__status city-search__status--error">
-                              {searchErrorB}
-                            </span>
-                          )}
-                          {showNoResultsB && (
-                            <span className="city-search__status">{t.noResults}</span>
-                          )}
-                        </div>
-                        {showSuggestionsB && (
-                          <ul className="city-search__list" role="listbox" id="city-suggestions-b">
-                            {suggestionsB.map((suggestion) => (
-                              <li key={suggestion.id} className="city-search__item">
-                                <button
-                                  type="button"
-                                  className="city-search__option"
-                                  onClick={() => handleSelectSuggestionB(suggestion)}
-                                >
-                                  <span className="city-search__option-label">
-                                    {suggestion.label}
-                                  </span>
-                                  <span className="city-search__option-meta">
-                                    {suggestion.timezone}
-                                  </span>
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    </label>
-                  </div>
-                  <p id="city-hint-b" className="form__hint">
-                    {t.cityHint}
-                  </p>
-                  <div className="form__row">
-                    <label className="form__label">
-                      {t.daylightSaving}
-                      <select
-                        name="daylight-saving-b"
-                        value={daylightSavingValueB}
-                        onChange={(event) => {
-                          const value = event.target.value;
-                          const nextValue =
-                            value === "auto" ? "auto" : value === "true";
-                          setInputB((prev) => ({
-                            ...prev,
-                            daylight_saving: nextValue,
-                          }));
-                        }}
-                      >
-                        <option value="auto">Auto</option>
-                        <option value="true">{t.yes}</option>
-                        <option value="false">{t.no}</option>
-                      </select>
-                    </label>
-                  </div>
-                </div>
-              )}
-
-              {analysisMode === "compatibility" && (
+              {analysisMode === "single" && (
                 <div className="form__row form__row--actions">
                   <button type="submit" className="btn-primary" disabled={loading}>
-                    {loading ? t.generating : chart && chartB ? t.generateNew : t.generate}
+                    {loading ? t.generating : chart ? t.generateNew : t.generate}
                   </button>
                 </div>
               )}
+
+              {analysisMode === "compatibility" && (
+                <>
+                  <PersonForm
+                    title={t.personB}
+                    framed
+                    date={dateB}
+                    time={timeB}
+                    daylightSavingValue={toDaylightSavingValue(daylightSavingB)}
+                    onDateChange={setDateB}
+                    onTimeChange={setTimeB}
+                    onDaylightSavingChange={(v) => setDaylightSavingB(parseDaylightSavingValue(v))}
+                    geo={geoB}
+                    labels={formLabels}
+                    hintId="city-hint-b"
+                    suggestionsId="city-suggestions-b"
+                    namePrefix="birth-b"
+                    activeIndex={kbB.activeIndex}
+                    onKeyDown={kbB.onKeyDown}
+                  />
+                  <div className="form__row form__row--actions">
+                    <button type="submit" className="btn-primary" disabled={loading}>
+                      {loading ? t.generating : chart && chartB ? t.generateNew : t.generate}
+                    </button>
+                  </div>
+                </>
+              )}
+
               {error && (
                 <p className="form__error" role="alert">
                   {t.error}: {error}
@@ -1279,7 +561,7 @@ function App() {
                   {chart.normalized.location.lon}
                 </p>
                 <p>
-                  {t.dstLabel}: {chart.normalized.daylightSaving ? t.yes : t.no}
+                  {t.dstLabel}: {chart.normalized.daylightSaving ? formLabels.yes : formLabels.no}
                 </p>
               </div>
             </Section>
@@ -1294,7 +576,7 @@ function App() {
                   <p>{chartMeta?.datetime}</p>
                   <p>Timezone: {chart.normalized.timezone}</p>
                   <p>UTC: {chart.normalized.utcDateTime}</p>
-                  <p>{t.dstLabel}: {chart.normalized.daylightSaving ? t.yes : t.no}</p>
+                  <p>{t.dstLabel}: {chart.normalized.daylightSaving ? formLabels.yes : formLabels.no}</p>
                 </div>
                 <div className="normalized__card">
                   <h3 className="normalized__title">{t.personB}</h3>
@@ -1302,7 +584,7 @@ function App() {
                   <p>{chartMetaB?.datetime}</p>
                   <p>Timezone: {chartB.normalized.timezone}</p>
                   <p>UTC: {chartB.normalized.utcDateTime}</p>
-                  <p>{t.dstLabel}: {chartB.normalized.daylightSaving ? t.yes : t.no}</p>
+                  <p>{t.dstLabel}: {chartB.normalized.daylightSaving ? formLabels.yes : formLabels.no}</p>
                 </div>
               </div>
               <div className="comparison-placements">

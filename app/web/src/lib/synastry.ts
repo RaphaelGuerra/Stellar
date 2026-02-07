@@ -1,51 +1,23 @@
+import {
+  ASPECT_DEFS,
+  ASPECT_SYMBOL,
+  PLANETS,
+  PLANET_SYMBOL,
+  SIGN_INDEX,
+  normalizeAngle,
+} from "./constants";
 import type {
   AspectName,
+  AspectTone,
   ChartComparison,
   ChartResult,
   ComparisonAspect,
   ComparisonHighlight,
   PlanetName,
-  ZodiacSign,
 } from "./types";
 
 export type SynastryLocale = "pt" | "en";
 type LifeArea = "love" | "family" | "work" | "friends" | "money" | "communication";
-
-const PLANETS: PlanetName[] = [
-  "Sun",
-  "Moon",
-  "Mercury",
-  "Venus",
-  "Mars",
-  "Jupiter",
-  "Saturn",
-  "Uranus",
-  "Neptune",
-  "Pluto",
-];
-
-const SIGN_INDEX: Record<ZodiacSign, number> = {
-  Aries: 0,
-  Taurus: 1,
-  Gemini: 2,
-  Cancer: 3,
-  Leo: 4,
-  Virgo: 5,
-  Libra: 6,
-  Scorpio: 7,
-  Sagittarius: 8,
-  Capricorn: 9,
-  Aquarius: 10,
-  Pisces: 11,
-};
-
-const ASPECT_DEFS: Array<{ type: AspectName; angle: number; orb: number }> = [
-  { type: "Conjunction", angle: 0, orb: 8 },
-  { type: "Opposition", angle: 180, orb: 8 },
-  { type: "Square", angle: 90, orb: 6 },
-  { type: "Trine", angle: 120, orb: 6 },
-  { type: "Sextile", angle: 60, orb: 4 },
-];
 
 const ASPECT_LABELS: Record<SynastryLocale, Record<AspectName, string>> = {
   en: {
@@ -74,25 +46,6 @@ const LIFE_AREA_LABELS: Record<SynastryLocale, Record<LifeArea, string>> = {
     friends: "Friends",
     money: "Money",
     communication: "Communication",
-  },
-  pt: {
-    love: "amor",
-    family: "familia",
-    work: "trampo",
-    friends: "amizades",
-    money: "grana",
-    communication: "papo",
-  },
-};
-
-const LIFE_AREA_TAGS: Record<SynastryLocale, Record<LifeArea, string>> = {
-  en: {
-    love: "love",
-    family: "family",
-    work: "work",
-    friends: "friends",
-    money: "money",
-    communication: "communication",
   },
   pt: {
     love: "amor",
@@ -177,8 +130,98 @@ const ASPECT_CLARITY: Record<
   },
 };
 
-function normalizeAngle(angle: number): number {
-  return ((angle % 360) + 360) % 360;
+function getAspectTone(type: AspectName): AspectTone {
+  switch (type) {
+    case "Trine":
+    case "Sextile":
+      return "harmonious";
+    case "Square":
+    case "Opposition":
+      return "challenging";
+    case "Conjunction":
+      return "intense";
+  }
+}
+
+
+const SYNASTRY_TITLES: Record<
+  SynastryLocale,
+  Record<LifeArea, Record<AspectTone, string[]>>
+> = {
+  en: {
+    love: {
+      harmonious: ["Love on Cruise Control", "Heart's Green Light"],
+      challenging: ["Love Under Fire", "Heart's Boot Camp"],
+      intense: ["Love at Full Volume", "Heart Lockdown"],
+    },
+    family: {
+      harmonious: ["Home Sweet Match", "Roots in Sync"],
+      challenging: ["Holiday Dinner Energy", "Family Tug of War"],
+      intense: ["Blood Bond", "Deep Roots"],
+    },
+    work: {
+      harmonious: ["Dream Team Energy", "The Easy Hustle"],
+      challenging: ["Office Friction", "The Ambition Clash"],
+      intense: ["Power Merger", "Workaholic Chemistry"],
+    },
+    friends: {
+      harmonious: ["Best Friend Material", "Squad Goals"],
+      challenging: ["Frenemies Potential", "Friends Who Push"],
+      intense: ["Ride or Die Energy", "Instant Connection"],
+    },
+    money: {
+      harmonious: ["Financial Sync", "The Golden Match"],
+      challenging: ["Budget Wars", "The Resource Tug"],
+      intense: ["High Stakes Bond", "All-In Investment"],
+    },
+    communication: {
+      harmonious: ["Same Wavelength", "The Easy Chat"],
+      challenging: ["Lost in Translation", "The Debate Club"],
+      intense: ["Mind Meld", "Words Hit Different"],
+    },
+  },
+  pt: {
+    love: {
+      harmonious: ["Amor no Sapatinho", "Coracao no Modo Facil"],
+      challenging: ["Amor que Da Trabalho", "Coracao na Porrada"],
+      intense: ["Amor Bomba Atomica", "Pegacao Cosmica"],
+    },
+    family: {
+      harmonious: ["Lar Doce Match", "Raiz Alinhada"],
+      challenging: ["Ceia de Natal Astral", "Familia na Treta"],
+      intense: ["Laco de Sangue", "DNA Cosmico"],
+    },
+    work: {
+      harmonious: ["Trampo que Flui", "Dupla de Ouro"],
+      challenging: ["Escritorio em Chamas", "Ambicao vs Ambicao"],
+      intense: ["Fusao de Potencia", "Parceria Atomica"],
+    },
+    friends: {
+      harmonious: ["Amizade no Sapatinho", "Sintonia de Cria"],
+      challenging: ["Quase Inimigo, Quase Irmao", "Cria que Cutuca"],
+      intense: ["Parceiro de Trincheira", "Cola Cosmica"],
+    },
+    money: {
+      harmonious: ["Grana no Flow", "Bolso em Sintonia"],
+      challenging: ["Guerra de Bolso", "Grana na Treta"],
+      intense: ["Aposta Alta", "Grana Tudo ou Nada"],
+    },
+    communication: {
+      harmonious: ["Mesma Frequencia", "Papo que Flui"],
+      challenging: ["Papo Desencontrado", "Dialogo de Surdo"],
+      intense: ["Telepatia Bruta", "Papo que Arrepia"],
+    },
+  },
+};
+
+function pickSynastryTitle(
+  area: LifeArea,
+  tone: AspectTone,
+  index: number,
+  locale: SynastryLocale
+): string {
+  const options = SYNASTRY_TITLES[locale][area][tone];
+  return options[index % options.length];
 }
 
 function getPlanetLongitude(chart: ChartResult, planet: PlanetName): number {
@@ -235,25 +278,29 @@ function makeHighlight(
   const rankedAreas = rankLifeAreas(aspect);
   const primaryArea = rankedAreas[0] ?? "love";
   const secondaryArea = rankedAreas[1] ?? "family";
-  const areaPairLabel =
-    locale === "en"
-      ? `${LIFE_AREA_LABELS[locale][primaryArea]} + ${LIFE_AREA_LABELS[locale][secondaryArea]}`
-      : `${LIFE_AREA_LABELS[locale][primaryArea]} + ${LIFE_AREA_LABELS[locale][secondaryArea]}`;
+  const tone = getAspectTone(aspect.type);
   const label = ASPECT_LABELS[locale][aspect.type];
   const clarity = ASPECT_CLARITY[locale][aspect.type];
+  const funTitle = pickSynastryTitle(primaryArea, tone, index, locale);
+  const pSymA = PLANET_SYMBOL[aspect.a.planet] ?? "";
+  const pSymB = PLANET_SYMBOL[aspect.b.planet] ?? "";
+  const aSymbol = ASPECT_SYMBOL[aspect.type] ?? "";
+  const subtitle = `${pSymA} ${aspect.a.planet} ${aSymbol} ${pSymB} ${aspect.b.planet} · ${label}`;
   return {
     key: `synastry-${index}-${aspect.a.planet}-${aspect.b.planet}-${aspect.type}`,
     kind: "synastry-aspect",
-    title: `${areaPairLabel}: ${aspect.a.planet} ${label} ${aspect.b.planet}`,
+    title: funTitle,
+    subtitle,
     text: buildHighlightText(aspect, [primaryArea, secondaryArea], locale),
     tags: dedupeTags([
-      LIFE_AREA_TAGS[locale][primaryArea],
-      LIFE_AREA_TAGS[locale][secondaryArea],
+      LIFE_AREA_LABELS[locale][primaryArea].toLowerCase(),
+      LIFE_AREA_LABELS[locale][secondaryArea].toLowerCase(),
       clarity.tag,
       label.toLowerCase(),
       aspect.a.planet.toLowerCase(),
       aspect.b.planet.toLowerCase(),
     ]),
+    tone,
     score: Math.max(0, 100 - (aspect.orb ?? 0) * 10),
     related: { aspect },
   };

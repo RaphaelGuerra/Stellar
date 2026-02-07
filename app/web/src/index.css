@@ -585,8 +585,7 @@ body {
   font-size: var(--font-size-xs);
   font-weight: 500;
   color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
 }
 
 .card__text {
@@ -1024,11 +1023,66 @@ body {
   padding: var(--space-md);
 }
 
+.card--aspect .card__title {
+  font-size: var(--font-size-base);
+  letter-spacing: 0.02em;
+}
+
 .card--aspect .card__text {
   display: -webkit-box;
   -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* ===== Card Variant: Synastry ===== */
+.card--synastry {
+  padding: var(--space-lg);
+}
+
+.card--synastry .card__title {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+}
+
+.card--synastry .card__subtitle {
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.1em;
+}
+
+.card--synastry .card__text {
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ===== Synastry Tone Modifiers ===== */
+.card--tone-harmonious::before {
+  background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.5), rgba(34, 211, 238, 0.3), transparent);
+  opacity: 1;
+}
+.card--tone-harmonious:hover {
+  border-color: rgba(16, 185, 129, 0.25);
+  box-shadow: var(--shadow-md), 0 0 30px rgba(16, 185, 129, 0.1);
+}
+
+.card--tone-challenging::before {
+  background: linear-gradient(90deg, transparent, rgba(244, 114, 182, 0.5), rgba(248, 113, 113, 0.3), transparent);
+  opacity: 1;
+}
+.card--tone-challenging:hover {
+  border-color: rgba(244, 114, 182, 0.25);
+  box-shadow: var(--shadow-md), 0 0 30px rgba(244, 114, 182, 0.1);
+}
+
+.card--tone-intense::before {
+  background: linear-gradient(90deg, transparent, rgba(251, 191, 36, 0.5), rgba(245, 158, 11, 0.3), transparent);
+  opacity: 1;
+}
+.card--tone-intense:hover {
+  border-color: rgba(251, 191, 36, 0.25);
+  box-shadow: var(--shadow-md), 0 0 30px rgba(251, 191, 36, 0.1);
 }
 
 /* ===== Card Header (title + badge row) ===== */
@@ -1077,40 +1131,26 @@ body {
 }
 
 /* ===== Grid Variants ===== */
-.cards-grid--hero {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-lg);
-}
-
-.cards-grid--planets {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-lg);
-}
-
-.cards-grid--aspects {
+.cards-grid--hero,
+.cards-grid--planets,
+.cards-grid--aspects,
+.cards-grid--synastry {
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--space-lg);
 }
 
 @media (min-width: 640px) {
-  .cards-grid--hero {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .cards-grid--planets {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .cards-grid--aspects {
+  .cards-grid--hero,
+  .cards-grid--planets,
+  .cards-grid--aspects,
+  .cards-grid--synastry {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (min-width: 900px) {
-  .cards-grid--planets {
-    grid-template-columns: repeat(3, 1fr);
-  }
+  .cards-grid--planets,
   .cards-grid--aspects {
     grid-template-columns: repeat(3, 1fr);
   }

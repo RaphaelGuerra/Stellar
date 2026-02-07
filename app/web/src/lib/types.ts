@@ -127,13 +127,17 @@ export interface ComparisonAspect {
   orb?: number;
 }
 
+export type AspectTone = "harmonious" | "challenging" | "intense";
+
 export interface ComparisonHighlight {
   // Card-friendly model for the UI; keep this stable for rendering.
   key: string;
   kind: ComparisonHighlightKind;
   title: string;
+  subtitle?: string;
   text: string;
   tags: readonly string[];
+  tone?: AspectTone;
   score?: number; // higher means more prominent
   related?: {
     aspect?: ComparisonAspect;

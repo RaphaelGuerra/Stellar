@@ -16,6 +16,19 @@ interface LocalDateTimeParts extends DateParts, TimeParts {
   second: number;
 }
 
+export type ValidationErrorCode =
+  | "DATE_REQUIRED"
+  | "DATE_FORMAT_INVALID"
+  | "DATE_INVALID"
+  | "DATE_TOO_OLD"
+  | "TIME_REQUIRED"
+  | "TIME_FORMAT_INVALID"
+  | "CITY_REQUIRED"
+  | "CITY_TOO_SHORT"
+  | "COUNTRY_TOO_SHORT"
+  | "DATE_IN_FUTURE"
+  | "TIMEZONE_INVALID";
+
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const FORMATTER_CACHE = new Map<string, Intl.DateTimeFormat>();
@@ -110,36 +123,33 @@ function compareLocalDateTime(left: LocalDateTimeParts, right: LocalDateTimePart
 
 export interface ValidationResult {
   valid: boolean;
-  errors: string[];
+  errors: ValidationErrorCode[];
 }
 
 export function validateChartInput(input: ChartInput): ValidationResult {
-  const errors: string[] = [];
+  const errors: ValidationErrorCode[] = [];
   const dateParts = parseDateParts(input.date);
   const timeParts = parseTimeParts(input.time);
   const hasValidCalendarDate = !!dateParts && isValidCalendarDate(dateParts);
 
-  // Validate date
   if (!input.date) {
-    errors.push("Data é obrigatória");
+    errors.push("DATE_REQUIRED");
   } else {
     if (!dateParts) {
-      errors.push("Formato de data inválido (esperado: YYYY-MM-DD)");
+      errors.push("DATE_FORMAT_INVALID");
     } else if (!hasValidCalendarDate) {
-      errors.push("Data inválida");
+      errors.push("DATE_INVALID");
     } else if (dateParts.year < 1900) {
-      errors.push("Data deve ser posterior a 1900");
+      errors.push("DATE_TOO_OLD");
     }
   }
 
-  // Validate time
   if (!input.time) {
-    errors.push("Hora é obrigatória");
+    errors.push("TIME_REQUIRED");
   } else if (!timeParts) {
-    errors.push("Formato de hora inválido (esperado: HH:mm)");
+    errors.push("TIME_FORMAT_INVALID");
   }
 
-  // Validate city
   const city = input.city?.trim() ?? "";
   const country = input.country?.trim() ?? "";
   const hasLocation =
@@ -150,14 +160,14 @@ export function validateChartInput(input: ChartInput): ValidationResult {
 
   if (!city || !country) {
     if (!hasLocation) {
-      errors.push("Cidade e país são obrigatórios (ex: Rio de Janeiro, BR)");
+      errors.push("CITY_REQUIRED");
     }
   }
   if (city && city.length < 2) {
-    errors.push("Nome da cidade deve ter pelo menos 2 caracteres");
+    errors.push("CITY_TOO_SHORT");
   }
   if (country && country.length < 2) {
-    errors.push("Código do país deve ter pelo menos 2 caracteres");
+    errors.push("COUNTRY_TOO_SHORT");
   }
 
   if (hasValidCalendarDate && timeParts) {
@@ -171,10 +181,10 @@ export function validateChartInput(input: ChartInput): ValidationResult {
           second: 0,
         };
         if (compareLocalDateTime(inputDateTime, now) > 0) {
-          errors.push("Data não pode ser no futuro");
+          errors.push("DATE_IN_FUTURE");
         }
       } catch {
-        errors.push("Timezone inválido para a localização informada");
+        errors.push("TIMEZONE_INVALID");
       }
     }
   }

@@ -31,7 +31,7 @@ describe("validateChartInput", () => {
       date: "2024-02-31",
     });
     expect(result.valid).toBe(false);
-    expect(result.errors).toContain("Data inválida");
+    expect(result.errors).toContain("DATE_INVALID");
   });
 
   it("accepts a local datetime that is not in the future in chart timezone", () => {
@@ -66,6 +66,6 @@ describe("validateChartInput", () => {
       },
     });
     expect(result.valid).toBe(false);
-    expect(result.errors).toContain("Data não pode ser no futuro");
+    expect(result.errors).toContain("DATE_IN_FUTURE");
   });
 });

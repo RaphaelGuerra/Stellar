@@ -1,3 +1,4 @@
+import { ASPECT_SYMBOL } from "./constants";
 import type { AspectName, PlanetName } from "./types";
 
 export type Mode = "normal" | "carioca";
@@ -51,14 +52,6 @@ const ASPECT_TONE: Record<AspectName, { normal: string; carioca: string }> = {
     normal: "opens opportunity, but requires initiative",
     carioca: "tem chance boa, mas se ficar parado perde a porra toda",
   },
-};
-
-const ASPECT_SYMBOL: Record<AspectName, string> = {
-  Conjunction: "☌",
-  Opposition: "☍",
-  Square: "□",
-  Trine: "△",
-  Sextile: "✶",
 };
 
 export function aspectSymbol(type: AspectName): string {

@@ -1,5 +1,6 @@
 import { Body, Ecliptic, GeoVector, MakeTime } from "astronomy-engine";
-import type { Aspect, AspectName, ChartInput, ChartResult, PlanetName, ZodiacSign } from "./types";
+import type { Aspect, ChartInput, ChartResult, PlanetName, ZodiacSign } from "./types";
+import { ASPECT_DEFS, PLANETS, SIGNS, normalizeAngle } from "./constants";
 import { resolveCity } from "./resolveCity";
 
 interface LocalDateTimeParts {
@@ -23,33 +24,6 @@ interface OffsetStats {
   offsets: number[];
 }
 
-const SIGNS: ZodiacSign[] = [
-  "Aries",
-  "Taurus",
-  "Gemini",
-  "Cancer",
-  "Leo",
-  "Virgo",
-  "Libra",
-  "Scorpio",
-  "Sagittarius",
-  "Capricorn",
-  "Aquarius",
-  "Pisces",
-];
-
-const PLANETS: PlanetName[] = [
-  "Sun",
-  "Moon",
-  "Mercury",
-  "Venus",
-  "Mars",
-  "Jupiter",
-  "Saturn",
-  "Uranus",
-  "Neptune",
-  "Pluto",
-];
 
 const PLANET_BODIES: Record<PlanetName, Body> = {
   Sun: Body.Sun,
@@ -64,13 +38,6 @@ const PLANET_BODIES: Record<PlanetName, Body> = {
   Pluto: Body.Pluto,
 };
 
-const ASPECT_DEFS: Array<{ type: AspectName; angle: number; orb: number }> = [
-  { type: "Conjunction", angle: 0, orb: 8 },
-  { type: "Opposition", angle: 180, orb: 8 },
-  { type: "Square", angle: 90, orb: 6 },
-  { type: "Trine", angle: 120, orb: 6 },
-  { type: "Sextile", angle: 60, orb: 4 },
-];
 
 const FORMATTER_CACHE = new Map<string, Intl.DateTimeFormat>();
 const OFFSET_STATS_CACHE = new Map<string, OffsetStats>();
@@ -242,10 +209,6 @@ function getOffsetStats(timeZone: string, year: number) {
 
 function formatUtcIso(utcMillis: number): string {
   return new Date(utcMillis).toISOString().replace(/\.\d{3}Z$/, "Z");
-}
-
-function normalizeAngle(angle: number): number {
-  return ((angle % 360) + 360) % 360;
 }
 
 function longitudeToSign(longitude: number): { sign: ZodiacSign; degree: number } {

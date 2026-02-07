@@ -149,8 +149,10 @@ describe("buildChartComparison", () => {
     );
 
     expect(uranusMarsSextile).toBeDefined();
-    expect(uranusMarsSextile?.title).toContain("Work");
-    expect(uranusMarsSextile?.title).toContain("Friends");
+    expect(uranusMarsSextile?.title).toBeTruthy();
+    expect(uranusMarsSextile?.subtitle).toContain("Uranus");
+    expect(uranusMarsSextile?.subtitle).toContain("Mars");
+    expect(uranusMarsSextile?.tone).toBe("harmonious");
     expect(uranusMarsSextile?.text).toContain("Main areas:");
     expect(uranusMarsSextile?.tags).toContain("work");
     expect(uranusMarsSextile?.tags).toContain("friends");
@@ -169,8 +171,10 @@ describe("buildChartComparison", () => {
     );
 
     expect(uranusMarsSextile).toBeDefined();
-    expect(uranusMarsSextile?.title).toContain("trampo");
-    expect(uranusMarsSextile?.title).toContain("amizades");
+    expect(uranusMarsSextile?.title).toBeTruthy();
+    expect(uranusMarsSextile?.subtitle).toContain("Uranus");
+    expect(uranusMarsSextile?.subtitle).toContain("Mars");
+    expect(uranusMarsSextile?.tone).toBe("harmonious");
     expect(uranusMarsSextile?.text).toContain("Areas mais mexidas:");
     expect(uranusMarsSextile?.tags).toContain("trampo");
     expect(uranusMarsSextile?.tags).toContain("amizades");

@@ -1,0 +1,162 @@
+import type { UseGeoSearchReturn } from "../lib/useGeoSearch";
+
+interface PersonFormLabels {
+  date: string;
+  time: string;
+  cityAndCountry: string;
+  searchPlaceholder: string;
+  searching: string;
+  noResults: string;
+  cityHint: string;
+  daylightSaving: string;
+  yes: string;
+  no: string;
+}
+
+interface PersonFormProps {
+  title?: string;
+  framed?: boolean;
+  date: string;
+  time: string;
+  daylightSavingValue: string;
+  onDateChange: (date: string) => void;
+  onTimeChange: (time: string) => void;
+  onDaylightSavingChange: (value: string) => void;
+  geo: UseGeoSearchReturn;
+  labels: PersonFormLabels;
+  hintId: string;
+  suggestionsId: string;
+  namePrefix: string;
+  activeIndex: number;
+  onKeyDown: (event: React.KeyboardEvent) => void;
+}
+
+export function PersonForm({
+  title,
+  framed,
+  date,
+  time,
+  daylightSavingValue,
+  onDateChange,
+  onTimeChange,
+  onDaylightSavingChange,
+  geo,
+  labels,
+  hintId,
+  suggestionsId,
+  namePrefix,
+  activeIndex,
+  onKeyDown,
+}: PersonFormProps) {
+  return (
+    <div className={`form__person ${framed ? "form__person--framed" : ""}`}>
+      {title && <h3 className="form__person-title">{title}</h3>}
+      <div className="form__row">
+        <label className="form__label">
+          {labels.date}
+          <input
+            type="date"
+            name={`${namePrefix}-date`}
+            autoComplete="bday"
+            value={date}
+            onChange={(e) => onDateChange(e.target.value)}
+            required
+          />
+        </label>
+        <label className="form__label">
+          {labels.time}
+          <input
+            type="time"
+            name={`${namePrefix}-time`}
+            autoComplete="off"
+            value={time}
+            onChange={(e) => onTimeChange(e.target.value)}
+            required
+          />
+        </label>
+      </div>
+      <div className="form__row">
+        <label className="form__label">
+          {labels.cityAndCountry}
+          <div className="city-search">
+            <input
+              type="text"
+              name={`${namePrefix}-location`}
+              value={geo.locationInput}
+              onChange={(e) => geo.setLocationInput(e.target.value)}
+              onKeyDown={onKeyDown}
+              required
+              aria-describedby={hintId}
+              aria-autocomplete="list"
+              aria-controls={suggestionsId}
+              aria-expanded={geo.showSuggestions}
+              aria-activedescendant={
+                activeIndex >= 0 ? `${suggestionsId}-${activeIndex}` : undefined
+              }
+              autoComplete="off"
+              inputMode="search"
+              placeholder={labels.searchPlaceholder}
+              role="combobox"
+            />
+            <div className="city-search__status-area" role="status" aria-live="polite">
+              {geo.isSearching && (
+                <span className="city-search__status">{labels.searching}</span>
+              )}
+              {geo.searchError && (
+                <span className="city-search__status city-search__status--error">
+                  {geo.searchError}
+                </span>
+              )}
+              {geo.showNoResults && (
+                <span className="city-search__status">{labels.noResults}</span>
+              )}
+            </div>
+            {geo.showSuggestions && (
+              <ul className="city-search__list" role="listbox" id={suggestionsId}>
+                {geo.suggestions.map((suggestion, i) => (
+                  <li
+                    key={suggestion.id}
+                    id={`${suggestionsId}-${i}`}
+                    className="city-search__item"
+                    role="option"
+                    aria-selected={i === activeIndex}
+                  >
+                    <button
+                      type="button"
+                      className="city-search__option"
+                      onClick={() => geo.selectSuggestion(suggestion)}
+                    >
+                      <span className="city-search__option-label">
+                        {suggestion.label}
+                      </span>
+                      <span className="city-search__option-meta">
+                        {suggestion.timezone}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </label>
+      </div>
+      <p id={hintId} className="form__hint">
+        {labels.cityHint}
+      </p>
+      <div className="form__row">
+        <label className="form__label">
+          {labels.daylightSaving}
+          <select
+            name={`${namePrefix}-daylight-saving`}
+            value={daylightSavingValue}
+            onChange={(e) => onDaylightSavingChange(e.target.value)}
+          >
+            <option value="auto">Auto</option>
+            <option value="true">{labels.yes}</option>
+            <option value="false">{labels.no}</option>
+          </select>
+        </label>
+      </div>
+    </div>
+  );
+}

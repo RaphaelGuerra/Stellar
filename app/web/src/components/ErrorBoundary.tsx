@@ -5,6 +5,14 @@ interface Props {
   fallback?: ReactNode;
 }
 
+function readIsCarioca(): boolean {
+  try {
+    return typeof window !== "undefined" && window.localStorage.getItem("stellar-mode") === "carioca";
+  } catch {
+    return false;
+  }
+}
+
 interface State {
   hasError: boolean;
   error: Error | null;
@@ -29,12 +37,17 @@ export class ErrorBoundary extends Component<Props, State> {
       if (this.props.fallback) {
         return this.props.fallback;
       }
+      const pt = readIsCarioca();
       return (
         <div className="error-boundary" role="alert">
-          <h2>Something went wrong</h2>
-          <p>An unexpected error occurred. Please reload the page.</p>
+          <h2>{pt ? "Deu ruim aqui" : "Something went wrong"}</h2>
+          <p>
+            {pt
+              ? "Aconteceu um erro inesperado. Recarrega a pagina ai."
+              : "An unexpected error occurred. Please reload the page."}
+          </p>
           <details>
-            <summary>Error details</summary>
+            <summary>{pt ? "Detalhes do erro" : "Error details"}</summary>
             <pre>{this.state.error?.message}</pre>
           </details>
           <button
@@ -42,7 +55,7 @@ export class ErrorBoundary extends Component<Props, State> {
             className="btn-primary"
             onClick={() => window.location.reload()}
           >
-            Reload page
+            {pt ? "Recarregar" : "Reload page"}
           </button>
         </div>
       );
