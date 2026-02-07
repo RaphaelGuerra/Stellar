@@ -13,6 +13,7 @@ import type {
   ChartResult,
   ComparisonAspect,
   ComparisonHighlight,
+  DetailBlock,
   PlanetName,
 } from "./types";
 
@@ -129,6 +130,164 @@ const ASPECT_CLARITY: Record<
     },
   },
 };
+
+const LIFE_AREA_PLAYBOOK: Record<
+  SynastryLocale,
+  Record<LifeArea, { focus: string; risk: string; move: string }>
+> = {
+  en: {
+    love: {
+      focus: "Chemistry, affection, and romantic expectations.",
+      risk: "Mixed signals around closeness can create insecurity.",
+      move: "Set one ritual for affection and one boundary for conflict.",
+    },
+    family: {
+      focus: "Home routines, emotional safety, and caregiving patterns.",
+      risk: "Unspoken roles can create resentment quickly.",
+      move: "Define who handles what at home for the next seven days.",
+    },
+    work: {
+      focus: "Ambition, pace, and execution style.",
+      risk: "Power struggles can replace collaboration.",
+      move: "Agree on priority, owner, and deadline before starting tasks.",
+    },
+    friends: {
+      focus: "Social rhythm, trust, and mutual support.",
+      risk: "One person can feel sidelined when plans stay vague.",
+      move: "Schedule intentional quality time with a clear plan.",
+    },
+    money: {
+      focus: "Risk tolerance, spending style, and shared security.",
+      risk: "Different priorities can trigger recurring budget conflict.",
+      move: "Do one weekly money check-in with a single concrete target.",
+    },
+    communication: {
+      focus: "How both people process, explain, and listen.",
+      risk: "Assumptions can become avoidable arguments.",
+      move: "Use short recap questions before reacting.",
+    },
+  },
+  pt: {
+    love: {
+      focus: "Quimica, carinho e expectativa no romance.",
+      risk: "Sinal misturado vira inseguranca e DR sem fim.",
+      move: "Combina um ritual de carinho e um limite claro pra treta.",
+    },
+    family: {
+      focus: "Rotina da casa, acolhimento e cuidado.",
+      risk: "Papel mal combinado vira ressentimento rapidinho.",
+      move: "Define quem puxa cada responsa da casa nesta semana.",
+    },
+    work: {
+      focus: "Ambicao, ritmo e jeito de executar.",
+      risk: "Disputa de ego mata parceria.",
+      move: "Antes de comecar, fecha prioridade, dono e prazo.",
+    },
+    friends: {
+      focus: "Role social, lealdade e apoio.",
+      risk: "No automatico, alguem vai se sentir escanteado.",
+      move: "Marca tempo de qualidade com plano fechado.",
+    },
+    money: {
+      focus: "Risco, gasto e seguranca financeira.",
+      risk: "Prioridade diferente vira guerra de boleto.",
+      move: "Faz check-in semanal de grana com uma meta objetiva.",
+    },
+    communication: {
+      focus: "Como voces pensam, explicam e escutam.",
+      risk: "Suposicao vira discussao boba.",
+      move: "Repete em uma frase o que ouviu antes de responder.",
+    },
+  },
+};
+
+function getOrbDetail(orb: number | undefined, locale: SynastryLocale): string {
+  if (orb == null) {
+    return locale === "en"
+      ? "Orb not specified, so treat this as medium strength."
+      : "Orb nao veio, entao considera intensidade media.";
+  }
+  if (orb <= 1) {
+    return locale === "en"
+      ? "Tight orb: this will show up loudly in day-to-day dynamics."
+      : "Orb fechadinho: isso aparece forte no dia a dia, porra.";
+  }
+  if (orb <= 3) {
+    return locale === "en"
+      ? "Mid orb: this stays reliable whenever the theme is triggered."
+      : "Orb medio: quando esse tema bate, ele aparece com constancia.";
+  }
+  return locale === "en"
+    ? "Wide orb: subtler, but still relevant under pressure."
+    : "Orb mais aberto: fica sutil, mas pinta quando o caldo engrossa.";
+}
+
+function buildAreaBreakdown(areas: readonly LifeArea[], locale: SynastryLocale): string {
+  return areas
+    .slice(0, 3)
+    .map((area, index) => {
+      const label = LIFE_AREA_LABELS[locale][area];
+      const playbook = LIFE_AREA_PLAYBOOK[locale][area];
+      return `${index + 1}. ${label}: ${playbook.focus}`;
+    })
+    .join(" ");
+}
+
+function buildHighlightDetails(
+  aspect: ComparisonAspect,
+  areas: readonly LifeArea[],
+  locale: SynastryLocale
+): DetailBlock[] {
+  const [primaryArea = "love", secondaryArea = "family", tertiaryArea = "work"] = areas;
+  const aspectLabel = ASPECT_LABELS[locale][aspect.type];
+  const clarity = ASPECT_CLARITY[locale][aspect.type];
+  const primaryLabel = LIFE_AREA_LABELS[locale][primaryArea];
+  const secondaryLabel = LIFE_AREA_LABELS[locale][secondaryArea];
+  const primaryPlaybook = LIFE_AREA_PLAYBOOK[locale][primaryArea];
+  const secondaryPlaybook = LIFE_AREA_PLAYBOOK[locale][secondaryArea];
+  const orbDetail = getOrbDetail(aspect.orb, locale);
+  const areaBreakdown = buildAreaBreakdown([primaryArea, secondaryArea, tertiaryArea], locale);
+
+  if (locale === "en") {
+    return [
+      {
+        title: "Aspect decoded",
+        text: `${aspect.a.planet} ${aspectLabel} ${aspect.b.planet}. ${clarity.tone} ${orbDetail}`,
+      },
+      {
+        title: "Life areas",
+        text: areaBreakdown,
+      },
+      {
+        title: "Watchout",
+        text: `${primaryLabel}: ${primaryPlaybook.risk} ${secondaryLabel}: ${secondaryPlaybook.risk}`,
+      },
+      {
+        title: "Action step",
+        text: `${primaryPlaybook.move} ${clarity.advice}`,
+      },
+    ];
+  }
+
+  return [
+    {
+      title: "Traducao sem astro-nerd",
+      text: `${aspect.a.planet} ${aspectLabel} ${aspect.b.planet}. ${clarity.tone} ${orbDetail}`,
+    },
+    {
+      title: "Areas que mais mexe",
+      text: areaBreakdown,
+    },
+    {
+      title: "Treta pra evitar",
+      text: `${primaryLabel}: ${primaryPlaybook.risk} ${secondaryLabel}: ${secondaryPlaybook.risk}`,
+    },
+    {
+      title: "Passo pratico",
+      text: `${primaryPlaybook.move} ${clarity.advice}`,
+    },
+  ];
+}
 
 function getAspectTone(type: AspectName): AspectTone {
   switch (type) {
@@ -292,6 +451,7 @@ function makeHighlight(
     title: funTitle,
     subtitle,
     text: buildHighlightText(aspect, [primaryArea, secondaryArea], locale),
+    details: buildHighlightDetails(aspect, rankedAreas, locale),
     tags: dedupeTags([
       LIFE_AREA_LABELS[locale][primaryArea].toLowerCase(),
       LIFE_AREA_LABELS[locale][secondaryArea].toLowerCase(),

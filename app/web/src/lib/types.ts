@@ -129,6 +129,11 @@ export interface ComparisonAspect {
 
 export type AspectTone = "harmonious" | "challenging" | "intense";
 
+export interface DetailBlock {
+  title: string;
+  text: string;
+}
+
 export interface ComparisonHighlight {
   // Card-friendly model for the UI; keep this stable for rendering.
   key: string;
@@ -137,6 +142,7 @@ export interface ComparisonHighlight {
   subtitle?: string;
   text: string;
   tags: readonly string[];
+  details?: readonly DetailBlock[];
   tone?: AspectTone;
   score?: number; // higher means more prominent
   related?: {

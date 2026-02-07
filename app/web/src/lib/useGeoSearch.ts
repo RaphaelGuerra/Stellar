@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import tzLookup from "tz-lookup";
 import type { CityResolution } from "./types";
 
@@ -259,16 +259,14 @@ export async function resolveLocationCandidates(
   const language = isCarioca ? "pt-BR" : "en";
   const cacheKey = buildCacheKey(normalized, language);
   const cached = getCachedResults(cacheKey);
-  if (cached && cached.length > 0) {
+  if (cached !== null) {
     return cached.slice(0, limit);
   }
 
   try {
     const data = await fetchNominatim(query, limit, language);
     const results = toUniqueSuggestions(data);
-    if (results.length > 0) {
-      setCachedResults(cacheKey, results);
-    }
+    setCachedResults(cacheKey, results);
     return results;
   } catch {
     return null;
@@ -297,14 +295,6 @@ export function useGeoSearch(
   isCarioca: boolean,
   enabled = true
 ): UseGeoSearchReturn {
-  // Load cache from localStorage once.
-  const cacheInitialized = useRef(false);
-  if (!cacheInitialized.current && !sharedCacheLoaded) {
-    loadCacheFromStorage();
-    sharedCacheLoaded = true;
-    cacheInitialized.current = true;
-  }
-
   const [locationInput, setLocationInput] = useState(initialLocation);
   const [suggestions, setSuggestions] = useState<GeoSuggestion[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -319,6 +309,13 @@ export function useGeoSearch(
   const city = isSelectedLabel ? (resolvedCity ?? parsed.city) : parsed.city;
   const country = isSelectedLabel ? (resolvedCountry ?? parsed.country) : parsed.country;
   const location = selectedLabel === locationInput ? resolvedLocation : undefined;
+
+  // Load shared cache lazily after mount to keep render side-effect free.
+  useEffect(() => {
+    if (sharedCacheLoaded) return;
+    loadCacheFromStorage();
+    sharedCacheLoaded = true;
+  }, []);
 
   function selectSuggestion(s: GeoSuggestion) {
     setSelectedLabel(s.label);

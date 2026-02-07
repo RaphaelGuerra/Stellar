@@ -595,6 +595,65 @@ body {
   line-height: var(--line-height-relaxed);
 }
 
+.card__text--clamped {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+}
+
+.card__expand-btn {
+  margin: calc(-1 * var(--space-sm)) 0 var(--space-md);
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-cyan);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+.card__expand-btn:hover {
+  color: var(--color-accent);
+}
+
+.card__expand-btn:focus-visible {
+  outline: none;
+  text-decoration: underline;
+}
+
+.card__details {
+  margin: 0 0 var(--space-md);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--color-border-light);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.card__detail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.card__detail-title {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.card__detail-text {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
+}
+
 .card__tags {
   display: flex;
   flex-wrap: wrap;

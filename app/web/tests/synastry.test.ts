@@ -156,6 +156,11 @@ describe("buildChartComparison", () => {
     expect(uranusMarsSextile?.text).toContain("Main areas:");
     expect(uranusMarsSextile?.tags).toContain("work");
     expect(uranusMarsSextile?.tags).toContain("friends");
+    expect(uranusMarsSextile?.details?.length).toBeGreaterThan(0);
+    expect(uranusMarsSextile?.details?.[0]?.title).toBe("Aspect decoded");
+    expect(uranusMarsSextile?.details?.[1]?.title).toBe("Life areas");
+    expect(uranusMarsSextile?.details?.[1]?.text).toContain("Work");
+    expect(uranusMarsSextile?.details?.[1]?.text).toContain("Friends");
   });
 
   it("adds plain-language life areas in Portuguese output too", () => {
@@ -178,5 +183,10 @@ describe("buildChartComparison", () => {
     expect(uranusMarsSextile?.text).toContain("Areas mais mexidas:");
     expect(uranusMarsSextile?.tags).toContain("trampo");
     expect(uranusMarsSextile?.tags).toContain("amizades");
+    expect(uranusMarsSextile?.details?.length).toBeGreaterThan(0);
+    expect(uranusMarsSextile?.details?.[0]?.title).toBe("Traducao sem astro-nerd");
+    expect(uranusMarsSextile?.details?.[1]?.title).toBe("Areas que mais mexe");
+    expect(uranusMarsSextile?.details?.[1]?.text).toContain("trampo");
+    expect(uranusMarsSextile?.details?.[1]?.text).toContain("amizades");
   });
 });

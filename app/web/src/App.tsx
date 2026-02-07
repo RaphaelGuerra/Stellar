@@ -220,6 +220,7 @@ function App() {
       subtitle: highlight.subtitle,
       text: highlight.text,
       tags: highlight.tags,
+      details: highlight.details,
       tone: highlight.tone,
       orb: highlight.related?.aspect?.orb,
     }));
@@ -429,6 +430,9 @@ function App() {
       ? 'Clica em "Gerar mapa, porra" pra ver a treta entre Pessoa A e Pessoa B.'
       : 'Click "Generate chart" to see aspects between Person A and Person B.',
   };
+  const cardExpandLabels = isCarioca
+    ? { more: "Abrir mais", less: "Fechar" }
+    : { more: "Show more", less: "Show less" };
 
   return (
     <>
@@ -628,9 +632,11 @@ function App() {
                     subtitle={card.subtitle}
                     text={card.text}
                     tags={card.tags}
+                    details={card.details}
                     element={card.element}
                     variant="hero"
                     degree={card.degree}
+                    expandLabels={cardExpandLabels}
                   />
                 ))}
               </div>
@@ -651,9 +657,11 @@ function App() {
                     subtitle={card.subtitle}
                     text={card.text}
                     tags={card.tags}
+                    details={card.details}
                     element={card.element}
                     variant="planet"
                     degree={card.degree}
+                    expandLabels={cardExpandLabels}
                   />
                 ))}
               </div>
@@ -675,8 +683,10 @@ function App() {
                     subtitle={card.subtitle}
                     text={card.text}
                     tags={card.tags}
+                    details={card.details}
                     variant="aspect"
                     orb={card.orb}
+                    expandLabels={cardExpandLabels}
                   />
                 ))}
               </div>
@@ -698,9 +708,11 @@ function App() {
                     subtitle={card.subtitle}
                     text={card.text}
                     tags={card.tags}
+                    details={card.details}
                     tone={card.tone}
                     variant="synastry"
                     orb={card.orb}
+                    expandLabels={cardExpandLabels}
                   />
                 ))}
               </div>
