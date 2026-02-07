@@ -12,16 +12,26 @@ interface UseContentModeReturn {
   content: ContentPack;
 }
 
-export function useContentMode(): UseContentModeReturn {
-  const [mode, setMode] = useState<Mode>(() => {
-    if (typeof window === "undefined") return "normal";
+function readStoredMode(): Mode {
+  if (typeof window === "undefined") return "normal";
+  try {
     const saved = window.localStorage.getItem(STORAGE_KEY);
     return saved === "carioca" || saved === "normal" ? saved : "normal";
-  });
+  } catch {
+    return "normal";
+  }
+}
+
+export function useContentMode(): UseContentModeReturn {
+  const [mode, setMode] = useState<Mode>(readStoredMode);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    localStorage.setItem(STORAGE_KEY, mode);
+    try {
+      window.localStorage.setItem(STORAGE_KEY, mode);
+    } catch {
+      // Ignore storage failures (private browsing / restricted contexts).
+    }
   }, [mode]);
 
   const content = useMemo((): ContentPack => {

@@ -16,6 +16,13 @@ interface UtcCandidate {
   offsetMinutes: number;
 }
 
+interface OffsetStats {
+  standardOffset: number;
+  dstOffset: number;
+  hasSeasonalDst: boolean;
+  offsets: number[];
+}
+
 const SIGNS: ZodiacSign[] = [
   "Aries",
   "Taurus",
@@ -66,7 +73,7 @@ const ASPECT_DEFS: Array<{ type: AspectName; angle: number; orb: number }> = [
 ];
 
 const FORMATTER_CACHE = new Map<string, Intl.DateTimeFormat>();
-const OFFSET_STATS_CACHE = new Map<string, { standardOffset: number; dstOffset: number }>();
+const OFFSET_STATS_CACHE = new Map<string, OffsetStats>();
 
 function getFormatter(timeZone: string) {
   const cached = FORMATTER_CACHE.get(timeZone);
@@ -167,36 +174,68 @@ function getOffsetMinutes(timeZone: string, localParts: LocalDateTimeParts): num
   return Math.round((utcGuess - zonedAsUtc) / 60000);
 }
 
+function pickMostFrequentOffset(offsetCounts: Map<number, number>): number {
+  const ranked = Array.from(offsetCounts.entries()).sort((left, right) => {
+    if (right[1] !== left[1]) return right[1] - left[1];
+    return right[0] - left[0];
+  });
+  return ranked[0]?.[0] ?? 0;
+}
+
 function getOffsetStats(timeZone: string, year: number) {
   const cacheKey = `${timeZone}|${year}`;
   const cached = OFFSET_STATS_CACHE.get(cacheKey);
   if (cached) return cached;
 
-  const offsets = new Set<number>();
+  const offsetsByDay: number[] = [];
+  const offsetCounts = new Map<number, number>();
   for (let month = 1; month <= 12; month++) {
     const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
     for (let day = 1; day <= daysInMonth; day++) {
-      offsets.add(
-        getOffsetMinutes(timeZone, {
-          year,
-          month,
-          day,
-          hour: 12,
-          minute: 0,
-          second: 0,
-        })
-      );
+      const offset = getOffsetMinutes(timeZone, {
+        year,
+        month,
+        day,
+        hour: 12,
+        minute: 0,
+        second: 0,
+      });
+      offsetsByDay.push(offset);
+      offsetCounts.set(offset, (offsetCounts.get(offset) ?? 0) + 1);
     }
   }
-  const values = Array.from(offsets.values());
-  if (values.length === 0) {
-    const emptyResult = { standardOffset: 0, dstOffset: 0 };
+  if (offsetsByDay.length === 0) {
+    const emptyResult: OffsetStats = {
+      standardOffset: 0,
+      dstOffset: 0,
+      hasSeasonalDst: false,
+      offsets: [0],
+    };
     OFFSET_STATS_CACHE.set(cacheKey, emptyResult);
     return emptyResult;
   }
-  const standardOffset = Math.max(...values);
-  const dstOffset = Math.min(...values);
-  const result = { standardOffset, dstOffset };
+
+  const offsets = Array.from(new Set(offsetsByDay.values()));
+  const januaryOffset = offsetsByDay[0];
+  const decemberOffset = offsetsByDay[offsetsByDay.length - 1];
+  const hasSeasonalDst = offsets.length >= 2 && januaryOffset === decemberOffset;
+
+  let standardOffset: number;
+  let dstOffset: number;
+  if (hasSeasonalDst) {
+    standardOffset = Math.max(...offsets);
+    dstOffset = Math.min(...offsets);
+  } else {
+    standardOffset = pickMostFrequentOffset(offsetCounts);
+    dstOffset = standardOffset;
+  }
+
+  const result: OffsetStats = {
+    standardOffset,
+    dstOffset,
+    hasSeasonalDst,
+    offsets,
+  };
   OFFSET_STATS_CACHE.set(cacheKey, result);
   return result;
 }
@@ -271,9 +310,13 @@ export async function generateChart(input: ChartInput): Promise<ChartResult> {
   const resolvedCity = input.location ?? resolveCity({ city: input.city, country: input.country });
   const localParts = parseLocalDateTime(input.date, input.time);
   const localDateTime = `${input.date}T${input.time}`;
-  const { standardOffset, dstOffset } = getOffsetStats(resolvedCity.timezone, localParts.year);
+  const { standardOffset, dstOffset, hasSeasonalDst, offsets } = getOffsetStats(
+    resolvedCity.timezone,
+    localParts.year
+  );
   const autoOffsetMinutes = getOffsetMinutes(resolvedCity.timezone, localParts);
   const candidates = findMatchingUtcCandidates(resolvedCity.timezone, localParts, [
+    ...offsets,
     standardOffset,
     dstOffset,
     autoOffsetMinutes,
@@ -292,14 +335,14 @@ export async function generateChart(input: ChartInput): Promise<ChartResult> {
     const selected =
       candidates.find((candidate) => candidate.offsetMinutes === autoOffsetMinutes) ?? candidates[0];
     offsetMinutes = selected.offsetMinutes;
-    daylightSaving = offsetMinutes !== standardOffset;
+    daylightSaving = hasSeasonalDst && offsetMinutes === dstOffset;
     utcMillis = selected.utcMillis;
   } else {
-    const preferredOffset = input.daylight_saving ? dstOffset : standardOffset;
+    const preferredOffset = input.daylight_saving && hasSeasonalDst ? dstOffset : standardOffset;
     const selected = candidates.find((candidate) => candidate.offsetMinutes === preferredOffset);
     if (selected) {
       offsetMinutes = selected.offsetMinutes;
-      daylightSaving = input.daylight_saving;
+      daylightSaving = hasSeasonalDst && offsetMinutes === dstOffset;
       utcMillis = selected.utcMillis;
     } else {
       // For non-ambiguous local times where the requested manual offset is unavailable,
@@ -307,7 +350,7 @@ export async function generateChart(input: ChartInput): Promise<ChartResult> {
       const fallback =
         candidates.find((candidate) => candidate.offsetMinutes === autoOffsetMinutes) ?? candidates[0];
       offsetMinutes = fallback.offsetMinutes;
-      daylightSaving = offsetMinutes !== standardOffset;
+      daylightSaving = hasSeasonalDst && offsetMinutes === dstOffset;
       utcMillis = fallback.utcMillis;
     }
   }

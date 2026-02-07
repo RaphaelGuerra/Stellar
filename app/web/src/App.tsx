@@ -3,7 +3,6 @@ import tzLookup from "tz-lookup";
 import { useContentMode } from "./content/useContentMode";
 import { ModeToggle } from "./components/ModeToggle";
 import { buildCards, buildPlacementsSummary, type CardModel, type PlacementSummary } from "./lib/cards";
-import { aspectSymbol } from "./lib/aspectContext";
 import { AmbiguousLocalTimeError, NonexistentLocalTimeError, generateChart } from "./lib/engine";
 import { buildChartComparison } from "./lib/synastry";
 import { validateChartInput } from "./lib/validation";
@@ -16,7 +15,8 @@ interface CardProps {
   text: string;
   tags: readonly string[];
   element?: string;
-  variant?: "hero" | "planet" | "aspect";
+  tone?: string;
+  variant?: "hero" | "planet" | "aspect" | "synastry";
   degree?: number;
   orb?: number;
 }
@@ -341,10 +341,11 @@ async function fetchNominatim(
   return (await response.json()) as NominatimResult[];
 }
 
-function Card({ title, subtitle, text, tags, element, variant, degree, orb }: CardProps) {
+function Card({ title, subtitle, text, tags, element, tone, variant, degree, orb }: CardProps) {
   const classes = [
     "card",
     element ? `card--${element}` : "",
+    tone ? `card--tone-${tone}` : "",
     variant ? `card--${variant}` : "",
   ].filter(Boolean).join(" ");
 
@@ -682,11 +683,10 @@ function App() {
     return comparison.highlights.map((highlight) => ({
       key: highlight.key,
       title: highlight.title,
+      subtitle: highlight.subtitle,
       text: highlight.text,
       tags: highlight.tags,
-      subtitle: highlight.related?.aspect
-        ? `${highlight.related.aspect.a.planet} ${aspectSymbol(highlight.related.aspect.type)} ${highlight.related.aspect.b.planet}`
-        : undefined,
+      tone: highlight.tone,
       orb: highlight.related?.aspect?.orb,
     }));
   }, [comparison]);
@@ -760,9 +760,7 @@ function App() {
     const cacheKey = buildCacheKey(normalized, language);
     const cached = getCachedResults(cacheKey, searchCache.current);
     if (cached && cached.length > 0) {
-      if (limit <= 1 || cached.length > 1) {
-        return cached.slice(0, limit);
-      }
+      return cached.slice(0, limit);
     }
 
     try {
@@ -902,14 +900,26 @@ function App() {
       });
       if (!inputResolvedB) return;
 
-      const [newChartA, newChartB] = await Promise.all([
+      const personALabel = isCarioca ? "Pessoa A" : "Person A";
+      const personBLabel = isCarioca ? "Pessoa B" : "Person B";
+      const [resultA, resultB] = await Promise.allSettled([
         generateChart(inputA),
         generateChart(inputResolvedB),
       ]);
-      setChart(newChartA);
-      setChartB(newChartB);
-      setCards(buildCards(content, newChartA, mode));
-      setPlacements(buildPlacementsSummary(newChartA));
+
+      if (resultA.status === "rejected") {
+        setError(`${personALabel}: ${formatRuntimeError(resultA.reason, isCarioca)}`);
+        return;
+      }
+      if (resultB.status === "rejected") {
+        setError(`${personBLabel}: ${formatRuntimeError(resultB.reason, isCarioca)}`);
+        return;
+      }
+
+      setChart(resultA.value);
+      setChartB(resultB.value);
+      setCards(buildCards(content, resultA.value, mode));
+      setPlacements(buildPlacementsSummary(resultA.value));
     } catch (err) {
       setError(formatRuntimeError(err, isCarioca));
     } finally {
@@ -1398,7 +1408,7 @@ function App() {
               badge={t.compatibilityBadge(comparisonCards.length)}
               badgeAccent
             >
-              <div className="cards-grid--aspects">
+              <div className="cards-grid--synastry">
                 {comparisonCards.map((card) => (
                   <Card
                     key={card.key}
@@ -1406,7 +1416,8 @@ function App() {
                     subtitle={card.subtitle}
                     text={card.text}
                     tags={card.tags}
-                    variant="aspect"
+                    tone={card.tone}
+                    variant="synastry"
                     orb={card.orb}
                   />
                 ))}

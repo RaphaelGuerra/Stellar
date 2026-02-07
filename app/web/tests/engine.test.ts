@@ -70,6 +70,7 @@ describe("generateChart normalization", () => {
     expect(autoChart.normalized.utcDateTime).toBe("2020-12-30T09:00:00Z");
     expect(manualNoDstChart.normalized.utcDateTime).toBe("2020-12-30T09:00:00Z");
     expect(manualNoDstChart.normalized.offsetMinutes).toBe(-180);
+    expect(autoChart.normalized.daylightSaving).toBe(false);
     expect(manualNoDstChart.normalized.daylightSaving).toBe(false);
   });
 
@@ -93,7 +94,7 @@ describe("generateChart normalization", () => {
     expect(autoChart.normalized.utcDateTime).toBe("2020-09-30T08:00:00Z");
     expect(manualNoDstChart.normalized.utcDateTime).toBe("2020-09-30T08:00:00Z");
     expect(manualNoDstChart.normalized.offsetMinutes).toBe(-240);
-    expect(manualNoDstChart.normalized.daylightSaving).toBe(true);
+    expect(manualNoDstChart.normalized.daylightSaving).toBe(false);
   });
 
   it("avoids synthetic UTC shift when manual DST offset is unavailable", async () => {
