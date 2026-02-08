@@ -127,12 +127,14 @@ function App() {
   const [dateA, setDateA] = useState("1990-01-01");
   const [timeA, setTimeA] = useState("12:00");
   const [daylightSavingA, setDaylightSavingA] = useState<boolean | "auto">("auto");
+  const [showDaylightSavingOverrideA, setShowDaylightSavingOverrideA] = useState(false);
   const geoA = useGeoSearch("Rio de Janeiro, BR", isCarioca);
 
   // Person B state
   const [dateB, setDateB] = useState("1990-01-01");
   const [timeB, setTimeB] = useState("12:00");
   const [daylightSavingB, setDaylightSavingB] = useState<boolean | "auto">("auto");
+  const [showDaylightSavingOverrideB, setShowDaylightSavingOverrideB] = useState(false);
   const geoB = useGeoSearch("New York, US", isCarioca, analysisMode === "compatibility");
 
   // Keyboard nav for suggestion lists
@@ -152,6 +154,7 @@ function App() {
   useEffect(() => {
     if (analysisMode === "single") {
       setChartB(null);
+      setShowDaylightSavingOverrideB(false);
     }
   }, [analysisMode]);
 
@@ -329,6 +332,8 @@ function App() {
   async function handleGenerateChart(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setShowDaylightSavingOverrideA(false);
+    setShowDaylightSavingOverrideB(false);
     setLoading(true);
 
     try {
@@ -347,6 +352,7 @@ function App() {
         setChartB(null);
         setCards(buildCards(content, newChart, mode));
         setPlacements(buildPlacementsSummary(newChart));
+        setShowDaylightSavingOverrideA(false);
         setResultVersion((prev) => prev + 1);
         return;
       }
@@ -367,6 +373,13 @@ function App() {
         generateChart(inputResolvedB),
       ]);
 
+      const ambiguousA =
+        resultA.status === "rejected" && resultA.reason instanceof AmbiguousLocalTimeError;
+      const ambiguousB =
+        resultB.status === "rejected" && resultB.reason instanceof AmbiguousLocalTimeError;
+      setShowDaylightSavingOverrideA(ambiguousA);
+      setShowDaylightSavingOverrideB(ambiguousB);
+
       const errors: string[] = [];
       if (resultA.status === "rejected") {
         errors.push(`${personALabel}: ${formatRuntimeError(resultA.reason, isCarioca)}`);
@@ -385,8 +398,13 @@ function App() {
       setChartB(chartBValue);
       setCards(buildCards(content, chartAValue, mode));
       setPlacements(buildPlacementsSummary(chartAValue));
+      setShowDaylightSavingOverrideA(false);
+      setShowDaylightSavingOverrideB(false);
       setResultVersion((prev) => prev + 1);
     } catch (err) {
+      if (err instanceof AmbiguousLocalTimeError) {
+        setShowDaylightSavingOverrideA(true);
+      }
       setError(formatRuntimeError(err, isCarioca));
     } finally {
       setLoading(false);
@@ -404,6 +422,11 @@ function App() {
       ? `Manda a cidade com pais certinho, mermão. Ou usa um exemplo: ${SUPPORTED_CITIES.join(", ")}`
       : `Type to search cities worldwide or try: ${SUPPORTED_CITIES.join(", ")}`,
     daylightSaving: isCarioca ? "Horario de verao" : "Daylight saving",
+    daylightSavingAuto: isCarioca ? "Auto (recomendado)" : "Auto (recommended)",
+    daylightSavingManual: isCarioca ? "Ajuste manual de horario de verao" : "Manual daylight saving override",
+    daylightSavingManualHint: isCarioca
+      ? "Deixa no auto na maior parte dos casos. So abre isso se o horario nascer duplicado."
+      : "Keep Auto for most cases. Use manual only when a birth time is duplicated by DST fallback.",
     yes: isCarioca ? "Sim, porra" : "Yes",
     no: isCarioca ? "Nao, porra" : "No",
   };
@@ -505,6 +528,7 @@ function App() {
               <PersonForm
                 title={analysisMode === "compatibility" ? t.personA : undefined}
                 framed={analysisMode === "compatibility"}
+                locale={isCarioca ? "pt-BR" : "en-US"}
                 date={dateA}
                 time={timeA}
                 daylightSavingValue={toDaylightSavingValue(daylightSavingA)}
@@ -518,6 +542,7 @@ function App() {
                 namePrefix="birth"
                 activeIndex={kbA.activeIndex}
                 onKeyDown={kbA.onKeyDown}
+                showDaylightSavingOverride={showDaylightSavingOverrideA}
               />
 
               {analysisMode === "single" && (
@@ -533,6 +558,7 @@ function App() {
                   <PersonForm
                     title={t.personB}
                     framed
+                    locale={isCarioca ? "pt-BR" : "en-US"}
                     date={dateB}
                     time={timeB}
                     daylightSavingValue={toDaylightSavingValue(daylightSavingB)}
@@ -546,6 +572,7 @@ function App() {
                     namePrefix="birth-b"
                     activeIndex={kbB.activeIndex}
                     onKeyDown={kbB.onKeyDown}
+                    showDaylightSavingOverride={showDaylightSavingOverrideB}
                   />
                   <div className="form__row form__row--actions">
                     <button type="submit" className="btn-primary" disabled={loading}>

@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { DatePicker } from "./DatePicker";
 import type { UseGeoSearchReturn } from "../lib/useGeoSearch";
 
 interface PersonFormLabels {
@@ -9,6 +11,9 @@ interface PersonFormLabels {
   noResults: string;
   cityHint: string;
   daylightSaving: string;
+  daylightSavingAuto: string;
+  daylightSavingManual: string;
+  daylightSavingManualHint: string;
   yes: string;
   no: string;
 }
@@ -16,6 +21,7 @@ interface PersonFormLabels {
 interface PersonFormProps {
   title?: string;
   framed?: boolean;
+  locale?: string;
   date: string;
   time: string;
   daylightSavingValue: string;
@@ -29,11 +35,13 @@ interface PersonFormProps {
   namePrefix: string;
   activeIndex: number;
   onKeyDown: (event: React.KeyboardEvent) => void;
+  showDaylightSavingOverride?: boolean;
 }
 
 export function PersonForm({
   title,
   framed,
+  locale,
   date,
   time,
   daylightSavingValue,
@@ -47,19 +55,22 @@ export function PersonForm({
   namePrefix,
   activeIndex,
   onKeyDown,
+  showDaylightSavingOverride = false,
 }: PersonFormProps) {
+  const [manualDstOpen, setManualDstOpen] = useState(false);
+  const showManualDst = showDaylightSavingOverride || manualDstOpen;
+
   return (
     <div className={`form__person ${framed ? "form__person--framed" : ""}`}>
       {title && <h3 className="form__person-title">{title}</h3>}
       <div className="form__row">
         <label className="form__label">
           {labels.date}
-          <input
-            type="date"
-            name={`${namePrefix}-date`}
-            autoComplete="bday"
+          <DatePicker
             value={date}
-            onChange={(e) => onDateChange(e.target.value)}
+            onChange={onDateChange}
+            locale={locale}
+            name={`${namePrefix}-date`}
             required
           />
         </label>
@@ -143,19 +154,34 @@ export function PersonForm({
       <p id={hintId} className="form__hint">
         {labels.cityHint}
       </p>
-      <div className="form__row">
-        <label className="form__label">
-          {labels.daylightSaving}
-          <select
-            name={`${namePrefix}-daylight-saving`}
-            value={daylightSavingValue}
-            onChange={(e) => onDaylightSavingChange(e.target.value)}
-          >
-            <option value="auto">Auto</option>
-            <option value="true">{labels.yes}</option>
-            <option value="false">{labels.no}</option>
-          </select>
-        </label>
+      <div className="form__advanced">
+        <button
+          type="button"
+          className="form__advanced-toggle"
+          aria-expanded={showManualDst}
+          onClick={() => setManualDstOpen((prev) => !prev)}
+        >
+          {labels.daylightSavingManual}
+        </button>
+        {showManualDst && (
+          <>
+            <p className="form__advanced-hint">{labels.daylightSavingManualHint}</p>
+            <div className="form__row">
+              <label className="form__label">
+                {labels.daylightSaving}
+                <select
+                  name={`${namePrefix}-daylight-saving`}
+                  value={daylightSavingValue}
+                  onChange={(e) => onDaylightSavingChange(e.target.value)}
+                >
+                  <option value="auto">{labels.daylightSavingAuto}</option>
+                  <option value="true">{labels.yes}</option>
+                  <option value="false">{labels.no}</option>
+                </select>
+              </label>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
