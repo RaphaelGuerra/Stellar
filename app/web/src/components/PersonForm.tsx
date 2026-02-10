@@ -10,6 +10,10 @@ interface PersonFormLabels {
   searching: string;
   noResults: string;
   cityHint: string;
+  datePickerDialog: string;
+  datePickerYear: string;
+  datePickerPreviousMonth: string;
+  datePickerNextMonth: string;
   daylightSaving: string;
   daylightSavingAuto: string;
   daylightSavingManual: string;
@@ -72,6 +76,12 @@ export function PersonForm({
             locale={locale}
             name={`${namePrefix}-date`}
             required
+            labels={{
+              chooseDate: labels.datePickerDialog,
+              year: labels.datePickerYear,
+              previousMonth: labels.datePickerPreviousMonth,
+              nextMonth: labels.datePickerNextMonth,
+            }}
           />
         </label>
         <label className="form__label">

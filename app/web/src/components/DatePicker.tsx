@@ -6,6 +6,7 @@ interface DatePickerProps {
   locale?: string;
   name?: string;
   required?: boolean;
+  labels?: DatePickerLabels;
 }
 
 interface CalendarDay {
@@ -14,6 +15,20 @@ interface CalendarDay {
   year: number;
   isCurrentMonth: boolean;
 }
+
+interface DatePickerLabels {
+  chooseDate: string;
+  year: string;
+  previousMonth: string;
+  nextMonth: string;
+}
+
+const DEFAULT_LABELS: DatePickerLabels = {
+  chooseDate: "Choose date",
+  year: "Year",
+  previousMonth: "Previous month",
+  nextMonth: "Next month",
+};
 
 function buildCalendarGrid(year: number, month: number): CalendarDay[] {
   const firstDay = new Date(year, month, 1).getDay();
@@ -68,20 +83,20 @@ function parseDate(value: string): { year: number; month: number; day: number } 
 const CURRENT_YEAR = new Date().getFullYear();
 const MIN_YEAR = 1900;
 
-export function DatePicker({ value, onChange, locale = "en-US", name, required }: DatePickerProps) {
+export function DatePicker({
+  value,
+  onChange,
+  locale = "en-US",
+  name,
+  required,
+  labels = DEFAULT_LABELS,
+}: DatePickerProps) {
   const parsed = parseDate(value);
   const [open, setOpen] = useState(false);
   const [viewYear, setViewYear] = useState(parsed.year);
   const [viewMonth, setViewMonth] = useState(parsed.month);
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
-
-  // Sync view when value changes externally
-  useEffect(() => {
-    const p = parseDate(value);
-    setViewYear(p.year);
-    setViewMonth(p.month);
-  }, [value]);
 
   // Close on outside click
   useEffect(() => {
@@ -129,7 +144,6 @@ export function DatePicker({ value, onChange, locale = "en-US", name, required }
   );
 
   const weekdays = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(2024, 0, i); // Jan 2024 starts on Monday; we need Sun=0
     // Jan 7 2024 is a Sunday
     const base = new Date(2024, 0, 7 + i); // Sun=7, Mon=8, ...
     return weekdayFormatter().format(base);
@@ -176,13 +190,22 @@ export function DatePicker({ value, onChange, locale = "en-US", name, required }
     yearOptions.push(y);
   }
 
+  function toggleOpen() {
+    if (!open) {
+      const nextParsed = parseDate(value);
+      setViewYear(nextParsed.year);
+      setViewMonth(nextParsed.month);
+    }
+    setOpen((current) => !current);
+  }
+
   return (
     <div className="datepicker">
       <button
         ref={triggerRef}
         type="button"
         className="datepicker__trigger"
-        onClick={() => setOpen((o) => !o)}
+        onClick={toggleOpen}
         aria-haspopup="dialog"
         aria-expanded={open}
       >
@@ -191,13 +214,13 @@ export function DatePicker({ value, onChange, locale = "en-US", name, required }
       <input type="hidden" name={name} value={value} required={required} />
 
       {open && (
-        <div ref={panelRef} className="datepicker__panel" role="dialog" aria-label="Choose date">
+        <div ref={panelRef} className="datepicker__panel" role="dialog" aria-label={labels.chooseDate}>
           <div className="datepicker__controls">
             <select
               className="datepicker__year-select"
               value={viewYear}
               onChange={(e) => setViewYear(Number(e.target.value))}
-              aria-label="Year"
+              aria-label={labels.year}
             >
               {yearOptions.map((y) => (
                 <option key={y} value={y}>{y}</option>
@@ -205,11 +228,21 @@ export function DatePicker({ value, onChange, locale = "en-US", name, required }
             </select>
 
             <div className="datepicker__month-nav">
-              <button type="button" className="datepicker__nav-btn" onClick={prevMonth} aria-label="Previous month">
+              <button
+                type="button"
+                className="datepicker__nav-btn"
+                onClick={prevMonth}
+                aria-label={labels.previousMonth}
+              >
                 &#8249;
               </button>
               <span className="datepicker__month-label">{monthLabel}</span>
-              <button type="button" className="datepicker__nav-btn" onClick={nextMonth} aria-label="Next month">
+              <button
+                type="button"
+                className="datepicker__nav-btn"
+                onClick={nextMonth}
+                aria-label={labels.nextMonth}
+              >
                 &#8250;
               </button>
             </div>

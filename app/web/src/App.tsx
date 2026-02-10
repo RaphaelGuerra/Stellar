@@ -421,6 +421,10 @@ function App() {
     cityHint: isCarioca
       ? `Manda a cidade com pais certinho, mermão. Ou usa um exemplo: ${SUPPORTED_CITIES.join(", ")}`
       : `Type to search cities worldwide or try: ${SUPPORTED_CITIES.join(", ")}`,
+    datePickerDialog: isCarioca ? "Escolher data" : "Choose date",
+    datePickerYear: isCarioca ? "Ano" : "Year",
+    datePickerPreviousMonth: isCarioca ? "Mes anterior" : "Previous month",
+    datePickerNextMonth: isCarioca ? "Proximo mes" : "Next month",
     daylightSaving: isCarioca ? "Horario de verao" : "Daylight saving",
     daylightSavingAuto: isCarioca ? "Auto (recomendado)" : "Auto (recommended)",
     daylightSavingManual: isCarioca ? "Ajuste manual de horario de verao" : "Manual daylight saving override",
