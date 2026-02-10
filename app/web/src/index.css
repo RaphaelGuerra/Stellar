@@ -1426,7 +1426,8 @@ body {
 .cards-grid--hero,
 .cards-grid--planets,
 .cards-grid--aspects,
-.cards-grid--synastry {
+.cards-grid--synastry,
+.cards-grid--today {
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--space-lg);
@@ -1437,7 +1438,8 @@ body {
   .cards-grid--hero,
   .cards-grid--planets,
   .cards-grid--aspects,
-  .cards-grid--synastry {
+  .cards-grid--synastry,
+  .cards-grid--today {
     grid-template-columns: repeat(2, 1fr);
   }
 }

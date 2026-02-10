@@ -6,6 +6,8 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "../src/App";
+import { APP_STATE_STORAGE_KEY } from "../src/lib/appState";
+import type { ChartResult, PlanetName, ZodiacSign } from "../src/lib/types";
 
 vi.mock("../src/lib/useGeoSearch", () => {
   const makeGeo = () => ({
@@ -59,6 +61,71 @@ afterEach(() => {
   cleanup();
 });
 
+const PLANETS: PlanetName[] = [
+  "Sun",
+  "Moon",
+  "Mercury",
+  "Venus",
+  "Mars",
+  "Jupiter",
+  "Saturn",
+  "Uranus",
+  "Neptune",
+  "Pluto",
+];
+
+const SIGNS: ZodiacSign[] = [
+  "Aries",
+  "Taurus",
+  "Gemini",
+  "Cancer",
+  "Leo",
+  "Virgo",
+  "Libra",
+  "Scorpio",
+  "Sagittarius",
+  "Capricorn",
+  "Aquarius",
+  "Pisces",
+];
+
+function toPlacement(longitude: number) {
+  const normalized = ((longitude % 360) + 360) % 360;
+  const signIndex = Math.floor(normalized / 30);
+  const degree = Math.round((normalized % 30) * 10) / 10;
+  return {
+    sign: SIGNS[signIndex],
+    degree,
+    longitude: normalized,
+  };
+}
+
+function buildChart(longitudes: Partial<Record<PlanetName, number>>): ChartResult {
+  const planets = {} as ChartResult["planets"];
+  for (const planet of PLANETS) {
+    planets[planet] = toPlacement(longitudes[planet] ?? 0);
+  }
+  return {
+    input: {
+      date: "1990-01-01",
+      time: "12:00",
+      city: "Rio de Janeiro",
+      country: "BR",
+      daylight_saving: "auto",
+    },
+    normalized: {
+      localDateTime: "1990-01-01T12:00",
+      utcDateTime: "1990-01-01T15:00:00Z",
+      timezone: "America/Sao_Paulo",
+      offsetMinutes: 180,
+      daylightSaving: false,
+      location: { lat: -22.9, lon: -43.2 },
+    },
+    planets,
+    aspects: [],
+  };
+}
+
 describe("App aria labels localization", () => {
   it("switches landmark/group labels from English to Carioca mode", () => {
     render(<App />);
@@ -84,5 +151,71 @@ describe("App aria labels localization", () => {
     expect(screen.getByRole("group", { name: "Duo mode" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Romantic" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Friend" })).toBeTruthy();
+  });
+
+  it("renders the Today for Us section for saved compatibility charts", () => {
+    const chartA = buildChart({ Sun: 0, Moon: 90, Venus: 120 });
+    const chartB = buildChart({ Sun: 180, Moon: 270, Venus: 300 });
+    window.localStorage.setItem(
+      APP_STATE_STORAGE_KEY,
+      JSON.stringify({
+        analysisMode: "compatibility",
+        duoMode: "romantic",
+        personA: {
+          date: "1990-01-01",
+          time: "12:00",
+          daylightSaving: "auto",
+          locationInput: "Rio de Janeiro, BR",
+        },
+        personB: {
+          date: "1992-02-02",
+          time: "18:00",
+          daylightSaving: "auto",
+          locationInput: "New York, US",
+        },
+        lastChartA: chartA,
+        lastChartB: chartB,
+        history: [],
+      })
+    );
+
+    render(<App />);
+
+    expect(screen.getByRole("heading", { name: "Today for Us" })).toBeTruthy();
+    expect(screen.getByText(/Boost Window/)).toBeTruthy();
+    expect(screen.getByText(/Pressure Point/)).toBeTruthy();
+  });
+
+  it("localizes Today for Us section in Carioca mode", () => {
+    const chartA = buildChart({ Sun: 0, Moon: 90, Venus: 120 });
+    const chartB = buildChart({ Sun: 180, Moon: 270, Venus: 300 });
+    window.localStorage.setItem(
+      APP_STATE_STORAGE_KEY,
+      JSON.stringify({
+        analysisMode: "compatibility",
+        duoMode: "friend",
+        personA: {
+          date: "1990-01-01",
+          time: "12:00",
+          daylightSaving: "auto",
+          locationInput: "Rio de Janeiro, BR",
+        },
+        personB: {
+          date: "1992-02-02",
+          time: "18:00",
+          daylightSaving: "auto",
+          locationInput: "New York, US",
+        },
+        lastChartA: chartA,
+        lastChartB: chartB,
+        history: [],
+      })
+    );
+
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Carioca, porra" }));
+
+    expect(screen.getByRole("heading", { name: "Hoje pra dupla" })).toBeTruthy();
+    expect(screen.getByText(/Janela de|Janela estavel/)).toBeTruthy();
   });
 });

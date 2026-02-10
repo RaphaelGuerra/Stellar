@@ -9,6 +9,7 @@ import { PersonForm } from "./components/PersonForm";
 import { buildCards, buildPlacementsSummary, type CardModel, type PlacementSummary } from "./lib/cards";
 import { AmbiguousLocalTimeError, NonexistentLocalTimeError, generateChart } from "./lib/engine";
 import { buildChartComparison } from "./lib/synastry";
+import { buildDailyTransitOutlook } from "./lib/transits";
 import {
   HISTORY_LIMIT,
   readPersistedAppState,
@@ -336,6 +337,14 @@ function App() {
     return buildChartComparison(chart, chartB, isCarioca ? "pt" : "en", duoMode);
   }, [analysisMode, chart, chartB, duoMode, isCarioca]);
 
+  const dailyOutlook = useMemo(() => {
+    if (analysisMode !== "compatibility" || !chart || !chartB) return null;
+    return buildDailyTransitOutlook(chart, chartB, {
+      locale: isCarioca ? "pt" : "en",
+      duoMode,
+    });
+  }, [analysisMode, chart, chartB, duoMode, isCarioca]);
+
   const comparisonCards = useMemo(() => {
     if (!comparison) return [];
     return comparison.highlights.map((highlight) => ({
@@ -644,6 +653,8 @@ function App() {
       : 'Click "Generate chart" to see aspects between Person A and Person B.',
     compatibilityStatsTitle: isCarioca ? "Stats da relacao" : "Relationship stats",
     compatibilityStatsBadge: isCarioca ? "modo RPG" : "RPG mode",
+    todayForUsTitle: isCarioca ? "Hoje pra dupla" : "Today for Us",
+    todayForUsBadge: isCarioca ? "transitos ativos" : "live transits",
     duoModeLabel: isCarioca ? "Tipo de dupla" : "Duo mode",
     duoModeRomantic: isCarioca ? "Romantico" : "Romantic",
     duoModeFriend: isCarioca ? "Amizade" : "Friend",
@@ -999,6 +1010,37 @@ function App() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </Section>
+          )}
+
+          {!loading && analysisMode === "compatibility" && dailyOutlook && (
+            <Section icon="📆" title={t.todayForUsTitle} badge={`${t.todayForUsBadge} · ${dailyOutlook.dateLabel}`}>
+              <div className="cards-grid--today">
+                <Card
+                  key={`${resultVersion}-${dailyOutlook.opportunity.key}`}
+                  title={dailyOutlook.opportunity.title}
+                  subtitle={dailyOutlook.opportunity.subtitle}
+                  text={dailyOutlook.opportunity.text}
+                  tags={dailyOutlook.opportunity.tags}
+                  details={dailyOutlook.opportunity.details}
+                  tone={dailyOutlook.opportunity.tone}
+                  variant="synastry"
+                  orb={dailyOutlook.opportunity.orb}
+                  expandLabels={cardExpandLabels}
+                />
+                <Card
+                  key={`${resultVersion}-${dailyOutlook.watchout.key}`}
+                  title={dailyOutlook.watchout.title}
+                  subtitle={dailyOutlook.watchout.subtitle}
+                  text={dailyOutlook.watchout.text}
+                  tags={dailyOutlook.watchout.tags}
+                  details={dailyOutlook.watchout.details}
+                  tone={dailyOutlook.watchout.tone}
+                  variant="synastry"
+                  orb={dailyOutlook.watchout.orb}
+                  expandLabels={cardExpandLabels}
+                />
               </div>
             </Section>
           )}
