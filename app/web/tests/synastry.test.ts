@@ -189,4 +189,37 @@ describe("buildChartComparison", () => {
     expect(uranusMarsSextile?.details?.[1]?.text).toContain("trampo");
     expect(uranusMarsSextile?.details?.[1]?.text).toContain("amizades");
   });
+
+  it("returns the four RPG synastry stats normalized to 0-100", () => {
+    const chartA = buildChart({ Sun: 0, Moon: 90, Venus: 120, Mars: 210, Jupiter: 15, Saturn: 45 });
+    const chartB = buildChart({ Sun: 180, Moon: 270, Venus: 300, Mars: 30, Jupiter: 195, Saturn: 225 });
+    const comparison = buildChartComparison(chartA, chartB, "en");
+
+    expect(comparison.stats.map((stat) => stat.key)).toEqual([
+      "attraction",
+      "communication",
+      "stability",
+      "growth",
+    ]);
+
+    for (const stat of comparison.stats) {
+      expect(stat.score).toBeGreaterThanOrEqual(0);
+      expect(stat.score).toBeLessThanOrEqual(100);
+      expect(stat.label.length).toBeGreaterThan(0);
+      expect(stat.summary.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("localizes RPG stat labels for Portuguese output", () => {
+    const chartA = buildChart({ Sun: 0 });
+    const chartB = buildChart({ Sun: 0 });
+    const comparison = buildChartComparison(chartA, chartB, "pt");
+
+    expect(comparison.stats.map((stat) => stat.label)).toEqual([
+      "Atracao",
+      "Comunicacao",
+      "Estabilidade",
+      "Crescimento",
+    ]);
+  });
 });

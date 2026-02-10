@@ -1006,6 +1006,76 @@ body {
   margin-bottom: 0;
 }
 
+/* ===== Synastry Stats ===== */
+.synastry-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-md);
+}
+
+.synastry-stats__item {
+  padding: var(--space-md);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.synastry-stats__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xs);
+}
+
+.synastry-stats__label {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+
+.synastry-stats__value {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-cyan);
+}
+
+.synastry-stats__summary {
+  margin: 0 0 var(--space-sm);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.synastry-stats__track {
+  width: 100%;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.synastry-stats__bar {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width var(--transition-medium);
+}
+
+.synastry-stats__bar--attraction {
+  background: linear-gradient(90deg, #f472b6, #fb7185);
+}
+
+.synastry-stats__bar--communication {
+  background: linear-gradient(90deg, #22d3ee, #60a5fa);
+}
+
+.synastry-stats__bar--stability {
+  background: linear-gradient(90deg, #10b981, #22c55e);
+}
+
+.synastry-stats__bar--growth {
+  background: linear-gradient(90deg, #f59e0b, #f97316);
+}
+
 /* ===== Error Boundary ===== */
 .error-boundary {
   display: flex;

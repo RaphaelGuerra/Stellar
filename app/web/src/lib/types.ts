@@ -128,10 +128,18 @@ export interface ComparisonAspect {
 }
 
 export type AspectTone = "harmonious" | "challenging" | "intense";
+export type SynastryStatKey = "attraction" | "communication" | "stability" | "growth";
 
 export interface DetailBlock {
   title: string;
   text: string;
+}
+
+export interface SynastryStat {
+  key: SynastryStatKey;
+  label: string;
+  score: number; // normalized 0-100
+  summary: string;
 }
 
 export interface ComparisonHighlight {
@@ -157,4 +165,5 @@ export interface ChartComparison {
   chartB: ChartResult;
   highlights: ComparisonHighlight[];
   aspects?: ComparisonAspect[]; // optional detailed synastry list
+  stats: SynastryStat[];
 }

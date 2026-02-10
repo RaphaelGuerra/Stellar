@@ -459,6 +459,8 @@ function App() {
     compatibilityEmpty: isCarioca
       ? 'Clica em "Gerar mapa, porra" pra ver a treta entre Pessoa A e Pessoa B.'
       : 'Click "Generate chart" to see aspects between Person A and Person B.',
+    compatibilityStatsTitle: isCarioca ? "Stats da relacao" : "Relationship stats",
+    compatibilityStatsBadge: isCarioca ? "modo RPG" : "RPG mode",
   };
   const ariaLabels = {
     chartInfo: isCarioca ? "Dados atuais do mapa" : "Current chart info",
@@ -729,6 +731,28 @@ function App() {
                     orb={card.orb}
                     expandLabels={cardExpandLabels}
                   />
+                ))}
+              </div>
+            </Section>
+          )}
+
+          {!loading && analysisMode === "compatibility" && comparison && comparison.stats.length > 0 && (
+            <Section icon="🎮" title={t.compatibilityStatsTitle} badge={t.compatibilityStatsBadge}>
+              <div className="synastry-stats">
+                {comparison.stats.map((stat) => (
+                  <div key={stat.key} className="synastry-stats__item">
+                    <div className="synastry-stats__head">
+                      <h3 className="synastry-stats__label">{stat.label}</h3>
+                      <span className="synastry-stats__value">{stat.score}%</span>
+                    </div>
+                    <p className="synastry-stats__summary">{stat.summary}</p>
+                    <div className="synastry-stats__track" aria-hidden="true">
+                      <div
+                        className={`synastry-stats__bar synastry-stats__bar--${stat.key}`}
+                        style={{ width: `${stat.score}%` }}
+                      />
+                    </div>
+                  </div>
                 ))}
               </div>
             </Section>

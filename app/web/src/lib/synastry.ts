@@ -15,6 +15,8 @@ import type {
   ComparisonHighlight,
   DetailBlock,
   PlanetName,
+  SynastryStat,
+  SynastryStatKey,
 } from "./types";
 
 export type SynastryLocale = "pt" | "en";
@@ -38,6 +40,65 @@ const ASPECT_LABELS: Record<SynastryLocale, Record<AspectName, string>> = {
 };
 
 const LIFE_AREAS: LifeArea[] = ["love", "family", "work", "friends", "money", "communication"];
+
+const SYNASTRY_STAT_ORDER: SynastryStatKey[] = [
+  "attraction",
+  "communication",
+  "stability",
+  "growth",
+];
+
+const SYNASTRY_STAT_AREAS: Record<SynastryStatKey, readonly LifeArea[]> = {
+  attraction: ["love"],
+  communication: ["communication"],
+  stability: ["family", "money"],
+  growth: ["work", "friends"],
+};
+
+const SYNASTRY_STAT_KEY_PLANETS: Record<SynastryStatKey, readonly PlanetName[]> = {
+  attraction: ["Venus", "Mars", "Pluto"],
+  communication: ["Mercury", "Jupiter", "Sun"],
+  stability: ["Moon", "Saturn", "Neptune"],
+  growth: ["Sun", "Jupiter", "Uranus"],
+};
+
+const SYNASTRY_STAT_LABELS: Record<SynastryLocale, Record<SynastryStatKey, string>> = {
+  en: {
+    attraction: "Attraction",
+    communication: "Communication",
+    stability: "Stability",
+    growth: "Growth",
+  },
+  pt: {
+    attraction: "Atracao",
+    communication: "Comunicacao",
+    stability: "Estabilidade",
+    growth: "Crescimento",
+  },
+};
+
+const SYNASTRY_STAT_SUMMARY: Record<SynastryLocale, Record<SynastryStatKey, string>> = {
+  en: {
+    attraction: "Chemistry, desire, and romantic pull.",
+    communication: "How well both people exchange ideas.",
+    stability: "Emotional and practical consistency.",
+    growth: "Capacity to evolve and build together.",
+  },
+  pt: {
+    attraction: "Quimica, desejo e puxada romantica.",
+    communication: "Como os dois trocam ideia no dia a dia.",
+    stability: "Constancia emocional e pratica.",
+    growth: "Capacidade de evoluir e construir junto.",
+  },
+};
+
+const ASPECT_STAT_IMPACT: Record<AspectName, number> = {
+  Trine: 1,
+  Sextile: 0.85,
+  Conjunction: 0.7,
+  Opposition: 0.4,
+  Square: 0.25,
+};
 
 const LIFE_AREA_LABELS: Record<SynastryLocale, Record<LifeArea, string>> = {
   en: {
@@ -413,6 +474,64 @@ function dedupeTags(tags: string[]): string[] {
   return Array.from(new Set(tags));
 }
 
+function clampToPercent(value: number): number {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function scoreAspect(aspect: ComparisonAspect): number {
+  const orb = aspect.orb ?? 0;
+  return Math.max(0, 100 - orb * 10);
+}
+
+function buildStatWeight(aspect: ComparisonAspect, stat: SynastryStatKey): number {
+  const areas = SYNASTRY_STAT_AREAS[stat];
+  const weightsA = PLANET_AREA_WEIGHTS[aspect.a.planet];
+  const weightsB = PLANET_AREA_WEIGHTS[aspect.b.planet];
+  const areaWeight = areas.reduce(
+    (sum, area) => sum + (weightsA[area] ?? 0) + (weightsB[area] ?? 0),
+    0
+  );
+
+  const keyPlanets = SYNASTRY_STAT_KEY_PLANETS[stat];
+  const keyBoost =
+    (keyPlanets.includes(aspect.a.planet) ? 2 : 0) +
+    (keyPlanets.includes(aspect.b.planet) ? 2 : 0);
+  return areaWeight + keyBoost;
+}
+
+function buildSynastryStats(
+  aspects: readonly ComparisonAspect[],
+  locale: SynastryLocale
+): SynastryStat[] {
+  const totals: Record<SynastryStatKey, { weighted: number; maximum: number }> = {
+    attraction: { weighted: 0, maximum: 0 },
+    communication: { weighted: 0, maximum: 0 },
+    stability: { weighted: 0, maximum: 0 },
+    growth: { weighted: 0, maximum: 0 },
+  };
+
+  for (const aspect of aspects) {
+    const baseScore = scoreAspect(aspect);
+    const impact = ASPECT_STAT_IMPACT[aspect.type];
+    for (const stat of SYNASTRY_STAT_ORDER) {
+      const weight = buildStatWeight(aspect, stat);
+      totals[stat].weighted += baseScore * impact * weight;
+      totals[stat].maximum += 100 * weight;
+    }
+  }
+
+  return SYNASTRY_STAT_ORDER.map((stat) => {
+    const total = totals[stat];
+    const normalized = total.maximum > 0 ? (total.weighted / total.maximum) * 100 : 0;
+    return {
+      key: stat,
+      label: SYNASTRY_STAT_LABELS[locale][stat],
+      score: clampToPercent(normalized),
+      summary: SYNASTRY_STAT_SUMMARY[locale][stat],
+    };
+  });
+}
+
 function buildHighlightText(
   aspect: ComparisonAspect,
   areas: [LifeArea, LifeArea],
@@ -495,11 +614,13 @@ export function buildChartComparison(
 
   aspects.sort((left, right) => (left.orb ?? 0) - (right.orb ?? 0));
   const highlights = aspects.map((aspect, index) => makeHighlight(aspect, index, locale));
+  const stats = buildSynastryStats(aspects, locale);
 
   return {
     chartA,
     chartB,
     aspects,
     highlights,
+    stats,
   };
 }
