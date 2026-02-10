@@ -60,6 +60,13 @@ describe("app state persistence", () => {
         locationInput: "Lisbon, PT",
       },
       history: [],
+      progression: {
+        xp: 120,
+        streak: 3,
+        lastCompletionDay: "2026-02-10",
+        completedQuestIds: ["q-1"],
+        reflectedQuestIds: ["q-1"],
+      },
     };
 
     writePersistedAppState(state);
@@ -70,6 +77,9 @@ describe("app state persistence", () => {
     expect(loaded?.duoMode).toBe("friend");
     expect(loaded?.personA.locationInput).toBe("Rio de Janeiro, BR");
     expect(loaded?.personB.daylightSaving).toBe(false);
+    expect(loaded?.progression.xp).toBe(120);
+    expect(loaded?.progression.streak).toBe(3);
+    expect(loaded?.progression.completedQuestIds).toEqual(["q-1"]);
   });
 
   it("returns safe defaults for invalid stored payload", () => {
@@ -81,5 +91,12 @@ describe("app state persistence", () => {
     expect(loaded?.duoMode).toBe("romantic");
     expect(loaded?.personA.locationInput).toBe("Rio de Janeiro, BR");
     expect(loaded?.history).toEqual([]);
+    expect(loaded?.progression).toEqual({
+      xp: 0,
+      streak: 0,
+      completedQuestIds: [],
+      reflectedQuestIds: [],
+      lastCompletionDay: undefined,
+    });
   });
 });

@@ -1,4 +1,8 @@
 import type { ChartResult, DuoMode } from "./types";
+import {
+  DEFAULT_PROGRESSION_STATE,
+  type ProgressionState,
+} from "./progression";
 
 export type PersistedAnalysisMode = "single" | "compatibility";
 
@@ -26,10 +30,12 @@ export interface PersistedAppState {
   lastChartA?: ChartResult;
   lastChartB?: ChartResult;
   history: PersistedHistoryEntry[];
+  progression: ProgressionState;
 }
 
 export const APP_STATE_STORAGE_KEY = "stellar-app-state-v1";
 export const HISTORY_LIMIT = 12;
+const PROGRESSION_IDS_LIMIT = 160;
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -97,6 +103,39 @@ function normalizeHistory(value: unknown): PersistedHistoryEntry[] {
   return normalized;
 }
 
+function normalizeIdList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return Array.from(
+    new Set(value.filter((entry): entry is string => typeof entry === "string" && entry.length > 0))
+  ).slice(0, PROGRESSION_IDS_LIMIT);
+}
+
+function normalizeProgression(value: unknown): ProgressionState {
+  if (!isObject(value)) {
+    return {
+      ...DEFAULT_PROGRESSION_STATE,
+      completedQuestIds: [],
+      reflectedQuestIds: [],
+    };
+  }
+  return {
+    xp:
+      typeof value.xp === "number" && Number.isFinite(value.xp) && value.xp >= 0
+        ? Math.round(value.xp)
+        : 0,
+    streak:
+      typeof value.streak === "number" && Number.isFinite(value.streak) && value.streak >= 0
+        ? Math.round(value.streak)
+        : 0,
+    lastCompletionDay:
+      typeof value.lastCompletionDay === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value.lastCompletionDay)
+        ? value.lastCompletionDay
+        : undefined,
+    completedQuestIds: normalizeIdList(value.completedQuestIds),
+    reflectedQuestIds: normalizeIdList(value.reflectedQuestIds),
+  };
+}
+
 export function readPersistedAppState(): PersistedAppState | null {
   if (typeof window === "undefined") return null;
   try {
@@ -116,6 +155,7 @@ export function readPersistedAppState(): PersistedAppState | null {
       lastChartA: isChartResult(parsed.lastChartA) ? parsed.lastChartA : undefined,
       lastChartB: isChartResult(parsed.lastChartB) ? parsed.lastChartB : undefined,
       history: normalizeHistory(parsed.history),
+      progression: normalizeProgression(parsed.progression),
     };
   } catch {
     return null;

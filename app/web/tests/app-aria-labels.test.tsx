@@ -215,7 +215,54 @@ describe("App aria labels localization", () => {
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "Carioca, porra" }));
 
-    expect(screen.getByRole("heading", { name: "Hoje pra dupla" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Hoje pra amizade" })).toBeTruthy();
     expect(screen.getByText(/Janela de|Janela estavel/)).toBeTruthy();
+  });
+
+  it("tracks quest actions and updates labels after completion", () => {
+    const chartA = buildChart({ Sun: 0, Moon: 90, Venus: 120 });
+    const chartB = buildChart({ Sun: 180, Moon: 270, Venus: 300 });
+    window.localStorage.setItem(
+      APP_STATE_STORAGE_KEY,
+      JSON.stringify({
+        analysisMode: "compatibility",
+        duoMode: "romantic",
+        personA: {
+          date: "1990-01-01",
+          time: "12:00",
+          daylightSaving: "auto",
+          locationInput: "Rio de Janeiro, BR",
+        },
+        personB: {
+          date: "1992-02-02",
+          time: "18:00",
+          daylightSaving: "auto",
+          locationInput: "New York, US",
+        },
+        lastChartA: chartA,
+        lastChartB: chartB,
+        history: [],
+        progression: {
+          xp: 0,
+          streak: 0,
+          completedQuestIds: [],
+          reflectedQuestIds: [],
+        },
+      })
+    );
+
+    render(<App />);
+
+    expect(screen.getByRole("heading", { name: "Relationship quest" })).toBeTruthy();
+    const reflectBefore = screen.getByRole("button", { name: "Log reflection (+20 XP)" });
+    expect((reflectBefore as HTMLButtonElement).disabled).toBe(true);
+
+    const complete = screen.getByRole("button", { name: "Complete quest (+40 XP)" });
+    fireEvent.click(complete);
+    expect(screen.getByRole("button", { name: "Quest completed" })).toBeTruthy();
+
+    const reflect = screen.getByRole("button", { name: "Log reflection (+20 XP)" });
+    fireEvent.click(reflect);
+    expect(screen.getByRole("button", { name: "Reflection logged" })).toBeTruthy();
   });
 });

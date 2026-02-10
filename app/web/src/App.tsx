@@ -11,6 +11,18 @@ import { AmbiguousLocalTimeError, NonexistentLocalTimeError, generateChart } fro
 import { buildChartComparison } from "./lib/synastry";
 import { buildDailyTransitOutlook } from "./lib/transits";
 import {
+  DEFAULT_PROGRESSION_STATE,
+  awardQuestCompletion,
+  awardQuestReflection,
+  buildRelationshipQuest,
+  getDetailUnlockCount,
+  getLocalDayKey,
+  getNextDetailUnlockXp,
+  hasCompletedQuest,
+  hasReflectedQuest,
+  type RelationshipQuest,
+} from "./lib/progression";
+import {
   HISTORY_LIMIT,
   readPersistedAppState,
   writePersistedAppState,
@@ -209,6 +221,7 @@ function App() {
   const [cards, setCards] = useState<CardModel[]>([]);
   const [resultVersion, setResultVersion] = useState(0);
   const [history, setHistory] = useState<PersistedHistoryEntry[]>(() => persisted?.history ?? []);
+  const [progression, setProgression] = useState(() => persisted?.progression ?? DEFAULT_PROGRESSION_STATE);
   const [placements, setPlacements] = useState<PlacementSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -270,6 +283,7 @@ function App() {
       lastChartA: chart ?? undefined,
       lastChartB: chartB ?? undefined,
       history: history.slice(0, HISTORY_LIMIT),
+      progression,
     });
   }, [
     analysisMode,
@@ -283,6 +297,7 @@ function App() {
     geoA.locationInput,
     geoB.locationInput,
     history,
+    progression,
     timeA,
     timeB,
   ]);
@@ -347,17 +362,54 @@ function App() {
 
   const comparisonCards = useMemo(() => {
     if (!comparison) return [];
+    const unlockedDetails = getDetailUnlockCount(progression.xp);
     return comparison.highlights.map((highlight) => ({
       key: highlight.key,
       title: highlight.title,
       subtitle: highlight.subtitle,
       text: highlight.text,
       tags: highlight.tags,
-      details: highlight.details,
+      details: highlight.details ? highlight.details.slice(0, unlockedDetails) : undefined,
       tone: highlight.tone,
       orb: highlight.related?.aspect?.orb,
     }));
-  }, [comparison]);
+  }, [comparison, progression.xp]);
+
+  const unlockedDetailCount = useMemo(
+    () => getDetailUnlockCount(progression.xp),
+    [progression.xp]
+  );
+  const nextDetailUnlockXp = useMemo(
+    () => getNextDetailUnlockXp(progression.xp),
+    [progression.xp]
+  );
+
+  const relationshipQuest: RelationshipQuest | null = useMemo(() => {
+    if (analysisMode !== "compatibility" || !comparison || !chart) return null;
+    return buildRelationshipQuest(comparison, {
+      locale: isCarioca ? "pt" : "en",
+      duoMode,
+      timeZone: chart.normalized.timezone,
+    });
+  }, [analysisMode, chart, comparison, duoMode, isCarioca]);
+
+  const questCompleted = relationshipQuest
+    ? hasCompletedQuest(progression, relationshipQuest.id)
+    : false;
+  const questReflected = relationshipQuest
+    ? hasReflectedQuest(progression, relationshipQuest.id)
+    : false;
+
+  function handleQuestComplete() {
+    if (!relationshipQuest || !chart) return;
+    const dayKey = getLocalDayKey(new Date(), chart.normalized.timezone);
+    setProgression((current) => awardQuestCompletion(current, relationshipQuest.id, dayKey));
+  }
+
+  function handleQuestReflection() {
+    if (!relationshipQuest || !questCompleted) return;
+    setProgression((current) => awardQuestReflection(current, relationshipQuest.id));
+  }
 
   function buildChartInput(
     date: string,
@@ -651,9 +703,42 @@ function App() {
     compatibilityEmpty: isCarioca
       ? 'Clica em "Gerar mapa, porra" pra ver a treta entre Pessoa A e Pessoa B.'
       : 'Click "Generate chart" to see aspects between Person A and Person B.',
-    compatibilityStatsTitle: isCarioca ? "Stats da relacao" : "Relationship stats",
+    compatibilityStatsTitle:
+      duoMode === "friend"
+        ? isCarioca
+          ? "Stats da amizade"
+          : "Friendship stats"
+        : isCarioca
+          ? "Stats da relacao"
+          : "Relationship stats",
     compatibilityStatsBadge: isCarioca ? "modo RPG" : "RPG mode",
-    todayForUsTitle: isCarioca ? "Hoje pra dupla" : "Today for Us",
+    questTitle:
+      duoMode === "friend"
+        ? isCarioca
+          ? "Missao da amizade"
+          : "Friendship quest"
+        : isCarioca
+          ? "Missao da dupla"
+          : "Relationship quest",
+    questBadge: (label: string) => isCarioca ? `foco em ${label}` : `${label} focus`,
+    questXpLabel: isCarioca ? "XP total" : "Total XP",
+    questStreakLabel: isCarioca ? "Streak" : "Streak",
+    questUnlockLabel: (count: number) =>
+      isCarioca ? `Blocos destravados: ${count}/4` : `Unlocked detail blocks: ${count}/4`,
+    questNextUnlockLabel: (xp: number) =>
+      isCarioca ? `Proximo unlock em ${xp} XP` : `Next unlock at ${xp} XP`,
+    questComplete: isCarioca ? `Concluir missao (+40 XP)` : "Complete quest (+40 XP)",
+    questCompleted: isCarioca ? "Missao concluida" : "Quest completed",
+    questReflect: isCarioca ? "Registrar reflexao (+20 XP)" : "Log reflection (+20 XP)",
+    questReflected: isCarioca ? "Reflexao registrada" : "Reflection logged",
+    todayForUsTitle:
+      duoMode === "friend"
+        ? isCarioca
+          ? "Hoje pra amizade"
+          : "Today for Friends"
+        : isCarioca
+          ? "Hoje pra dupla"
+          : "Today for Us",
     todayForUsBadge: isCarioca ? "transitos ativos" : "live transits",
     duoModeLabel: isCarioca ? "Tipo de dupla" : "Duo mode",
     duoModeRomantic: isCarioca ? "Romantico" : "Romantic",
@@ -817,6 +902,41 @@ function App() {
             </form>
           </section>
 
+          {!loading && history.length > 0 && (
+            <Section icon="🗂️" title={t.historyTitle} badge={`${history.length}`}>
+              <div className="history-list">
+                {history.map((entry) => {
+                  const when = new Date(entry.createdAt);
+                  const modeLabel =
+                    entry.analysisMode === "compatibility"
+                      ? `${t.historyCompatibility} · ${entry.duoMode === "friend" ? t.duoModeFriend : t.duoModeRomantic}`
+                      : t.historySingle;
+                  const cities =
+                    entry.analysisMode === "compatibility" && entry.chartB
+                      ? `${entry.chartA.input.city} + ${entry.chartB.input.city}`
+                      : entry.chartA.input.city;
+                  return (
+                    <div key={entry.id} className="history-item">
+                      <div className="history-item__meta">
+                        <p className="history-item__title">{cities}</p>
+                        <p className="history-item__subtitle">
+                          {modeLabel} · {when.toLocaleString(isCarioca ? "pt-BR" : "en-US")}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        className="history-item__load"
+                        onClick={() => handleLoadHistory(entry)}
+                      >
+                        {t.historyLoad}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </Section>
+          )}
+
           {!loading && analysisMode === "single" && chart && (
             <Section icon="🧭" title={t.normalizedTitle}>
               <div className="normalized">
@@ -869,41 +989,6 @@ function App() {
           )}
 
           {loading && <LoadingState label={t.loading} />}
-
-          {!loading && history.length > 0 && (
-            <Section icon="🗂️" title={t.historyTitle} badge={`${history.length}`}>
-              <div className="history-list">
-                {history.map((entry) => {
-                  const when = new Date(entry.createdAt);
-                  const modeLabel =
-                    entry.analysisMode === "compatibility"
-                      ? `${t.historyCompatibility} · ${entry.duoMode === "friend" ? t.duoModeFriend : t.duoModeRomantic}`
-                      : t.historySingle;
-                  const cities =
-                    entry.analysisMode === "compatibility" && entry.chartB
-                      ? `${entry.chartA.input.city} + ${entry.chartB.input.city}`
-                      : entry.chartA.input.city;
-                  return (
-                    <div key={entry.id} className="history-item">
-                      <div className="history-item__meta">
-                        <p className="history-item__title">{cities}</p>
-                        <p className="history-item__subtitle">
-                          {modeLabel} · {when.toLocaleString(isCarioca ? "pt-BR" : "en-US")}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        className="history-item__load"
-                        onClick={() => handleLoadHistory(entry)}
-                      >
-                        {t.historyLoad}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            </Section>
-          )}
 
           {!loading && analysisMode === "single" && cards.length === 0 && (
             <p className="empty-state">
@@ -1014,6 +1099,53 @@ function App() {
             </Section>
           )}
 
+          {!loading && analysisMode === "compatibility" && relationshipQuest && (
+            <Section icon="🎯" title={t.questTitle} badge={t.questBadge(relationshipQuest.focusStatLabel)}>
+              <div className="quest-panel">
+                <div className="quest-panel__stats">
+                  <p>{t.questXpLabel}: {progression.xp}</p>
+                  <p>{t.questStreakLabel}: {progression.streak}</p>
+                  <p>{t.questUnlockLabel(unlockedDetailCount)}</p>
+                  {nextDetailUnlockXp != null && (
+                    <p>{t.questNextUnlockLabel(nextDetailUnlockXp)}</p>
+                  )}
+                </div>
+                <div className="quest-panel__actions">
+                  <button
+                    type="button"
+                    className="quest-action"
+                    onClick={handleQuestComplete}
+                    disabled={questCompleted}
+                  >
+                    {questCompleted ? t.questCompleted : t.questComplete}
+                  </button>
+                  <button
+                    type="button"
+                    className="quest-action"
+                    onClick={handleQuestReflection}
+                    disabled={!questCompleted || questReflected}
+                  >
+                    {questReflected ? t.questReflected : t.questReflect}
+                  </button>
+                </div>
+              </div>
+              <div className="cards-grid--quest">
+                <Card
+                  key={`${resultVersion}-${relationshipQuest.id}`}
+                  title={relationshipQuest.title}
+                  subtitle={relationshipQuest.subtitle}
+                  text={relationshipQuest.text}
+                  tags={relationshipQuest.tags}
+                  details={relationshipQuest.details.slice(0, unlockedDetailCount)}
+                  tone={relationshipQuest.tone}
+                  variant="synastry"
+                  orb={relationshipQuest.sourceAspect.orb}
+                  expandLabels={cardExpandLabels}
+                />
+              </div>
+            </Section>
+          )}
+
           {!loading && analysisMode === "compatibility" && dailyOutlook && (
             <Section icon="📆" title={t.todayForUsTitle} badge={`${t.todayForUsBadge} · ${dailyOutlook.dateLabel}`}>
               <div className="cards-grid--today">
@@ -1023,7 +1155,7 @@ function App() {
                   subtitle={dailyOutlook.opportunity.subtitle}
                   text={dailyOutlook.opportunity.text}
                   tags={dailyOutlook.opportunity.tags}
-                  details={dailyOutlook.opportunity.details}
+                  details={dailyOutlook.opportunity.details.slice(0, unlockedDetailCount)}
                   tone={dailyOutlook.opportunity.tone}
                   variant="synastry"
                   orb={dailyOutlook.opportunity.orb}
@@ -1035,7 +1167,7 @@ function App() {
                   subtitle={dailyOutlook.watchout.subtitle}
                   text={dailyOutlook.watchout.text}
                   tags={dailyOutlook.watchout.tags}
-                  details={dailyOutlook.watchout.details}
+                  details={dailyOutlook.watchout.details.slice(0, unlockedDetailCount)}
                   tone={dailyOutlook.watchout.tone}
                   variant="synastry"
                   orb={dailyOutlook.watchout.orb}

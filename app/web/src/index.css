@@ -1153,6 +1153,61 @@ body {
   background: linear-gradient(90deg, #f59e0b, #f97316);
 }
 
+/* ===== Relationship Quest ===== */
+.quest-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+  padding: var(--space-md);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.quest-panel__stats {
+  flex: 1;
+  min-width: 220px;
+  display: grid;
+  gap: 4px;
+}
+
+.quest-panel__stats p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.quest-panel__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  min-width: 220px;
+}
+
+.quest-action {
+  border: 1px solid var(--color-border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-text);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: left;
+}
+
+.quest-action:hover:not(:disabled) {
+  border-color: rgba(124, 106, 239, 0.35);
+  background: rgba(124, 106, 239, 0.12);
+}
+
+.quest-action:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
 /* ===== Error Boundary ===== */
 .error-boundary {
   display: flex;
@@ -1427,7 +1482,8 @@ body {
 .cards-grid--planets,
 .cards-grid--aspects,
 .cards-grid--synastry,
-.cards-grid--today {
+.cards-grid--today,
+.cards-grid--quest {
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--space-lg);
@@ -1441,6 +1497,10 @@ body {
   .cards-grid--synastry,
   .cards-grid--today {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .cards-grid--quest {
+    grid-template-columns: 1fr;
   }
 }
 
