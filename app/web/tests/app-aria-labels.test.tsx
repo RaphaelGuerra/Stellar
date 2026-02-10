@@ -75,4 +75,14 @@ describe("App aria labels localization", () => {
     expect(screen.getByRole("group", { name: "Modo de analise" })).toBeTruthy();
     expect(screen.getByLabelText("Dados atuais do mapa")).toBeTruthy();
   });
+
+  it("shows duo mode toggle only in compatibility mode", () => {
+    render(<App />);
+
+    expect(screen.queryByRole("group", { name: "Duo mode" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Compatibility" }));
+    expect(screen.getByRole("group", { name: "Duo mode" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Romantic" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Friend" })).toBeTruthy();
+  });
 });

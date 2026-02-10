@@ -128,6 +128,7 @@ export interface ComparisonAspect {
 }
 
 export type AspectTone = "harmonious" | "challenging" | "intense";
+export type DuoMode = "romantic" | "friend";
 export type SynastryStatKey = "attraction" | "communication" | "stability" | "growth";
 
 export interface DetailBlock {

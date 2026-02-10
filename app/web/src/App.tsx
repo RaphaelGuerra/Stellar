@@ -9,12 +9,58 @@ import { PersonForm } from "./components/PersonForm";
 import { buildCards, buildPlacementsSummary, type CardModel, type PlacementSummary } from "./lib/cards";
 import { AmbiguousLocalTimeError, NonexistentLocalTimeError, generateChart } from "./lib/engine";
 import { buildChartComparison } from "./lib/synastry";
+import {
+  HISTORY_LIMIT,
+  readPersistedAppState,
+  writePersistedAppState,
+  type PersistedHistoryEntry,
+} from "./lib/appState";
 import { validateChartInput, type ValidationErrorCode } from "./lib/validation";
 import { useGeoSearch, resolveLocationCandidates, type GeoSuggestion } from "./lib/useGeoSearch";
 import { SUPPORTED_CITIES } from "./lib/resolveCity";
-import type { ChartInput, ChartResult } from "./lib/types";
+import type { ChartInput, ChartResult, DuoMode } from "./lib/types";
 
 type AnalysisMode = "single" | "compatibility";
+
+function toLocationLabel(city: string, country: string): string {
+  const trimmedCity = city.trim();
+  const trimmedCountry = country.trim();
+  if (!trimmedCity) return trimmedCountry;
+  if (!trimmedCountry) return trimmedCity;
+  return `${trimmedCity}, ${trimmedCountry}`;
+}
+
+function chartToSuggestion(chart: ChartResult): GeoSuggestion {
+  const lat = chart.input.location?.lat ?? chart.normalized.location.lat;
+  const lon = chart.input.location?.lon ?? chart.normalized.location.lon;
+  const timezone = chart.input.location?.timezone ?? chart.normalized.timezone;
+  const label = toLocationLabel(chart.input.city, chart.input.country);
+  return {
+    id: `history-${chart.input.city}-${chart.input.country}-${lat}-${lon}-${timezone}`,
+    label,
+    city: chart.input.city,
+    country: chart.input.country,
+    lat,
+    lon,
+    timezone,
+  };
+}
+
+function makeHistorySignature(
+  analysisMode: AnalysisMode,
+  duoMode: DuoMode,
+  chartA: ChartResult,
+  chartB: ChartResult | null
+): string {
+  return [
+    analysisMode,
+    duoMode,
+    chartA.normalized.utcDateTime,
+    chartA.normalized.timezone,
+    chartB?.normalized.utcDateTime ?? "",
+    chartB?.normalized.timezone ?? "",
+  ].join("|");
+}
 
 const EN_VALIDATION_MESSAGES: Record<ValidationErrorCode, string> = {
   DATE_REQUIRED: "Date is required.",
@@ -121,34 +167,51 @@ function parseDaylightSavingValue(value: string): boolean | "auto" {
 function App() {
   const { mode, setMode, content } = useContentMode();
   const isCarioca = mode === "carioca";
-  const [analysisMode, setAnalysisMode] = useState<AnalysisMode>("single");
+  const persisted = useMemo(() => readPersistedAppState(), []);
+  const [analysisMode, setAnalysisMode] = useState<AnalysisMode>(
+    () => persisted?.analysisMode ?? "single"
+  );
+  const [duoMode, setDuoMode] = useState<DuoMode>(() => persisted?.duoMode ?? "romantic");
 
   // Person A state
-  const [dateA, setDateA] = useState("1990-01-01");
-  const [timeA, setTimeA] = useState("12:00");
-  const [daylightSavingA, setDaylightSavingA] = useState<boolean | "auto">("auto");
+  const [dateA, setDateA] = useState(() => persisted?.personA.date ?? "1990-01-01");
+  const [timeA, setTimeA] = useState(() => persisted?.personA.time ?? "12:00");
+  const [daylightSavingA, setDaylightSavingA] = useState<boolean | "auto">(
+    () => persisted?.personA.daylightSaving ?? "auto"
+  );
   const [showDaylightSavingOverrideA, setShowDaylightSavingOverrideA] = useState(false);
-  const geoA = useGeoSearch("Rio de Janeiro, BR", isCarioca);
+  const geoA = useGeoSearch(
+    persisted?.personA.locationInput ?? "Rio de Janeiro, BR",
+    isCarioca
+  );
 
   // Person B state
-  const [dateB, setDateB] = useState("1990-01-01");
-  const [timeB, setTimeB] = useState("12:00");
-  const [daylightSavingB, setDaylightSavingB] = useState<boolean | "auto">("auto");
+  const [dateB, setDateB] = useState(() => persisted?.personB.date ?? "1990-01-01");
+  const [timeB, setTimeB] = useState(() => persisted?.personB.time ?? "12:00");
+  const [daylightSavingB, setDaylightSavingB] = useState<boolean | "auto">(
+    () => persisted?.personB.daylightSaving ?? "auto"
+  );
   const [showDaylightSavingOverrideB, setShowDaylightSavingOverrideB] = useState(false);
-  const geoB = useGeoSearch("New York, US", isCarioca, analysisMode === "compatibility");
+  const geoB = useGeoSearch(
+    persisted?.personB.locationInput ?? "New York, US",
+    isCarioca,
+    analysisMode === "compatibility"
+  );
 
   // Keyboard nav for suggestion lists
   const kbA = useSuggestionKeyboard(geoA);
   const kbB = useSuggestionKeyboard(geoB);
 
   // Chart state
-  const [chart, setChart] = useState<ChartResult | null>(null);
-  const [chartB, setChartB] = useState<ChartResult | null>(null);
+  const [chart, setChart] = useState<ChartResult | null>(() => persisted?.lastChartA ?? null);
+  const [chartB, setChartB] = useState<ChartResult | null>(() => persisted?.lastChartB ?? null);
   const [cards, setCards] = useState<CardModel[]>([]);
   const [resultVersion, setResultVersion] = useState(0);
+  const [history, setHistory] = useState<PersistedHistoryEntry[]>(() => persisted?.history ?? []);
   const [placements, setPlacements] = useState<PlacementSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [geoRestored, setGeoRestored] = useState(false);
 
   // Clear stale state when switching analysis mode
   useEffect(() => {
@@ -165,6 +228,63 @@ function App() {
       setPlacements(buildPlacementsSummary(chart));
     }
   }, [mode, content, chart]);
+
+  useEffect(() => {
+    if (geoRestored) return;
+    const savedChartA = persisted?.lastChartA ?? chart;
+    const savedChartB = persisted?.lastChartB ?? chartB;
+    if (savedChartA) {
+      geoA.applyResolved(chartToSuggestion(savedChartA));
+    }
+    if ((persisted?.analysisMode ?? analysisMode) === "compatibility" && savedChartB) {
+      geoB.applyResolved(chartToSuggestion(savedChartB));
+    }
+    setGeoRestored(true);
+  }, [
+    analysisMode,
+    chart,
+    chartB,
+    geoA,
+    geoB,
+    geoRestored,
+    persisted,
+  ]);
+
+  useEffect(() => {
+    writePersistedAppState({
+      analysisMode,
+      duoMode,
+      personA: {
+        date: dateA,
+        time: timeA,
+        daylightSaving: daylightSavingA,
+        locationInput: geoA.locationInput,
+      },
+      personB: {
+        date: dateB,
+        time: timeB,
+        daylightSaving: daylightSavingB,
+        locationInput: geoB.locationInput,
+      },
+      lastChartA: chart ?? undefined,
+      lastChartB: chartB ?? undefined,
+      history: history.slice(0, HISTORY_LIMIT),
+    });
+  }, [
+    analysisMode,
+    chart,
+    chartB,
+    dateA,
+    dateB,
+    daylightSavingA,
+    daylightSavingB,
+    duoMode,
+    geoA.locationInput,
+    geoB.locationInput,
+    history,
+    timeA,
+    timeB,
+  ]);
 
   const { heroCards, planetCards, aspectCards } = useMemo(() => {
     const HERO_PLANETS = new Set(["Sun", "Moon"]);
@@ -213,8 +333,8 @@ function App() {
 
   const comparison = useMemo(() => {
     if (analysisMode !== "compatibility" || !chart || !chartB) return null;
-    return buildChartComparison(chart, chartB, isCarioca ? "pt" : "en");
-  }, [analysisMode, chart, chartB, isCarioca]);
+    return buildChartComparison(chart, chartB, isCarioca ? "pt" : "en", duoMode);
+  }, [analysisMode, chart, chartB, duoMode, isCarioca]);
 
   const comparisonCards = useMemo(() => {
     if (!comparison) return [];
@@ -329,6 +449,67 @@ function App() {
     return chartInput;
   }
 
+  function appendHistoryEntry(nextChartA: ChartResult, nextChartB: ChartResult | null) {
+    const entry: PersistedHistoryEntry = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+      createdAt: new Date().toISOString(),
+      analysisMode: nextChartB ? "compatibility" : "single",
+      duoMode,
+      chartA: nextChartA,
+      chartB: nextChartB ?? undefined,
+    };
+    const signature = makeHistorySignature(entry.analysisMode, entry.duoMode, entry.chartA, nextChartB);
+    setHistory((prev) => {
+      const deduped = prev.filter(
+        (saved) =>
+          makeHistorySignature(
+            saved.analysisMode,
+            saved.duoMode,
+            saved.chartA,
+            saved.chartB ?? null
+          ) !== signature
+      );
+      return [entry, ...deduped].slice(0, HISTORY_LIMIT);
+    });
+  }
+
+  function applyChartToForm(
+    chartValue: ChartResult,
+    person: "A" | "B"
+  ) {
+    const suggestion = chartToSuggestion(chartValue);
+    if (person === "A") {
+      setDateA(chartValue.input.date);
+      setTimeA(chartValue.input.time);
+      setDaylightSavingA(chartValue.input.daylight_saving);
+      geoA.applyResolved(suggestion);
+      return;
+    }
+    setDateB(chartValue.input.date);
+    setTimeB(chartValue.input.time);
+    setDaylightSavingB(chartValue.input.daylight_saving);
+    geoB.applyResolved(suggestion);
+  }
+
+  function handleLoadHistory(entry: PersistedHistoryEntry) {
+    setError(null);
+    setShowDaylightSavingOverrideA(false);
+    setShowDaylightSavingOverrideB(false);
+    setAnalysisMode(entry.analysisMode);
+    setDuoMode(entry.duoMode);
+    applyChartToForm(entry.chartA, "A");
+    setChart(entry.chartA);
+
+    if (entry.analysisMode === "compatibility" && entry.chartB) {
+      applyChartToForm(entry.chartB, "B");
+      setChartB(entry.chartB);
+    } else {
+      setChartB(null);
+    }
+
+    setResultVersion((prev) => prev + 1);
+  }
+
   async function handleGenerateChart(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
@@ -353,6 +534,7 @@ function App() {
         setCards(buildCards(content, newChart, mode));
         setPlacements(buildPlacementsSummary(newChart));
         setShowDaylightSavingOverrideA(false);
+        appendHistoryEntry(newChart, null);
         setResultVersion((prev) => prev + 1);
         return;
       }
@@ -400,6 +582,7 @@ function App() {
       setPlacements(buildPlacementsSummary(chartAValue));
       setShowDaylightSavingOverrideA(false);
       setShowDaylightSavingOverrideB(false);
+      appendHistoryEntry(chartAValue, chartBValue);
       setResultVersion((prev) => prev + 1);
     } catch (err) {
       if (err instanceof AmbiguousLocalTimeError) {
@@ -461,6 +644,13 @@ function App() {
       : 'Click "Generate chart" to see aspects between Person A and Person B.',
     compatibilityStatsTitle: isCarioca ? "Stats da relacao" : "Relationship stats",
     compatibilityStatsBadge: isCarioca ? "modo RPG" : "RPG mode",
+    duoModeLabel: isCarioca ? "Tipo de dupla" : "Duo mode",
+    duoModeRomantic: isCarioca ? "Romantico" : "Romantic",
+    duoModeFriend: isCarioca ? "Amizade" : "Friend",
+    historyTitle: isCarioca ? "Historico salvo" : "Saved history",
+    historyLoad: isCarioca ? "Carregar" : "Load",
+    historySingle: isCarioca ? "Solo" : "Single",
+    historyCompatibility: isCarioca ? "Sinastria" : "Compatibility",
   };
   const ariaLabels = {
     chartInfo: isCarioca ? "Dados atuais do mapa" : "Current chart info",
@@ -468,6 +658,7 @@ function App() {
     birthDataForm: isCarioca ? "Formulario de dados de nascimento" : "Birth data form",
     analysisMode: isCarioca ? "Modo de analise" : "Analysis mode",
     contentMode: isCarioca ? "Modo de conteudo" : "Content mode",
+    duoMode: isCarioca ? "Modo de dupla" : "Duo mode",
   };
   const cardExpandLabels = isCarioca
     ? { more: "Abrir mais", less: "Fechar" }
@@ -530,6 +721,25 @@ function App() {
                   {t.compatibilityMode}
                 </button>
               </div>
+
+              {analysisMode === "compatibility" && (
+                <div className="duo-mode" role="group" aria-label={ariaLabels.duoMode}>
+                  <button
+                    type="button"
+                    className={`duo-mode__btn ${duoMode === "romantic" ? "duo-mode__btn--active" : ""}`}
+                    onClick={() => setDuoMode("romantic")}
+                  >
+                    {t.duoModeRomantic}
+                  </button>
+                  <button
+                    type="button"
+                    className={`duo-mode__btn ${duoMode === "friend" ? "duo-mode__btn--active" : ""}`}
+                    onClick={() => setDuoMode("friend")}
+                  >
+                    {t.duoModeFriend}
+                  </button>
+                </div>
+              )}
 
               <PersonForm
                 title={analysisMode === "compatibility" ? t.personA : undefined}
@@ -648,6 +858,41 @@ function App() {
           )}
 
           {loading && <LoadingState label={t.loading} />}
+
+          {!loading && history.length > 0 && (
+            <Section icon="🗂️" title={t.historyTitle} badge={`${history.length}`}>
+              <div className="history-list">
+                {history.map((entry) => {
+                  const when = new Date(entry.createdAt);
+                  const modeLabel =
+                    entry.analysisMode === "compatibility"
+                      ? `${t.historyCompatibility} · ${entry.duoMode === "friend" ? t.duoModeFriend : t.duoModeRomantic}`
+                      : t.historySingle;
+                  const cities =
+                    entry.analysisMode === "compatibility" && entry.chartB
+                      ? `${entry.chartA.input.city} + ${entry.chartB.input.city}`
+                      : entry.chartA.input.city;
+                  return (
+                    <div key={entry.id} className="history-item">
+                      <div className="history-item__meta">
+                        <p className="history-item__title">{cities}</p>
+                        <p className="history-item__subtitle">
+                          {modeLabel} · {when.toLocaleString(isCarioca ? "pt-BR" : "en-US")}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        className="history-item__load"
+                        onClick={() => handleLoadHistory(entry)}
+                      >
+                        {t.historyLoad}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </Section>
+          )}
 
           {!loading && analysisMode === "single" && cards.length === 0 && (
             <p className="empty-state">

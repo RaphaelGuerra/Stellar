@@ -14,6 +14,7 @@ import type {
   ComparisonAspect,
   ComparisonHighlight,
   DetailBlock,
+  DuoMode,
   PlanetName,
   SynastryStat,
   SynastryStatKey,
@@ -116,6 +117,17 @@ const LIFE_AREA_LABELS: Record<SynastryLocale, Record<LifeArea, string>> = {
     friends: "amizades",
     money: "grana",
     communication: "papo",
+  },
+};
+
+const LIFE_AREA_LABELS_FRIEND: Record<SynastryLocale, Record<LifeArea, string>> = {
+  en: {
+    ...LIFE_AREA_LABELS.en,
+    love: "Bond",
+  },
+  pt: {
+    ...LIFE_AREA_LABELS.pt,
+    love: "vibe",
   },
 };
 
@@ -262,6 +274,19 @@ const LIFE_AREA_PLAYBOOK: Record<
   },
 };
 
+const FRIEND_LOVE_PLAYBOOK: Record<SynastryLocale, { focus: string; risk: string; move: string }> = {
+  en: {
+    focus: "Trust, loyalty, and shared rhythm between close friends.",
+    risk: "Unclear expectations can turn support into friction.",
+    move: "Set one friendship pact for availability and direct feedback this week.",
+  },
+  pt: {
+    focus: "Confianca, lealdade e sintonia entre amigos de verdade.",
+    risk: "Expectativa mal combinada vira cobranca e desgaste.",
+    move: "Fecha um pacto simples de disponibilidade e sinceridade nesta semana.",
+  },
+};
+
 function getOrbDetail(orb: number | undefined, locale: SynastryLocale): string {
   if (orb == null) {
     return locale === "en"
@@ -283,12 +308,17 @@ function getOrbDetail(orb: number | undefined, locale: SynastryLocale): string {
     : "Orb mais aberto: fica sutil, mas pinta quando o caldo engrossa.";
 }
 
-function buildAreaBreakdown(areas: readonly LifeArea[], locale: SynastryLocale): string {
+function buildAreaBreakdown(
+  areas: readonly LifeArea[],
+  locale: SynastryLocale,
+  duoMode: DuoMode
+): string {
+  const areaLabels = getAreaLabels(locale, duoMode);
   return areas
     .slice(0, 3)
     .map((area, index) => {
-      const label = LIFE_AREA_LABELS[locale][area];
-      const playbook = LIFE_AREA_PLAYBOOK[locale][area];
+      const label = areaLabels[area];
+      const playbook = getAreaPlaybook(locale, duoMode, area);
       return `${index + 1}. ${label}: ${playbook.focus}`;
     })
     .join(" ");
@@ -297,17 +327,19 @@ function buildAreaBreakdown(areas: readonly LifeArea[], locale: SynastryLocale):
 function buildHighlightDetails(
   aspect: ComparisonAspect,
   areas: readonly LifeArea[],
-  locale: SynastryLocale
+  locale: SynastryLocale,
+  duoMode: DuoMode
 ): DetailBlock[] {
   const [primaryArea = "love", secondaryArea = "family", tertiaryArea = "work"] = areas;
+  const areaLabels = getAreaLabels(locale, duoMode);
   const aspectLabel = ASPECT_LABELS[locale][aspect.type];
   const clarity = ASPECT_CLARITY[locale][aspect.type];
-  const primaryLabel = LIFE_AREA_LABELS[locale][primaryArea];
-  const secondaryLabel = LIFE_AREA_LABELS[locale][secondaryArea];
-  const primaryPlaybook = LIFE_AREA_PLAYBOOK[locale][primaryArea];
-  const secondaryPlaybook = LIFE_AREA_PLAYBOOK[locale][secondaryArea];
+  const primaryLabel = areaLabels[primaryArea];
+  const secondaryLabel = areaLabels[secondaryArea];
+  const primaryPlaybook = getAreaPlaybook(locale, duoMode, primaryArea);
+  const secondaryPlaybook = getAreaPlaybook(locale, duoMode, secondaryArea);
   const orbDetail = getOrbDetail(aspect.orb, locale);
-  const areaBreakdown = buildAreaBreakdown([primaryArea, secondaryArea, tertiaryArea], locale);
+  const areaBreakdown = buildAreaBreakdown([primaryArea, secondaryArea, tertiaryArea], locale, duoMode);
 
   if (locale === "en") {
     return [
@@ -434,13 +466,45 @@ const SYNASTRY_TITLES: Record<
   },
 };
 
+const FRIEND_LOVE_TITLES: Record<SynastryLocale, Record<AspectTone, string[]>> = {
+  en: {
+    harmonious: ["Friendship Green Light", "Ride-or-Die Sync"],
+    challenging: ["Friendship Stress Test", "Trust Bootcamp"],
+    intense: ["Crew Bond at Full Volume", "Unbreakable Squad Energy"],
+  },
+  pt: {
+    harmonious: ["Amizade no Sinal Verde", "Sintonia de Trincheira"],
+    challenging: ["Amizade no Teste", "Confianca no Bootcamp"],
+    intense: ["Vibe de Bonde Fechado", "Parceria no Talo"],
+  },
+};
+
+function getAreaLabels(locale: SynastryLocale, duoMode: DuoMode): Record<LifeArea, string> {
+  return duoMode === "friend" ? LIFE_AREA_LABELS_FRIEND[locale] : LIFE_AREA_LABELS[locale];
+}
+
+function getAreaPlaybook(
+  locale: SynastryLocale,
+  duoMode: DuoMode,
+  area: LifeArea
+): { focus: string; risk: string; move: string } {
+  if (duoMode === "friend" && area === "love") {
+    return FRIEND_LOVE_PLAYBOOK[locale];
+  }
+  return LIFE_AREA_PLAYBOOK[locale][area];
+}
+
 function pickSynastryTitle(
   area: LifeArea,
   tone: AspectTone,
   index: number,
-  locale: SynastryLocale
+  locale: SynastryLocale,
+  duoMode: DuoMode
 ): string {
-  const options = SYNASTRY_TITLES[locale][area][tone];
+  const options =
+    duoMode === "friend" && area === "love"
+      ? FRIEND_LOVE_TITLES[locale][tone]
+      : SYNASTRY_TITLES[locale][area][tone];
   return options[index % options.length];
 }
 
@@ -535,12 +599,14 @@ function buildSynastryStats(
 function buildHighlightText(
   aspect: ComparisonAspect,
   areas: [LifeArea, LifeArea],
-  locale: SynastryLocale
+  locale: SynastryLocale,
+  duoMode: DuoMode
 ): string {
   const [firstArea, secondArea] = areas;
+  const areaLabels = getAreaLabels(locale, duoMode);
   const clarity = ASPECT_CLARITY[locale][aspect.type];
-  const firstLabel = LIFE_AREA_LABELS[locale][firstArea];
-  const secondLabel = LIFE_AREA_LABELS[locale][secondArea];
+  const firstLabel = areaLabels[firstArea];
+  const secondLabel = areaLabels[secondArea];
 
   if (locale === "en") {
     return `Main areas: ${firstLabel} and ${secondLabel}. ${clarity.tone} ${clarity.advice}`;
@@ -551,15 +617,17 @@ function buildHighlightText(
 function makeHighlight(
   aspect: ComparisonAspect,
   index: number,
-  locale: SynastryLocale
+  locale: SynastryLocale,
+  duoMode: DuoMode
 ): ComparisonHighlight {
+  const areaLabels = getAreaLabels(locale, duoMode);
   const rankedAreas = rankLifeAreas(aspect);
   const primaryArea = rankedAreas[0] ?? "love";
   const secondaryArea = rankedAreas[1] ?? "family";
   const tone = getAspectTone(aspect.type);
   const label = ASPECT_LABELS[locale][aspect.type];
   const clarity = ASPECT_CLARITY[locale][aspect.type];
-  const funTitle = pickSynastryTitle(primaryArea, tone, index, locale);
+  const funTitle = pickSynastryTitle(primaryArea, tone, index, locale, duoMode);
   const pSymA = PLANET_SYMBOL[aspect.a.planet] ?? "";
   const pSymB = PLANET_SYMBOL[aspect.b.planet] ?? "";
   const aSymbol = ASPECT_SYMBOL[aspect.type] ?? "";
@@ -569,11 +637,11 @@ function makeHighlight(
     kind: "synastry-aspect",
     title: funTitle,
     subtitle,
-    text: buildHighlightText(aspect, [primaryArea, secondaryArea], locale),
-    details: buildHighlightDetails(aspect, rankedAreas, locale),
+    text: buildHighlightText(aspect, [primaryArea, secondaryArea], locale, duoMode),
+    details: buildHighlightDetails(aspect, rankedAreas, locale, duoMode),
     tags: dedupeTags([
-      LIFE_AREA_LABELS[locale][primaryArea].toLowerCase(),
-      LIFE_AREA_LABELS[locale][secondaryArea].toLowerCase(),
+      areaLabels[primaryArea].toLowerCase(),
+      areaLabels[secondaryArea].toLowerCase(),
       clarity.tag,
       label.toLowerCase(),
       aspect.a.planet.toLowerCase(),
@@ -588,7 +656,8 @@ function makeHighlight(
 export function buildChartComparison(
   chartA: ChartResult,
   chartB: ChartResult,
-  locale: SynastryLocale = "pt"
+  locale: SynastryLocale = "pt",
+  duoMode: DuoMode = "romantic"
 ): ChartComparison {
   const aspects: ComparisonAspect[] = [];
 
@@ -613,7 +682,7 @@ export function buildChartComparison(
   }
 
   aspects.sort((left, right) => (left.orb ?? 0) - (right.orb ?? 0));
-  const highlights = aspects.map((aspect, index) => makeHighlight(aspect, index, locale));
+  const highlights = aspects.map((aspect, index) => makeHighlight(aspect, index, locale, duoMode));
   const stats = buildSynastryStats(aspects, locale);
 
   return {

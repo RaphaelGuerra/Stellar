@@ -222,4 +222,22 @@ describe("buildChartComparison", () => {
       "Crescimento",
     ]);
   });
+
+  it("uses friend framing for bond-heavy friend mode highlights", () => {
+    const chartA = buildChart({ Venus: 0 });
+    const chartB = buildChart({ Venus: 0 });
+    const comparison = buildChartComparison(chartA, chartB, "en", "friend");
+
+    const venusConjunction = comparison.highlights.find(
+      (highlight) =>
+        highlight.related?.aspect?.a.planet === "Venus" &&
+        highlight.related?.aspect?.b.planet === "Venus" &&
+        highlight.related?.aspect?.type === "Conjunction"
+    );
+
+    expect(venusConjunction).toBeDefined();
+    expect(venusConjunction?.title).not.toContain("Love");
+    expect(venusConjunction?.tags).toContain("bond");
+    expect(venusConjunction?.text).toContain("Main areas");
+  });
 });
