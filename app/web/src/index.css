@@ -267,6 +267,11 @@ body {
   display: inline-block;
   transform: scale(1.15);
   transform-origin: bottom left;
+  background: inherit;
+  background-size: inherit;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.4));
 }
 
