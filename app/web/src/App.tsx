@@ -901,7 +901,7 @@ function App() {
       <div className="container">
         <header className="header" role="banner">
           <div className="header__brand">
-            <h1 className="header__title"><span className="header__title-s">S</span>tellar</h1>
+            <h1 className="header__title">Stellar</h1>
             <p className="header__tagline">"City of stars, are you shining just for me?"</p>
             <div
               className="header__meta"
