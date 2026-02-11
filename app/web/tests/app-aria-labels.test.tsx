@@ -6,7 +6,10 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "../src/App";
-import { APP_STATE_STORAGE_KEY } from "../src/lib/appState";
+import {
+  APP_STATE_STORAGE_KEY,
+  PRIVACY_SETTINGS_STORAGE_KEY,
+} from "../src/lib/appState";
 import type { ChartResult, PlanetName, ZodiacSign } from "../src/lib/types";
 
 vi.mock("../src/lib/useGeoSearch", () => {
@@ -268,5 +271,41 @@ describe("App aria labels localization", () => {
     const reflect = screen.getByRole("button", { name: "Log reflection (+20 XP)" });
     fireEvent.click(reflect);
     expect(screen.getByRole("button", { name: "Reflection logged" })).toBeTruthy();
+  });
+
+  it("allows disabling persistence and clearing local data", () => {
+    const chartA = buildChart({ Sun: 0, Moon: 90, Venus: 120 });
+    window.localStorage.setItem(
+      APP_STATE_STORAGE_KEY,
+      JSON.stringify({
+        analysisMode: "single",
+        duoMode: "romantic",
+        personA: {
+          date: "1990-01-01",
+          time: "12:00",
+          daylightSaving: "auto",
+          locationInput: "Rio de Janeiro, BR",
+        },
+        personB: {
+          date: "1992-02-02",
+          time: "18:00",
+          daylightSaving: "auto",
+          locationInput: "New York, US",
+        },
+        lastChartA: chartA,
+        history: [],
+      })
+    );
+
+    render(<App />);
+
+    const persistToggle = screen.getByRole("checkbox", { name: "Save data on this device" });
+    fireEvent.click(persistToggle);
+    expect(window.localStorage.getItem(APP_STATE_STORAGE_KEY)).toBeNull();
+
+    const clearButton = screen.getByRole("button", { name: "Clear local data now" });
+    fireEvent.click(clearButton);
+    expect(window.localStorage.getItem(APP_STATE_STORAGE_KEY)).toBeNull();
+    expect(window.localStorage.getItem(PRIVACY_SETTINGS_STORAGE_KEY)).not.toBeNull();
   });
 });

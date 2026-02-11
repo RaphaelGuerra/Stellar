@@ -31,8 +31,12 @@ import {
   type ForecastRange,
 } from "./lib/phase5";
 import {
+  APP_STATE_RETENTION_DAYS,
   HISTORY_LIMIT,
+  clearPersistedAppState,
   readPersistedAppState,
+  readPrivacySettings,
+  writePrivacySettings,
   writePersistedAppState,
   type PersistedHistoryEntry,
 } from "./lib/appState";
@@ -198,6 +202,9 @@ function App() {
   const { mode, setMode, content } = useContentMode();
   const isCarioca = mode === "carioca";
   const persisted = useMemo(() => readPersistedAppState(), []);
+  const [persistLocalData, setPersistLocalData] = useState(
+    () => readPrivacySettings().persistLocalData
+  );
   const [analysisMode, setAnalysisMode] = useState<AnalysisMode>(
     () => persisted?.analysisMode ?? "single"
   );
@@ -283,6 +290,14 @@ function App() {
   ]);
 
   useEffect(() => {
+    writePrivacySettings({ persistLocalData });
+    if (!persistLocalData) {
+      clearPersistedAppState();
+    }
+  }, [persistLocalData]);
+
+  useEffect(() => {
+    if (!persistLocalData) return;
     writePersistedAppState({
       analysisMode,
       duoMode,
@@ -315,6 +330,7 @@ function App() {
     geoA.locationInput,
     geoB.locationInput,
     history,
+    persistLocalData,
     progression,
     timeA,
     timeB,
@@ -444,6 +460,35 @@ function App() {
   function handleQuestReflection() {
     if (!relationshipQuest || !questCompleted) return;
     setProgression((current) => awardQuestReflection(current, relationshipQuest.id));
+  }
+
+  function handleClearLocalData() {
+    clearPersistedAppState();
+    setAnalysisMode("single");
+    setDuoMode("romantic");
+    setDateA("1990-01-01");
+    setTimeA("12:00");
+    setDaylightSavingA("auto");
+    geoA.setLocationInput("Rio de Janeiro, BR");
+    geoA.setSuggestions([]);
+    geoA.setSearchError(null);
+    setDateB("1990-01-01");
+    setTimeB("12:00");
+    setDaylightSavingB("auto");
+    geoB.setLocationInput("New York, US");
+    geoB.setSuggestions([]);
+    geoB.setSearchError(null);
+    setShowDaylightSavingOverrideA(false);
+    setShowDaylightSavingOverrideB(false);
+    setChart(null);
+    setChartB(null);
+    setCards([]);
+    setPlacements([]);
+    setHistory([]);
+    setProgression(DEFAULT_PROGRESSION_STATE);
+    setForecastRange(7);
+    setError(null);
+    setResultVersion((prev) => prev + 1);
   }
 
   function buildChartInput(
@@ -725,6 +770,11 @@ function App() {
     generate: isCarioca ? "Gerar mapa, porra" : "Generate chart",
     error: isCarioca ? "Deu merda no mapa" : "Error generating chart",
     normalizedTitle: isCarioca ? "Dados no papo reto" : "Normalized data",
+    timezoneLabel: isCarioca ? "Fuso" : "Timezone",
+    utcLabel: "UTC",
+    localLabel: isCarioca ? "Local" : "Local",
+    offsetLabel: isCarioca ? "Offset" : "Offset",
+    latLonLabel: "Lat/Lon",
     dstLabel: isCarioca ? "Horario de verao" : "Daylight saving",
     emptyState: isCarioca
       ? 'Clica em "Gerar mapa, porra" pra ver os cards desse mapa.'
@@ -807,6 +857,18 @@ function App() {
     historyLoad: isCarioca ? "Carregar" : "Load",
     historySingle: isCarioca ? "Solo" : "Single",
     historyCompatibility: isCarioca ? "Sinastria" : "Compatibility",
+    privacyTitle: isCarioca ? "Privacidade local" : "Local privacy",
+    privacyPersist: isCarioca
+      ? "Salvar dados neste dispositivo"
+      : "Save data on this device",
+    privacyHint: (days: number) =>
+      isCarioca
+        ? `Dados locais expiram automaticamente em ${days} dias.`
+        : `Local data expires automatically after ${days} days.`,
+    privacyDisabledHint: isCarioca
+      ? "Salvamento local desligado."
+      : "Local persistence is disabled.",
+    privacyClear: isCarioca ? "Limpar dados locais agora" : "Clear local data now",
   };
   const ariaLabels = {
     chartInfo: isCarioca ? "Dados atuais do mapa" : "Current chart info",
@@ -815,6 +877,7 @@ function App() {
     analysisMode: isCarioca ? "Modo de analise" : "Analysis mode",
     contentMode: isCarioca ? "Modo de conteudo" : "Content mode",
     duoMode: isCarioca ? "Modo de dupla" : "Duo mode",
+    privacyControls: isCarioca ? "Controles de privacidade local" : "Local privacy controls",
   };
   const cardExpandLabels = isCarioca
     ? { more: "Abrir mais", less: "Fechar" }
@@ -954,6 +1017,30 @@ function App() {
                 </>
               )}
 
+              <div className="privacy-controls" role="group" aria-label={ariaLabels.privacyControls}>
+                <p className="privacy-controls__title">{t.privacyTitle}</p>
+                <label className="privacy-controls__toggle">
+                  <input
+                    type="checkbox"
+                    checked={persistLocalData}
+                    onChange={(event) => setPersistLocalData(event.target.checked)}
+                  />
+                  <span>{t.privacyPersist}</span>
+                </label>
+                <p className="privacy-controls__hint">
+                  {persistLocalData
+                    ? t.privacyHint(APP_STATE_RETENTION_DAYS)
+                    : t.privacyDisabledHint}
+                </p>
+                <button
+                  type="button"
+                  className="privacy-controls__clear"
+                  onClick={handleClearLocalData}
+                >
+                  {t.privacyClear}
+                </button>
+              </div>
+
               {error && (
                 <p className="form__error" role="alert">
                   {t.error}: {error}
@@ -1000,12 +1087,12 @@ function App() {
           {!loading && analysisMode === "single" && chart && (
             <Section icon="🧭" title={t.normalizedTitle}>
               <div className="normalized">
-                <p>Timezone: {chart.normalized.timezone}</p>
-                <p>UTC: {chart.normalized.utcDateTime}</p>
-                <p>Local: {chart.normalized.localDateTime}</p>
-                <p>Offset: {chart.normalized.offsetMinutes} min</p>
+                <p>{t.timezoneLabel}: {chart.normalized.timezone}</p>
+                <p>{t.utcLabel}: {chart.normalized.utcDateTime}</p>
+                <p>{t.localLabel}: {chart.normalized.localDateTime}</p>
+                <p>{t.offsetLabel}: {chart.normalized.offsetMinutes} min</p>
                 <p>
-                  Lat/Lon: {chart.normalized.location.lat},{" "}
+                  {t.latLonLabel}: {chart.normalized.location.lat},{" "}
                   {chart.normalized.location.lon}
                 </p>
                 <p>
@@ -1033,8 +1120,8 @@ function App() {
                   <h3 className="normalized__title">{t.personA}</h3>
                   <p>{chartMeta?.location}</p>
                   <p>{chartMeta?.datetime}</p>
-                  <p>Timezone: {chart.normalized.timezone}</p>
-                  <p>UTC: {chart.normalized.utcDateTime}</p>
+                  <p>{t.timezoneLabel}: {chart.normalized.timezone}</p>
+                  <p>{t.utcLabel}: {chart.normalized.utcDateTime}</p>
                   <p>{t.dstLabel}: {chart.normalized.daylightSaving ? formLabels.yes : formLabels.no}</p>
                   <p>{t.housesStatus}</p>
                 </div>
@@ -1042,8 +1129,8 @@ function App() {
                   <h3 className="normalized__title">{t.personB}</h3>
                   <p>{chartMetaB?.location}</p>
                   <p>{chartMetaB?.datetime}</p>
-                  <p>Timezone: {chartB.normalized.timezone}</p>
-                  <p>UTC: {chartB.normalized.utcDateTime}</p>
+                  <p>{t.timezoneLabel}: {chartB.normalized.timezone}</p>
+                  <p>{t.utcLabel}: {chartB.normalized.utcDateTime}</p>
                   <p>{t.dstLabel}: {chartB.normalized.daylightSaving ? formLabels.yes : formLabels.no}</p>
                   <p>{t.housesStatus}</p>
                 </div>

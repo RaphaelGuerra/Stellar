@@ -34,8 +34,29 @@ export interface PersistedAppState {
 }
 
 export const APP_STATE_STORAGE_KEY = "stellar-app-state-v1";
+export const PRIVACY_SETTINGS_STORAGE_KEY = "stellar-privacy-settings-v1";
 export const HISTORY_LIMIT = 12;
+export const APP_STATE_RETENTION_DAYS = 30;
 const PROGRESSION_IDS_LIMIT = 160;
+const APP_STATE_MAX_AGE_MS = APP_STATE_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+const APP_STATE_SCHEMA_VERSION = 2;
+const PRIVACY_SCHEMA_VERSION = 1;
+
+export interface PersistedPrivacySettings {
+  persistLocalData: boolean;
+}
+
+interface PersistedAppStateEnvelope {
+  schemaVersion: number;
+  updatedAt: string;
+  state: PersistedAppState;
+}
+
+interface PersistedPrivacySettingsEnvelope {
+  schemaVersion: number;
+  updatedAt: string;
+  persistLocalData: boolean;
+}
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -83,10 +104,14 @@ function normalizePersonState(value: unknown, fallbackLocation: string): Persist
 
 function normalizeHistory(value: unknown): PersistedHistoryEntry[] {
   if (!Array.isArray(value)) return [];
+  const now = Date.now();
   const normalized: PersistedHistoryEntry[] = [];
   for (const entry of value) {
     if (!isObject(entry)) continue;
     if (typeof entry.id !== "string" || typeof entry.createdAt !== "string") continue;
+    const createdAtMs = Date.parse(entry.createdAt);
+    if (!Number.isFinite(createdAtMs)) continue;
+    if (now - createdAtMs > APP_STATE_MAX_AGE_MS) continue;
     if (!isAnalysisMode(entry.analysisMode) || !isDuoMode(entry.duoMode)) continue;
     if (!isChartResult(entry.chartA)) continue;
     if (entry.chartB != null && !isChartResult(entry.chartB)) continue;
@@ -136,26 +161,49 @@ function normalizeProgression(value: unknown): ProgressionState {
   };
 }
 
+function isExpired(updatedAt: string): boolean {
+  const updatedAtMs = Date.parse(updatedAt);
+  if (!Number.isFinite(updatedAtMs)) return true;
+  return Date.now() - updatedAtMs > APP_STATE_MAX_AGE_MS;
+}
+
+function parsePersistedStatePayload(rawValue: unknown): unknown | null {
+  if (!isObject(rawValue)) return null;
+  if (
+    typeof rawValue.schemaVersion === "number" &&
+    typeof rawValue.updatedAt === "string" &&
+    isObject(rawValue.state)
+  ) {
+    if (isExpired(rawValue.updatedAt)) return null;
+    return rawValue.state;
+  }
+  return rawValue;
+}
+
 export function readPersistedAppState(): PersistedAppState | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(APP_STATE_STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as unknown;
-    if (!isObject(parsed)) return null;
+    const payload = parsePersistedStatePayload(parsed);
+    if (!payload || !isObject(payload)) {
+      clearPersistedAppState();
+      return null;
+    }
 
-    const analysisMode = isAnalysisMode(parsed.analysisMode) ? parsed.analysisMode : "single";
-    const duoMode = isDuoMode(parsed.duoMode) ? parsed.duoMode : "romantic";
+    const analysisMode = isAnalysisMode(payload.analysisMode) ? payload.analysisMode : "single";
+    const duoMode = isDuoMode(payload.duoMode) ? payload.duoMode : "romantic";
 
     return {
       analysisMode,
       duoMode,
-      personA: normalizePersonState(parsed.personA, "Rio de Janeiro, BR"),
-      personB: normalizePersonState(parsed.personB, "New York, US"),
-      lastChartA: isChartResult(parsed.lastChartA) ? parsed.lastChartA : undefined,
-      lastChartB: isChartResult(parsed.lastChartB) ? parsed.lastChartB : undefined,
-      history: normalizeHistory(parsed.history),
-      progression: normalizeProgression(parsed.progression),
+      personA: normalizePersonState(payload.personA, "Rio de Janeiro, BR"),
+      personB: normalizePersonState(payload.personB, "New York, US"),
+      lastChartA: isChartResult(payload.lastChartA) ? payload.lastChartA : undefined,
+      lastChartB: isChartResult(payload.lastChartB) ? payload.lastChartB : undefined,
+      history: normalizeHistory(payload.history),
+      progression: normalizeProgression(payload.progression),
     };
   } catch {
     return null;
@@ -165,7 +213,54 @@ export function readPersistedAppState(): PersistedAppState | null {
 export function writePersistedAppState(state: PersistedAppState) {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(APP_STATE_STORAGE_KEY, JSON.stringify(state));
+    const envelope: PersistedAppStateEnvelope = {
+      schemaVersion: APP_STATE_SCHEMA_VERSION,
+      updatedAt: new Date().toISOString(),
+      state: {
+        ...state,
+        history: normalizeHistory(state.history).slice(0, HISTORY_LIMIT),
+      },
+    };
+    window.localStorage.setItem(APP_STATE_STORAGE_KEY, JSON.stringify(envelope));
+  } catch {
+    // ignore storage failures
+  }
+}
+
+export function clearPersistedAppState() {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(APP_STATE_STORAGE_KEY);
+  } catch {
+    // ignore storage failures
+  }
+}
+
+export function readPrivacySettings(): PersistedPrivacySettings {
+  if (typeof window === "undefined") return { persistLocalData: true };
+  try {
+    const raw = window.localStorage.getItem(PRIVACY_SETTINGS_STORAGE_KEY);
+    if (!raw) return { persistLocalData: true };
+    const parsed = JSON.parse(raw) as unknown;
+    if (!isObject(parsed)) return { persistLocalData: true };
+    if (typeof parsed.persistLocalData === "boolean") {
+      return { persistLocalData: parsed.persistLocalData };
+    }
+    return { persistLocalData: true };
+  } catch {
+    return { persistLocalData: true };
+  }
+}
+
+export function writePrivacySettings(settings: PersistedPrivacySettings) {
+  if (typeof window === "undefined") return;
+  try {
+    const envelope: PersistedPrivacySettingsEnvelope = {
+      schemaVersion: PRIVACY_SCHEMA_VERSION,
+      updatedAt: new Date().toISOString(),
+      persistLocalData: settings.persistLocalData,
+    };
+    window.localStorage.setItem(PRIVACY_SETTINGS_STORAGE_KEY, JSON.stringify(envelope));
   } catch {
     // ignore storage failures
   }

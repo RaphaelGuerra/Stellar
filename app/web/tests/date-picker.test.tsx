@@ -12,6 +12,19 @@ afterEach(() => {
 });
 
 describe("DatePicker", () => {
+  it("falls back to locale-based aria labels when labels are omitted", () => {
+    render(
+      <DatePicker value="2000-01-15" onChange={vi.fn()} locale="pt-BR" />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Escolher data" }));
+
+    expect(screen.getByRole("dialog", { name: "Escolher data" })).toBeTruthy();
+    expect(screen.getByRole("combobox", { name: "Ano" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Mes anterior" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Proximo mes" })).toBeTruthy();
+  });
+
   it("uses localized aria labels when provided", () => {
     render(
       <DatePicker

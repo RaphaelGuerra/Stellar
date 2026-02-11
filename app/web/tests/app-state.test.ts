@@ -4,8 +4,13 @@
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+  APP_STATE_RETENTION_DAYS,
   APP_STATE_STORAGE_KEY,
+  PRIVACY_SETTINGS_STORAGE_KEY,
+  clearPersistedAppState,
   readPersistedAppState,
+  readPrivacySettings,
+  writePrivacySettings,
   writePersistedAppState,
   type PersistedAppState,
 } from "../src/lib/appState";
@@ -98,5 +103,84 @@ describe("app state persistence", () => {
       reflectedQuestIds: [],
       lastCompletionDay: undefined,
     });
+  });
+
+  it("drops expired persisted payloads", () => {
+    const staleUpdatedAt = new Date(
+      Date.now() - (APP_STATE_RETENTION_DAYS + 1) * 24 * 60 * 60 * 1000
+    ).toISOString();
+    window.localStorage.setItem(
+      APP_STATE_STORAGE_KEY,
+      JSON.stringify({
+        schemaVersion: 2,
+        updatedAt: staleUpdatedAt,
+        state: {
+          analysisMode: "single",
+          duoMode: "romantic",
+          personA: {
+            date: "1990-01-01",
+            time: "12:00",
+            daylightSaving: "auto",
+            locationInput: "Rio de Janeiro, BR",
+          },
+          personB: {
+            date: "1990-01-01",
+            time: "12:00",
+            daylightSaving: "auto",
+            locationInput: "New York, US",
+          },
+          history: [],
+          progression: {
+            xp: 0,
+            streak: 0,
+            completedQuestIds: [],
+            reflectedQuestIds: [],
+          },
+        },
+      })
+    );
+
+    expect(readPersistedAppState()).toBeNull();
+    expect(window.localStorage.getItem(APP_STATE_STORAGE_KEY)).toBeNull();
+  });
+
+  it("supports local privacy settings", () => {
+    expect(readPrivacySettings().persistLocalData).toBe(true);
+
+    writePrivacySettings({ persistLocalData: false });
+    expect(readPrivacySettings().persistLocalData).toBe(false);
+
+    const raw = window.localStorage.getItem(PRIVACY_SETTINGS_STORAGE_KEY);
+    expect(raw).not.toBeNull();
+  });
+
+  it("clears persisted app state on demand", () => {
+    writePersistedAppState({
+      analysisMode: "single",
+      duoMode: "romantic",
+      personA: {
+        date: "1990-01-01",
+        time: "12:00",
+        daylightSaving: "auto",
+        locationInput: "Rio de Janeiro, BR",
+      },
+      personB: {
+        date: "1990-01-01",
+        time: "12:00",
+        daylightSaving: "auto",
+        locationInput: "New York, US",
+      },
+      history: [],
+      progression: {
+        xp: 0,
+        streak: 0,
+        completedQuestIds: [],
+        reflectedQuestIds: [],
+      },
+    });
+
+    expect(window.localStorage.getItem(APP_STATE_STORAGE_KEY)).not.toBeNull();
+    clearPersistedAppState();
+    expect(window.localStorage.getItem(APP_STATE_STORAGE_KEY)).toBeNull();
   });
 });

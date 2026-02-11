@@ -23,12 +23,23 @@ interface DatePickerLabels {
   nextMonth: string;
 }
 
-const DEFAULT_LABELS: DatePickerLabels = {
+const DEFAULT_LABELS_EN: DatePickerLabels = {
   chooseDate: "Choose date",
   year: "Year",
   previousMonth: "Previous month",
   nextMonth: "Next month",
 };
+
+const DEFAULT_LABELS_PT: DatePickerLabels = {
+  chooseDate: "Escolher data",
+  year: "Ano",
+  previousMonth: "Mes anterior",
+  nextMonth: "Proximo mes",
+};
+
+function getDefaultLabels(locale: string): DatePickerLabels {
+  return locale.toLowerCase().startsWith("pt") ? DEFAULT_LABELS_PT : DEFAULT_LABELS_EN;
+}
 
 function buildCalendarGrid(year: number, month: number): CalendarDay[] {
   const firstDay = new Date(year, month, 1).getDay();
@@ -89,8 +100,9 @@ export function DatePicker({
   locale = "en-US",
   name,
   required,
-  labels = DEFAULT_LABELS,
+  labels,
 }: DatePickerProps) {
+  const resolvedLabels = labels ?? getDefaultLabels(locale);
   const parsed = parseDate(value);
   const [open, setOpen] = useState(false);
   const [viewYear, setViewYear] = useState(parsed.year);
@@ -208,19 +220,25 @@ export function DatePicker({
         onClick={toggleOpen}
         aria-haspopup="dialog"
         aria-expanded={open}
+        aria-label={resolvedLabels.chooseDate}
       >
         {triggerLabel || <span className="datepicker__placeholder">&nbsp;</span>}
       </button>
       <input type="hidden" name={name} value={value} required={required} />
 
       {open && (
-        <div ref={panelRef} className="datepicker__panel" role="dialog" aria-label={labels.chooseDate}>
+        <div
+          ref={panelRef}
+          className="datepicker__panel"
+          role="dialog"
+          aria-label={resolvedLabels.chooseDate}
+        >
           <div className="datepicker__controls">
             <select
               className="datepicker__year-select"
               value={viewYear}
               onChange={(e) => setViewYear(Number(e.target.value))}
-              aria-label={labels.year}
+              aria-label={resolvedLabels.year}
             >
               {yearOptions.map((y) => (
                 <option key={y} value={y}>{y}</option>
@@ -232,7 +250,7 @@ export function DatePicker({
                 type="button"
                 className="datepicker__nav-btn"
                 onClick={prevMonth}
-                aria-label={labels.previousMonth}
+                aria-label={resolvedLabels.previousMonth}
               >
                 &#8249;
               </button>
@@ -241,7 +259,7 @@ export function DatePicker({
                 type="button"
                 className="datepicker__nav-btn"
                 onClick={nextMonth}
-                aria-label={labels.nextMonth}
+                aria-label={resolvedLabels.nextMonth}
               >
                 &#8250;
               </button>

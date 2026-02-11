@@ -36,7 +36,7 @@ interface CacheEntry {
 }
 
 const NOMINATIM_ENDPOINT = "https://nominatim.openstreetmap.org/search";
-const NOMINATIM_EMAIL = import.meta.env.VITE_NOMINATIM_EMAIL ?? "phaelixai@gmail.com";
+const NOMINATIM_EMAIL = import.meta.env.VITE_NOMINATIM_EMAIL;
 const SEARCH_MIN_CHARS = 3;
 const SEARCH_DEBOUNCE_MS = 450;
 const SEARCH_RATE_LIMIT_MS = 1100;
@@ -166,8 +166,10 @@ async function fetchNominatim(
     addressdetails: "1",
     limit: String(limit),
     q: query,
-    email: NOMINATIM_EMAIL,
   });
+  if (typeof NOMINATIM_EMAIL === "string" && NOMINATIM_EMAIL.trim().length > 0) {
+    params.set("email", NOMINATIM_EMAIL.trim());
+  }
   params.set("accept-language", language);
 
   const response = await fetch(`${NOMINATIM_ENDPOINT}?${params.toString()}`, { signal });
