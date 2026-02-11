@@ -378,6 +378,10 @@ export function buildCards(
 ): CardModel[] {
   const cards: CardModel[] = [];
   const usedKeys = new Set<string>();
+  const labels = {
+    planetPlacement: mode === "carioca" ? "Posicao planetaria" : "Planet placement",
+    aspect: mode === "carioca" ? "Aspecto" : "Aspect",
+  };
 
   function addCard(
     key: string,
@@ -435,10 +439,12 @@ export function buildCards(
       addCard(
         `planet-sign-${planet}-${placement.sign}`,
         "planet-sign",
-        signEntry.title,
+        `${planet} · ${signEntry.title}`,
         signEntry,
         {
-          subtitle: planetEntry ? `${subtitle} · ${planetEntry.title}` : subtitle,
+          subtitle: planetEntry
+            ? `${labels.planetPlacement} · ${subtitle} · ${planetEntry.title}`
+            : `${labels.planetPlacement} · ${subtitle}`,
           details: buildPlanetSignDetails({
             mode,
             planet,
@@ -476,7 +482,7 @@ export function buildCards(
     const detailTags = dedupeTags(aspectEntry.tags);
 
     addCard(key, "aspect", pairTitle, aspectEntry, {
-      subtitle: `${aspect.type} · ${aspectEntry.title}`,
+      subtitle: `${labels.aspect} · ${aspect.type} · ${aspectEntry.title}`,
       textOverride: text,
       details: buildAspectDetails({
         mode,

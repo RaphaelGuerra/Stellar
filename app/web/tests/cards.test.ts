@@ -73,10 +73,13 @@ describe("buildCards details", () => {
 
     const sunCard = cards.find((card) => card.category === "planet-sign" && card.planet === "Sun");
     expect(sunCard?.details?.length).toBeGreaterThan(0);
+    expect(sunCard?.title).toContain("Sun ·");
+    expect(sunCard?.subtitle).toContain("Planet placement");
     expect(sunCard?.details?.[0]?.title).toBe("How this shows up day to day");
 
     const aspectCard = cards.find((card) => card.category === "aspect");
     expect(aspectCard?.details?.length).toBeGreaterThan(0);
+    expect(aspectCard?.subtitle).toContain("Aspect ·");
     expect(aspectCard?.details?.[0]?.title).toBe("Aspect dynamic");
     expect(aspectCard?.details?.[2]?.text).toContain("Very tight orb");
   });
@@ -86,10 +89,13 @@ describe("buildCards details", () => {
 
     const sunCard = cards.find((card) => card.category === "planet-sign" && card.planet === "Sun");
     expect(sunCard?.details?.length).toBeGreaterThan(0);
+    expect(sunCard?.title).toContain("Sun ·");
+    expect(sunCard?.subtitle).toContain("Posicao planetaria");
     expect(sunCard?.details?.[0]?.title).toBe("Como isso aparece no dia a dia");
 
     const aspectCard = cards.find((card) => card.category === "aspect");
     expect(aspectCard?.details?.length).toBeGreaterThan(0);
+    expect(aspectCard?.subtitle).toContain("Aspecto ·");
     expect(aspectCard?.details?.[0]?.title).toBe("Dinamica desse aspecto");
     expect(aspectCard?.details?.[2]?.text).toContain("Orb bem fechado");
   });

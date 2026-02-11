@@ -103,6 +103,9 @@ export interface ChartResult {
   input: ChartInput;
   normalized: ChartInputNormalized;
   planets: Record<PlanetName, PlanetPlacement>;
+  angles?: {
+    ascendant: PlanetPlacement;
+  };
   houses?: HousePlacement[]; // optional until house calculation is in place
   aspects: Aspect[]; // can be empty when aspects are not computed
 }

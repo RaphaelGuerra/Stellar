@@ -31,7 +31,7 @@ import {
 import { validateChartInput, type ValidationErrorCode } from "./lib/validation";
 import { useGeoSearch, resolveLocationCandidates, type GeoSuggestion } from "./lib/useGeoSearch";
 import { SUPPORTED_CITIES } from "./lib/resolveCity";
-import type { ChartInput, ChartResult, DuoMode } from "./lib/types";
+import type { ChartInput, ChartResult, DuoMode, PlanetPlacement } from "./lib/types";
 
 type AnalysisMode = "single" | "compatibility";
 
@@ -175,6 +175,15 @@ function toDaylightSavingValue(ds: boolean | "auto"): string {
 
 function parseDaylightSavingValue(value: string): boolean | "auto" {
   return value === "auto" ? "auto" : value === "true";
+}
+
+function formatPlacementLabel(
+  placement: PlanetPlacement | undefined,
+  emptyText: string
+): string {
+  if (!placement) return emptyText;
+  if (placement.degree == null) return placement.sign;
+  return `${placement.sign} ${placement.degree.toFixed(1)}°`;
 }
 
 function App() {
@@ -695,9 +704,11 @@ function App() {
       ? 'Clica em "Gerar mapa, porra" pra ver os cards desse mapa.'
       : 'Click "Generate chart" to see your birth chart cards.',
     loading: isCarioca ? "Calculando os planetas nessa porra" : "Calculating planetary positions",
-    planetsTitle: isCarioca ? "Planetas no caos" : "Planets",
-    aspectsTitle: isCarioca ? "Aspectos na porrada" : "Aspects",
+    planetsTitle: isCarioca ? "Posicoes planetarias" : "Planet placements",
+    aspectsTitle: isCarioca ? "Aspectos planetarios" : "Planetary aspects",
     aspectsBadge: (n: number) => isCarioca ? `${n} conexoes brabas` : `${n} connections`,
+    sunMoonInsightsTitle: isCarioca ? "Insights de Sol e Lua" : "Sun and Moon insights",
+    housesStatus: isCarioca ? "Casas: em breve (ainda nao calculado)" : "Houses: coming soon (not calculated yet)",
     compatibilityTitle: isCarioca ? "Sinastria de cria" : "Synastry",
     compatibilityBadge: (n: number) => isCarioca ? `${n} aspectos brabos` : `${n} aspects`,
     compatibilityEmpty: isCarioca
@@ -712,6 +723,12 @@ function App() {
           ? "Stats da relacao"
           : "Relationship stats",
     compatibilityStatsBadge: isCarioca ? "modo RPG" : "RPG mode",
+    coreTriadTitle: isCarioca ? "Sol, Lua e Ascendente" : "Sun, Moon, Ascendant",
+    coreTriadBadge: isCarioca ? "base do mapa" : "chart core",
+    coreSun: isCarioca ? "Sol (identidade)" : "Sun (identity)",
+    coreMoon: isCarioca ? "Lua (emocional)" : "Moon (emotions)",
+    coreAsc: isCarioca ? "Ascendente (estilo externo)" : "Ascendant (outer style)",
+    coreAscMissing: isCarioca ? "Ascendente indisponivel" : "Ascendant unavailable",
     questTitle:
       duoMode === "friend"
         ? isCarioca
@@ -951,6 +968,17 @@ function App() {
                 <p>
                   {t.dstLabel}: {chart.normalized.daylightSaving ? formLabels.yes : formLabels.no}
                 </p>
+                <p>{t.housesStatus}</p>
+              </div>
+            </Section>
+          )}
+
+          {!loading && analysisMode === "single" && chart && (
+            <Section icon="🧬" title={t.coreTriadTitle} badge={t.coreTriadBadge}>
+              <div className="core-triad">
+                <p><strong>{t.coreSun}:</strong> {formatPlacementLabel(chart.planets.Sun, t.coreAscMissing)}</p>
+                <p><strong>{t.coreMoon}:</strong> {formatPlacementLabel(chart.planets.Moon, t.coreAscMissing)}</p>
+                <p><strong>{t.coreAsc}:</strong> {formatPlacementLabel(chart.angles?.ascendant, t.coreAscMissing)}</p>
               </div>
             </Section>
           )}
@@ -965,6 +993,7 @@ function App() {
                   <p>Timezone: {chart.normalized.timezone}</p>
                   <p>UTC: {chart.normalized.utcDateTime}</p>
                   <p>{t.dstLabel}: {chart.normalized.daylightSaving ? formLabels.yes : formLabels.no}</p>
+                  <p>{t.housesStatus}</p>
                 </div>
                 <div className="normalized__card">
                   <h3 className="normalized__title">{t.personB}</h3>
@@ -973,6 +1002,7 @@ function App() {
                   <p>Timezone: {chartB.normalized.timezone}</p>
                   <p>UTC: {chartB.normalized.utcDateTime}</p>
                   <p>{t.dstLabel}: {chartB.normalized.daylightSaving ? formLabels.yes : formLabels.no}</p>
+                  <p>{t.housesStatus}</p>
                 </div>
               </div>
               <div className="comparison-placements">
@@ -983,6 +1013,25 @@ function App() {
                 <div>
                   <h3 className="comparison-placements__title">{t.personB}</h3>
                   <PlacementsSummary placements={placementsB} />
+                </div>
+              </div>
+            </Section>
+          )}
+
+          {!loading && analysisMode === "compatibility" && chart && chartB && (
+            <Section icon="🧬" title={t.coreTriadTitle} badge={t.coreTriadBadge}>
+              <div className="core-triad core-triad--comparison">
+                <div className="core-triad__card">
+                  <h3 className="core-triad__title">{t.personA}</h3>
+                  <p><strong>{t.coreSun}:</strong> {formatPlacementLabel(chart.planets.Sun, t.coreAscMissing)}</p>
+                  <p><strong>{t.coreMoon}:</strong> {formatPlacementLabel(chart.planets.Moon, t.coreAscMissing)}</p>
+                  <p><strong>{t.coreAsc}:</strong> {formatPlacementLabel(chart.angles?.ascendant, t.coreAscMissing)}</p>
+                </div>
+                <div className="core-triad__card">
+                  <h3 className="core-triad__title">{t.personB}</h3>
+                  <p><strong>{t.coreSun}:</strong> {formatPlacementLabel(chartB.planets.Sun, t.coreAscMissing)}</p>
+                  <p><strong>{t.coreMoon}:</strong> {formatPlacementLabel(chartB.planets.Moon, t.coreAscMissing)}</p>
+                  <p><strong>{t.coreAsc}:</strong> {formatPlacementLabel(chartB.angles?.ascendant, t.coreAscMissing)}</p>
                 </div>
               </div>
             </Section>
@@ -1007,7 +1056,7 @@ function App() {
           )}
 
           {!loading && analysisMode === "single" && heroCards.length > 0 && (
-            <Section icon="☀️" title="Big 3" badge={`${heroCards.length} cards`}>
+            <Section icon="☀️" title={t.sunMoonInsightsTitle} badge={`${heroCards.length} cards`}>
               <div className="cards-grid--hero">
                 {heroCards.map((card) => (
                   <Card

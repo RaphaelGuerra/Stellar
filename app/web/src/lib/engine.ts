@@ -1,4 +1,4 @@
-import { Body, Ecliptic, GeoVector, MakeTime } from "astronomy-engine";
+import { Body, Ecliptic, GeoVector, MakeTime, SiderealTime, e_tilt } from "astronomy-engine";
 import type { Aspect, ChartInput, ChartResult, PlanetName, ZodiacSign } from "./types";
 import { ASPECT_DEFS, PLANETS, SIGNS, normalizeAngle } from "./constants";
 import { resolveCity } from "./resolveCity";
@@ -269,6 +269,23 @@ function buildAspects(time: Date): Aspect[] {
   return aspects;
 }
 
+function calculateAscendantLongitude(
+  time: Date,
+  latitudeDegrees: number,
+  longitudeDegrees: number
+): number {
+  const siderealHours = SiderealTime(time);
+  const localSiderealDegrees = normalizeAngle(siderealHours * 15 + longitudeDegrees);
+  const obliquityDegrees = e_tilt(MakeTime(time)).tobl;
+  const theta = localSiderealDegrees * Math.PI / 180;
+  const phi = latitudeDegrees * Math.PI / 180;
+  const epsilon = obliquityDegrees * Math.PI / 180;
+
+  const numerator = -Math.cos(theta);
+  const denominator = Math.sin(theta) * Math.cos(epsilon) + Math.tan(phi) * Math.sin(epsilon);
+  return normalizeAngle(Math.atan2(numerator, denominator) * 180 / Math.PI);
+}
+
 export async function generateChart(input: ChartInput): Promise<ChartResult> {
   const resolvedCity = input.location ?? resolveCity({ city: input.city, country: input.country });
   const localParts = parseLocalDateTime(input.date, input.time);
@@ -322,6 +339,12 @@ export async function generateChart(input: ChartInput): Promise<ChartResult> {
 
   const planets = buildPlanets(observationTime);
   const aspects = buildAspects(observationTime);
+  const ascendantLongitude = calculateAscendantLongitude(
+    observationTime,
+    resolvedCity.lat,
+    resolvedCity.lon
+  );
+  const ascendant = longitudeToSign(ascendantLongitude);
 
   return {
     input,
@@ -337,6 +360,13 @@ export async function generateChart(input: ChartInput): Promise<ChartResult> {
       },
     },
     planets,
+    angles: {
+      ascendant: {
+        sign: ascendant.sign,
+        degree: ascendant.degree,
+        longitude: ascendantLongitude,
+      },
+    },
     aspects,
   };
 }

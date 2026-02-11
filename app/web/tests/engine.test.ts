@@ -131,6 +131,21 @@ describe("generateChart normalization", () => {
     expect(chart.planets.Sun.sign).toBe("Sagittarius");
   });
 
+  it("calculates ascendant separately from moon placement", async () => {
+    const chart = await generateChart({
+      ...baseInput,
+      city: "Rio de Janeiro",
+      country: "BR",
+      date: "1990-12-16",
+      time: "12:00",
+    });
+
+    expect(chart.angles?.ascendant).toBeDefined();
+    expect(chart.angles?.ascendant.longitude).toBeGreaterThanOrEqual(0);
+    expect(chart.angles?.ascendant.longitude).toBeLessThan(360);
+    expect(chart.angles?.ascendant.longitude).not.toBe(chart.planets.Moon.longitude);
+  });
+
   it("rejects nonexistent local time during DST spring-forward in New York when auto", async () => {
     await expect(
       generateChart({

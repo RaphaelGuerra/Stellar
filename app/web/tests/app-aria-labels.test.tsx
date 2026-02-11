@@ -182,6 +182,8 @@ describe("App aria labels localization", () => {
     render(<App />);
 
     expect(screen.getByRole("heading", { name: "Today for Us" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Sun, Moon, Ascendant" })).toBeTruthy();
+    expect(screen.getAllByText("Houses: coming soon (not calculated yet)").length).toBeGreaterThan(0);
     expect(screen.getByText(/Boost Window/)).toBeTruthy();
     expect(screen.getByText(/Pressure Point/)).toBeTruthy();
   });
