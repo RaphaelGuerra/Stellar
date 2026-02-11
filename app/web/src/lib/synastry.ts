@@ -402,9 +402,9 @@ const SYNASTRY_TITLES: Record<
 > = {
   en: {
     love: {
-      harmonious: ["Love on Cruise Control", "Heart's Green Light"],
+      harmonious: ["City of Stars", "A Lovely Night"],
       challenging: ["Love Under Fire", "Heart's Boot Camp"],
-      intense: ["Love at Full Volume", "Heart Lockdown"],
+      intense: ["Here's to the Ones Who Dream", "I'm Always Gonna Love You"],
     },
     family: {
       harmonious: ["Home Sweet Match", "Roots in Sync"],
@@ -417,7 +417,7 @@ const SYNASTRY_TITLES: Record<
       intense: ["Power Merger", "Workaholic Chemistry"],
     },
     friends: {
-      harmonious: ["Best Friend Material", "Squad Goals"],
+      harmonious: ["People Love What Others Are Passionate About", "A Bit of Madness"],
       challenging: ["Frenemies Potential", "Friends Who Push"],
       intense: ["Ride or Die Energy", "Instant Connection"],
     },
@@ -427,16 +427,16 @@ const SYNASTRY_TITLES: Record<
       intense: ["High Stakes Bond", "All-In Investment"],
     },
     communication: {
-      harmonious: ["Same Wavelength", "The Easy Chat"],
+      harmonious: ["Same Wavelength", "I Think It's Romantic"],
       challenging: ["Lost in Translation", "The Debate Club"],
       intense: ["Mind Meld", "Words Hit Different"],
     },
   },
   pt: {
     love: {
-      harmonious: ["Amor no Sapatinho", "Coracao no Modo Facil"],
+      harmonious: ["Cidade das Estrelas", "Uma Noite Encantadora"],
       challenging: ["Amor que Da Trabalho", "Coracao na Porrada"],
-      intense: ["Amor Bomba Atomica", "Pegacao Cosmica"],
+      intense: ["Pros Que Ousam Sonhar", "Eu Sempre Vou Te Amar"],
     },
     family: {
       harmonious: ["Lar Doce Match", "Raiz Alinhada"],
@@ -449,7 +449,7 @@ const SYNASTRY_TITLES: Record<
       intense: ["Fusao de Potencia", "Parceria Atomica"],
     },
     friends: {
-      harmonious: ["Amizade no Sapatinho", "Sintonia de Cria"],
+      harmonious: ["As Pessoas Amam Quem Tem Paixao", "Um Pouco de Loucura"],
       challenging: ["Quase Inimigo, Quase Irmao", "Cria que Cutuca"],
       intense: ["Parceiro de Trincheira", "Cola Cosmica"],
     },
@@ -459,7 +459,7 @@ const SYNASTRY_TITLES: Record<
       intense: ["Aposta Alta", "Grana Tudo ou Nada"],
     },
     communication: {
-      harmonious: ["Mesma Frequencia", "Papo que Flui"],
+      harmonious: ["Mesma Frequencia", "Eu Acho Romantico"],
       challenging: ["Papo Desencontrado", "Dialogo de Surdo"],
       intense: ["Telepatia Bruta", "Papo que Arrepia"],
     },

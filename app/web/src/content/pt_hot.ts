@@ -2,7 +2,7 @@ export const PT_HOT = {
   "sign": {
     "Aries": {
       "title": "O Cara Que Já Tá Indo",
-      "text": "Tu já saiu correndo antes de qualquer um terminar de explicar o plano - e provavelmente tropeçou no meio do caminho. Tua gaveta tá cheia de projeto começado e abandonado na segunda semana, mas tu jura que dessa vez vai ser diferente. Competição é teu combustível: até corrida pra ver quem aperta o botão do elevador primeiro tu leva a sério. Paciência? Nunca conheceu essa desgraça. Mas quando todo mundo tá paralisado de medo, tu é quem levanta e faz a merda acontecer. Impulsivo pra caralho, mas pelo menos tu move.",
+      "text": "Tu já saiu correndo antes de qualquer um terminar de explicar o plano - e provavelmente tropeçou no meio do caminho. Tua gaveta tá cheia de projeto começado e abandonado na segunda semana, mas tu jura que dessa vez vai ser diferente. Competição é teu combustível: até corrida pra ver quem aperta o botão do elevador primeiro tu leva a sério. Paciência? Nunca conheceu essa desgraça. Mas quando todo mundo tá paralisado de medo, tu é quem levanta e faz a merda acontecer. Impulsivo pra caralho, mas pelo menos tu move. É conflito e é compromisso, e é muito, muito emocionante — basicamente tua vida inteira numa frase.",
       "tags": [
         "iniciativa",
         "competição",
@@ -14,7 +14,7 @@ export const PT_HOT = {
     },
     "Taurus": {
       "title": "O Rei do Sofá",
-      "text": "Tu transformou 'deixa quieto' em filosofia de vida e não sente um pingo de vergonha disso. Teu sofá já tem a marca do teu corpo, teu restaurante favorito já sabe o pedido de cor, e mudar de rotina te dá urticária. Teimoso que nem mula: quando bate o pé, nem tsunami move. Mas quando tu promete, tu entrega - pode demorar três eras geológicas, mas entrega. Conforto é prioridade, e tu sabe que um bom jantar resolve oitenta por cento dos problemas da humanidade. Preguiça? Não, é só economia de energia.",
+      "text": "Tu transformou 'deixa quieto' em filosofia de vida e não sente um pingo de vergonha disso. Teu sofá já tem a marca do teu corpo, teu restaurante favorito já sabe o pedido de cor, e mudar de rotina te dá urticária. Teimoso que nem mula: quando bate o pé, nem tsunami move. Mas quando tu promete, tu entrega - pode demorar três eras geológicas, mas entrega. Conforto é prioridade, e tu sabe que um bom jantar resolve oitenta por cento dos problemas da humanidade. Preguiça? Não, é só economia de energia. Tu vive esbarrando nos mesmos lugares, nos mesmos confortos, nas mesmas pessoas — talvez isso signifique alguma coisa.",
       "tags": [
         "estabilidade",
         "teimosia",
@@ -26,7 +26,7 @@ export const PT_HOT = {
     },
     "Gemini": {
       "title": "O Zap Humano",
-      "text": "Tu nasceu com vinte abas abertas na cabeça e nenhuma carregando direito. Num minuto tá discutindo filosofia, no outro quer saber a fofoca do prédio, e no terceiro já esqueceu os dois assuntos. Curso online? Tu tem quinze começados e zero terminados. Fala pelos cotovelos e consegue fazer amizade até com poste, mas compromisso de longo prazo te dá coceira. Tu é tipo sampler humano: experimenta tudo, não aprofunda nada. Pelo menos nunca fica sem assunto - mesmo que seja pra falar merda.",
+      "text": "Tu nasceu com vinte abas abertas na cabeça e nenhuma carregando direito. Num minuto tá discutindo filosofia, no outro quer saber a fofoca do prédio, e no terceiro já esqueceu os dois assuntos. Curso online? Tu tem quinze começados e zero terminados. Fala pelos cotovelos e consegue fazer amizade até com poste, mas compromisso de longo prazo te dá coceira. Tu é tipo sampler humano: experimenta tudo, não aprofunda nada. Pelo menos nunca fica sem assunto - mesmo que seja pra falar merda. Mas as pessoas amam quem tem paixão — e tu tem paixão por tudo, mesmo que dure só cinco minutos.",
       "tags": [
         "comunicação",
         "curiosidade",
@@ -38,7 +38,7 @@ export const PT_HOT = {
     },
     "Cancer": {
       "title": "O Guardião do Lar",
-      "text": "Tu carrega a casa nas costas feito tartaruga emocional e já chega perguntando se todo mundo comeu. Memória de elefante pra guardar mágoa de 2014 - tu lembra até o tom de voz que usaram contigo. Leal pra caralho com quem tu confia: guarda segredo até debaixo de tortura. Mas criticou? Tu recolhe pro casco e some por três dias sem dar satisfação. Tua geladeira sempre tem comfort food e teu álbum de família tá organizado por década. Sensível, protetor e rancoroso na medida certa.",
+      "text": "Tu carrega a casa nas costas feito tartaruga emocional e já chega perguntando se todo mundo comeu. Memória de elefante pra guardar mágoa de 2014 - tu lembra até o tom de voz que usaram contigo. Leal pra caralho com quem tu confia: guarda segredo até debaixo de tortura. Mas criticou? Tu recolhe pro casco e some por três dias sem dar satisfação. Tua geladeira sempre tem comfort food e teu álbum de família tá organizado por década. Sensível, protetor e rancoroso na medida certa. Pros corações que doem — o teu dói mais alto que a maioria, e é exatamente isso que faz valer a pena.",
       "tags": [
         "família",
         "proteção",
@@ -50,7 +50,7 @@ export const PT_HOT = {
     },
     "Leo": {
       "title": "O Show Tem Que Continuar",
-      "text": "Tu entra no recinto já procurando o holofote - se não tiver, improvisa um com o flash do celular. Generoso de verdade, paga rodada, divide pizza, empresta grana, mas ai de quem não reconhecer o gesto. Teu ego precisa de carinho diário senão murcha feito planta esquecida, e aí o drama começa. Dividir aplausos? Só em dose homeopática e com agradecimento por escrito. Mas quando tu brilha, ilumina geral junto. Festa sem tua presença é tipo aniversário sem bolo: tecnicamente acontece, mas que graça tem?",
+      "text": "Tu entra no recinto já procurando o holofote - se não tiver, improvisa um com o flash do celular. Generoso de verdade, paga rodada, divide pizza, empresta grana, mas ai de quem não reconhecer o gesto. Teu ego precisa de carinho diário senão murcha feito planta esquecida, e aí o drama começa. Dividir aplausos? Só em dose homeopática e com agradecimento por escrito. Mas quando tu brilha, ilumina geral junto. Uma festa sem você é tipo filme sem música — até rola, mas qual é o sentido?",
       "tags": [
         "autoexpressão",
         "criatividade",
@@ -62,7 +62,7 @@ export const PT_HOT = {
     },
     "Virgo": {
       "title": "O Fiscal da Vida",
-      "text": "Tu é o tipo que acha erro em prova já corrigida e manda email pro professor apontando. Executa com qualidade absurda - teu trabalho é o que todo mundo copia escondido. Mas tu se tortura com detalhe que ninguém mais notou: a vírgula fora do lugar, o pixel desalinhado, o sal que ficou meio grau a mais. Quer ajudar, quer servir, quer consertar o mundo um defeito por vez. Vai apontar onde tu errou sem tu pedir, e o pior é que geralmente tá certo. Teu armário de tempero tá em ordem alfabética, né?",
+      "text": "Tu é o tipo que acha erro em prova já corrigida e manda email pro professor apontando. Executa com qualidade absurda - teu trabalho é o que todo mundo copia escondido. Mas tu se tortura com detalhe que ninguém mais notou: a vírgula fora do lugar, o pixel desalinhado, o sal que ficou meio grau a mais. Quer ajudar, quer servir, quer consertar o mundo um defeito por vez. Vai apontar onde tu errou sem tu pedir, e o pior é que geralmente tá certo. Teu armário de tempero tá em ordem alfabética, né? Como tu vai ser revolucionário sendo tão tradicionalista? Mas alguém precisa manter o padrão vivo.",
       "tags": [
         "análise",
         "perfeccionismo",
@@ -74,7 +74,7 @@ export const PT_HOT = {
     },
     "Libra": {
       "title": "O Diplomata Indeciso",
-      "text": "Tu consegue ver todos os lados de uma questão e por isso não consegue escolher porra nenhuma. Cardápio de restaurante é teu pesadelo: pede opinião de todo mundo, muda três vezes, e no final pede o mesmo de sempre. Pra apaziguar briga alheia tu é craque, acha meio-termo onde ninguém via. Mas bancar decisão própria? E se a outra opção fosse melhor? Tu quer harmonia, beleza e que todo mundo goste de ti - nessa ordem ou em qualquer outra, tu não consegue decidir. Morre de medo de ser grosso mesmo quando precisa.",
+      "text": "Tu consegue ver todos os lados de uma questão e por isso não consegue escolher porra nenhuma. Cardápio de restaurante é teu pesadelo: pede opinião de todo mundo, muda três vezes, e no final pede o mesmo de sempre. Pra apaziguar briga alheia tu é craque, acha meio-termo onde ninguém via. Mas bancar decisão própria? E se a outra opção fosse melhor? Tu quer harmonia, beleza e que todo mundo goste de ti - nessa ordem ou em qualquer outra, tu não consegue decidir. Morre de medo de ser grosso mesmo quando precisa. Amor e sonho puxam pra lados opostos, e tu é quem fica no meio — querendo os dois, morrendo de medo de escolher.",
       "tags": [
         "equilíbrio",
         "diplomacia",
@@ -86,7 +86,7 @@ export const PT_HOT = {
     },
     "Scorpio": {
       "title": "O Detetive Emocional",
-      "text": "Tu olha pra pessoa e já sabe o que ela comeu no café, com quem conversou e o que tá escondendo. Intenso em tudo: ama intenso, odeia intenso, até assiste série intenso. Estratégico feito jogador de xadrez, sempre três movimentos na frente. Traição? Tu não esquece nem com amnésia, e a vingança pode demorar anos, mas vem. Transforma crise em renascimento, mas às vezes cria crise só pelo prazer de ressurgir das cinzas. Controle é teu jogo favorito, e tu joga pra ganhar mesmo fingindo que não tá jogando.",
+      "text": "Tu olha pra pessoa e já sabe o que ela comeu no café, com quem conversou e o que tá escondendo. Intenso em tudo: ama intenso, odeia intenso, até assiste série intenso. Estratégico feito jogador de xadrez, sempre três movimentos na frente. Traição? Tu não esquece nem com amnésia, e a vingança pode demorar anos, mas vem. Transforma crise em renascimento, mas às vezes cria crise só pelo prazer de ressurgir das cinzas. Controle é teu jogo favorito, e tu joga pra ganhar mesmo fingindo que não tá jogando. Eu sempre vou te amar — mesmo que esse amor queime tudo e reconstrua diferente.",
       "tags": [
         "intensidade",
         "transformação",
@@ -98,7 +98,7 @@ export const PT_HOT = {
     },
     "Sagittarius": {
       "title": "O Eterno Viajante",
-      "text": "Tu tá sempre de olho no próximo horizonte enquanto tropeça no degrau da frente. Mala meio pronta, passaporte no bolso, qualquer feriadão vira desculpa pra cair na estrada. Otimista nato: acha que vai dar certo mesmo quando toda evidência aponta pro contrário. Fala o que pensa na hora que pensa, e às vezes tua sinceridade machuca mais que mentira. Já deu opinião sobre política externa, física quântica e gastronomia molecular no mesmo dia, entendendo pouco de todas. Começar aventura é fácil; terminar é outro departamento que tu nem sabe onde fica.",
+      "text": "Tu tá sempre de olho no próximo horizonte enquanto tropeça no degrau da frente. Mala meio pronta, passaporte no bolso, qualquer feriadão vira desculpa pra cair na estrada. Otimista nato: acha que vai dar certo mesmo quando toda evidência aponta pro contrário. Fala o que pensa na hora que pensa, e às vezes tua sinceridade machuca mais que mentira. Já deu opinião sobre política externa, física quântica e gastronomia molecular no mesmo dia, entendendo pouco de todas. Começar aventura é fácil; terminar é outro departamento que tu nem sabe onde fica. Mas um pouco de loucura é o que faz a gente ver cores novas.",
       "tags": [
         "expansão",
         "otimismo",
@@ -110,7 +110,7 @@ export const PT_HOT = {
     },
     "Capricorn": {
       "title": "O CEO Desde Criança",
-      "text": "Tu já nasceu com plano de carreira de cinco anos e planilha de metas até 2050. Enquanto geral brincava de casinha, tu brincava de empresa. Disciplinado, resistente, e leva responsabilidade tão a sério que esquece de viver - férias só se tiver wifi pra checar email. Quer subir na vida e vai subir, nem que demore décadas, um degrau por vez. Mostrar vulnerabilidade? Talvez depois da aposentadoria, e olhe lá. Mas quando tu promete, entrega. Tua palavra vale contrato com firma reconhecida.",
+      "text": "Tu já nasceu com plano de carreira de cinco anos e planilha de metas até 2050. Enquanto geral brincava de casinha, tu brincava de empresa. Disciplinado, resistente, e leva responsabilidade tão a sério que esquece de viver - férias só se tiver wifi pra checar email. Quer subir na vida e vai subir, nem que demore décadas, um degrau por vez. Mostrar vulnerabilidade? Talvez depois da aposentadoria, e olhe lá. Mas quando tu promete, entrega. Tua palavra vale contrato com firma reconhecida. Tu prefere a carreira ao conto de fadas — mas nas noites quietas, fica pensando no que teria acontecido se tivesse escolhido a outra porta.",
       "tags": [
         "ambição",
         "disciplina",
@@ -122,7 +122,7 @@ export const PT_HOT = {
     },
     "Aquarius": {
       "title": "O ET de Bermuda",
-      "text": "Tu pensa fora da caixa porque nem sabe onde a caixa tá - e sinceramente, não quer saber. Enquanto todo mundo usa app mainstream, tu já achou um alternativo que ninguém conhece. Meio desligado emocionalmente: não é que não sente, é que processa diferente. Adora ser do contra por esporte - se todo mundo concorda, tu acha argumento oposto só pra testar. Quer mudar o mundo, mas às vezes esquece de perguntar se o mundo quer. Tem mais amizade virtual que presencial, e teu grupo de WhatsApp é sobre teoria conspiratória ou tecnologia obscura.",
+      "text": "Tu pensa fora da caixa porque nem sabe onde a caixa tá - e sinceramente, não quer saber. Enquanto todo mundo usa app mainstream, tu já achou um alternativo que ninguém conhece. Meio desligado emocionalmente: não é que não sente, é que processa diferente. Adora ser do contra por esporte - se todo mundo concorda, tu acha argumento oposto só pra testar. Quer mudar o mundo, mas às vezes esquece de perguntar se o mundo quer. Tem mais amizade virtual que presencial, e teu grupo de WhatsApp é sobre teoria conspiratória ou tecnologia obscura. Tu escreve teus próprios papéis porque nada lá fora é tão interessante quanto o que tem na tua cabeça.",
       "tags": [
         "inovação",
         "independência",
@@ -134,7 +134,7 @@ export const PT_HOT = {
     },
     "Pisces": {
       "title": "O Sonhador Profissional",
-      "text": "Tu vive com um pé na realidade e outro em Nárnia - às vezes os dois em Nárnia mesmo. Sensível demais: absorve energia do ambiente feito esponja, entra feliz na festa e sai triste porque captou a vibe de alguém no canto. Criativo de um jeito inexplicável, a arte vem de um lugar que nem tu sabe qual é. Precisa de escape, e se não der, tu inventa: série, vinho, devaneio de três horas. Limite é conceito abstrato, tipo prazo de entrega ou hora de dormir. Mas tua empatia é real - quando alguém precisa de escuta sem julgamento, tu tá lá.",
+      "text": "Tu vive com um pé na realidade e outro em Nárnia - às vezes os dois em Nárnia mesmo. Sensível demais: absorve energia do ambiente feito esponja, entra feliz na festa e sai triste porque captou a vibe de alguém no canto. Criativo de um jeito inexplicável, a arte vem de um lugar que nem tu sabe qual é. Precisa de escape, e se não der, tu inventa: série, vinho, devaneio de três horas. Limite é conceito abstrato, tipo prazo de entrega ou hora de dormir. Mas tua empatia é real - quando alguém precisa de escuta sem julgamento, tu tá lá. Pros loucos que sonham — por mais insanos que pareçam.",
       "tags": [
         "imaginação",
         "empatia",

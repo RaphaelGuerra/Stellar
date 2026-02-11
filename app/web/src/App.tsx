@@ -251,6 +251,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [geoRestored, setGeoRestored] = useState(false);
+  const [showShootingStar, setShowShootingStar] = useState(false);
 
   // Clear stale state when switching analysis mode
   useEffect(() => {
@@ -724,6 +725,11 @@ function App() {
       setShowDaylightSavingOverrideA(false);
       setShowDaylightSavingOverrideB(false);
       appendHistoryEntry(chartAValue, chartBValue);
+      setShowShootingStar(false);
+      requestAnimationFrame(() => {
+        setShowShootingStar(true);
+        setTimeout(() => setShowShootingStar(false), 2000);
+      });
       setResultVersion((prev) => prev + 1);
     } catch (err) {
       if (err instanceof AmbiguousLocalTimeError) {
@@ -889,12 +895,14 @@ function App() {
         <div className="starfield__layer starfield__layer--1" />
         <div className="starfield__layer starfield__layer--2" />
         <div className="starfield__layer starfield__layer--3" />
+        {showShootingStar && <div className="shooting-star" />}
       </div>
       <div className="app">
       <div className="container">
         <header className="header" role="banner">
           <div className="header__brand">
-            <h1 className="header__title">stellar</h1>
+            <h1 className="header__title"><span className="header__title-s">S</span>tellar</h1>
+            <p className="header__tagline">"City of stars, are you shining just for me?"</p>
             <div
               className="header__meta"
               aria-label={ariaLabels.chartInfo}
@@ -946,6 +954,7 @@ function App() {
                   <button
                     type="button"
                     className={`duo-mode__btn ${duoMode === "romantic" ? "duo-mode__btn--active" : ""}`}
+                    data-duo="romantic"
                     onClick={() => setDuoMode("romantic")}
                   >
                     {t.duoModeRomantic}
@@ -953,6 +962,7 @@ function App() {
                   <button
                     type="button"
                     className={`duo-mode__btn ${duoMode === "friend" ? "duo-mode__btn--active" : ""}`}
+                    data-duo="friend"
                     onClick={() => setDuoMode("friend")}
                   >
                     {t.duoModeFriend}
@@ -1258,7 +1268,7 @@ function App() {
 
           {!loading && analysisMode === "compatibility" && comparison && comparison.stats.length > 0 && (
             <Section icon="🎮" title={t.compatibilityStatsTitle} badge={t.compatibilityStatsBadge}>
-              <div className="synastry-stats">
+              <div className={`synastry-stats${duoMode === "romantic" ? " synastry-stats--romantic" : ""}`}>
                 {comparison.stats.map((stat) => (
                   <div key={stat.key} className="synastry-stats__item">
                     <div className="synastry-stats__head">
@@ -1427,7 +1437,7 @@ function App() {
               badge={t.compatibilityBadge(comparisonCards.length)}
               badgeAccent
             >
-              <div className="cards-grid--synastry">
+              <div className={`cards-grid--synastry cards-grid--${duoMode}`}>
                 {comparisonCards.map((card) => (
                   <Card
                     key={`${resultVersion}-${card.key}`}

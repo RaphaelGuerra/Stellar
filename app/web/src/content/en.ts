@@ -2,7 +2,7 @@ export const EN = {
   "sign": {
     "Aries": {
       "title": "The One Already Running",
-      "text": "You bolted before anyone finished explaining the plan — and probably tripped on the way out. Your drawer is full of projects you started and abandoned by week two, but you swear this time it's different. Patience has never been your thing, but when everyone else is frozen, you're the one who stands up and makes things happen. Impulsive, competitive, and always first to arrive — even when you're not sure where you're going.",
+      "text": "You bolted before anyone finished explaining the plan — and probably tripped on the way out. Your drawer is full of projects you started and abandoned by week two, but you swear this time it's different. Patience has never been your thing, but when everyone else is frozen, you're the one who stands up and makes things happen. Impulsive, competitive, and always first to arrive — even when you're not sure where you're going. It's conflict and it's compromise, and it's very, very exciting — that's your whole life in one sentence.",
       "tags": [
         "initiative",
         "competition",
@@ -14,7 +14,7 @@ export const EN = {
     },
     "Taurus": {
       "title": "The Couch Monarch",
-      "text": "You turned 'leave it alone' into a life philosophy and feel zero guilt about it. Your couch has a permanent dent in your shape and your favorite restaurant knows your order by heart. Changing your routine gives you hives, but when you make a promise, you deliver — it might take geological ages, but you deliver. Comfort is priority one, and a good dinner solves about eighty percent of life's problems.",
+      "text": "You turned 'leave it alone' into a life philosophy and feel zero guilt about it. Your couch has a permanent dent in your shape and your favorite restaurant knows your order by heart. Changing your routine gives you hives, but when you make a promise, you deliver — it might take geological ages, but you deliver. Comfort is priority one, and a good dinner solves about eighty percent of life's problems. You keep running into the same places, the same comforts, the same people — maybe it means something.",
       "tags": [
         "stability",
         "stubbornness",
@@ -26,7 +26,7 @@ export const EN = {
     },
     "Gemini": {
       "title": "The Human Group Chat",
-      "text": "You were born with twenty browser tabs open in your head and none of them loading properly. One minute you're debating philosophy, the next you want the building gossip, and by the third you've forgotten both topics. You talk a mile a minute and can befriend a lamppost, but long-term commitment gives you the itch. You know everyone a little and go deep on almost no one.",
+      "text": "You were born with twenty browser tabs open in your head and none of them loading properly. One minute you're debating philosophy, the next you want the building gossip, and by the third you've forgotten both topics. You talk a mile a minute and can befriend a lamppost, but long-term commitment gives you the itch. You know everyone a little and go deep on almost no one. But people love what other people are passionate about — and you're passionate about everything, even if only for five minutes.",
       "tags": [
         "communication",
         "curiosity",
@@ -38,7 +38,7 @@ export const EN = {
     },
     "Cancer": {
       "title": "The Home Guardian",
-      "text": "You carry home on your back and arrive already asking if everyone's eaten. You have an elephant's memory for slights from 2014 — including ones the other person has long forgotten. Fiercely loyal to those you trust, but criticize you? You retreat into your shell and vanish for three days without explanation. Your fridge always has comfort food and your heart always has room for the people you love.",
+      "text": "You carry home on your back and arrive already asking if everyone's eaten. You have an elephant's memory for slights from 2014 — including ones the other person has long forgotten. Fiercely loyal to those you trust, but criticize you? You retreat into your shell and vanish for three days without explanation. Your fridge always has comfort food and your heart always has room for the people you love. Here's to the hearts that ache — yours aches louder than most, and that's exactly what makes it worth having.",
       "tags": [
         "family",
         "protection",
@@ -50,7 +50,7 @@ export const EN = {
     },
     "Leo": {
       "title": "The Show Must Go On",
-      "text": "You walk into any room already scanning for the spotlight — and if there isn't one, you improvise. Genuinely generous, you'll share what you have, but heaven help anyone who doesn't acknowledge the gesture. Your ego needs daily watering or it wilts, and then the drama begins. But when you shine, you light up everyone around you. A party without you is like a birthday without cake: it technically happens, but what's the point?",
+      "text": "You walk into any room already scanning for the spotlight — and if there isn't one, you improvise. Genuinely generous, you'll share what you have, but heaven help anyone who doesn't acknowledge the gesture. Your ego needs daily watering or it wilts, and then the drama begins. But when you shine, you light up everyone around you. A party without you is like a movie without music — it technically happens, but what's the point?",
       "tags": [
         "self-expression",
         "creativity",
@@ -62,7 +62,7 @@ export const EN = {
     },
     "Virgo": {
       "title": "Life's Quality Inspector",
-      "text": "You're the type who finds errors in already-graded exams and emails the professor about it. You execute with absurd quality, but you torture yourself over details no one else noticed. You want to help, to serve, to fix the world one flaw at a time. You'll point out where things went wrong without being asked — and the worst part is you're usually right.",
+      "text": "You're the type who finds errors in already-graded exams and emails the professor about it. You execute with absurd quality, but you torture yourself over details no one else noticed. You want to help, to serve, to fix the world one flaw at a time. You'll point out where things went wrong without being asked — and the worst part is you're usually right. How are you gonna be a revolutionary if you're such a traditionalist? Then again, someone has to keep the standards alive.",
       "tags": [
         "analysis",
         "perfectionism",
@@ -74,7 +74,7 @@ export const EN = {
     },
     "Libra": {
       "title": "The Indecisive Diplomat",
-      "text": "You can see every side of every issue, which is exactly why you can't choose anything. Restaurant menus are your nightmare: you ask everyone's opinion, change your mind three times, and order what you always get. You're a genius at mediating other people's conflicts and finding middle ground no one else saw. You want harmony, beauty, and for everyone to like you — and you're terrified of seeming rude.",
+      "text": "You can see every side of every issue, which is exactly why you can't choose anything. Restaurant menus are your nightmare: you ask everyone's opinion, change your mind three times, and order what you always get. You're a genius at mediating other people's conflicts and finding middle ground no one else saw. You want harmony, beauty, and for everyone to like you — and you're terrified of seeming rude. Love and dreams pull in opposite directions, and you're the one in the middle — wanting both, terrified of choosing either.",
       "tags": [
         "balance",
         "diplomacy",
@@ -86,7 +86,7 @@ export const EN = {
     },
     "Scorpio": {
       "title": "The Emotional Detective",
-      "text": "You look at someone and already know what they're hiding — emotional radar permanently on. Intense in everything: love intensely, hate intensely, even watch TV intensely. You don't forget betrayal even with amnesia, and the reckoning may take years, but it comes. You transform crisis into rebirth, but sometimes create crisis just for the thrill of rising from the ashes.",
+      "text": "You look at someone and already know what they're hiding — emotional radar permanently on. Intense in everything: love intensely, hate intensely, even watch TV intensely. You don't forget betrayal even with amnesia, and the reckoning may take years, but it comes. You transform crisis into rebirth, but sometimes create crisis just for the thrill of rising from the ashes. I'm always gonna love you — even if that love burns the whole thing down and builds it back different.",
       "tags": [
         "intensity",
         "transformation",
@@ -98,7 +98,7 @@ export const EN = {
     },
     "Sagittarius": {
       "title": "The Eternal Traveler",
-      "text": "You're always eyeing the next horizon while tripping over the step right in front of you. Bag half-packed, passport in pocket, any long weekend becomes an excuse to hit the road. Born optimist who thinks it'll work out even when all evidence points otherwise. You say what you think the moment you think it, and sometimes your honesty hits harder than a lie. Starting adventures is easy; finishing them is a department you haven't found yet.",
+      "text": "You're always eyeing the next horizon while tripping over the step right in front of you. Bag half-packed, passport in pocket, any long weekend becomes an excuse to hit the road. Born optimist who thinks it'll work out even when all evidence points otherwise. You say what you think the moment you think it, and sometimes your honesty hits harder than a lie. Starting adventures is easy; finishing them is a department you haven't found yet. But a bit of madness is key — to give us new colors to see.",
       "tags": [
         "expansion",
         "optimism",
@@ -110,7 +110,7 @@ export const EN = {
     },
     "Capricorn": {
       "title": "CEO Since Childhood",
-      "text": "You were born with a five-year career plan and a goals spreadsheet through 2050. Disciplined and resilient, you take responsibility so seriously that you sometimes forget to actually live — vacation only if there's wifi to check email. You want to climb and you will climb, even if it takes decades, one step at a time. When you promise, you deliver. Your word is a signed contract.",
+      "text": "You were born with a five-year career plan and a goals spreadsheet through 2050. Disciplined and resilient, you take responsibility so seriously that you sometimes forget to actually live — vacation only if there's wifi to check email. You want to climb and you will climb, even if it takes decades, one step at a time. When you promise, you deliver. Your word is a signed contract. You'd rather have the career than the fairy tale — but on quiet nights, you wonder what would've happened if you'd chosen the other door.",
       "tags": [
         "ambition",
         "discipline",
@@ -122,7 +122,7 @@ export const EN = {
     },
     "Aquarius": {
       "title": "The Alien in Bermuda Shorts",
-      "text": "You think outside the box because you don't even know where the box is — and frankly, you don't care. While everyone uses mainstream apps, you've already found an obscure alternative nobody's heard of. You love being contrarian for sport — if everyone agrees, you'll find the opposite argument just to test it. You want to change the world, but sometimes forget to ask if the world is ready.",
+      "text": "You think outside the box because you don't even know where the box is — and frankly, you don't care. While everyone uses mainstream apps, you've already found an obscure alternative nobody's heard of. You love being contrarian for sport — if everyone agrees, you'll find the opposite argument just to test it. You want to change the world, but sometimes forget to ask if the world is ready. You write your own roles because nothing out there is as interesting as what's in your head.",
       "tags": [
         "innovation",
         "independence",
@@ -134,7 +134,7 @@ export const EN = {
     },
     "Pisces": {
       "title": "The Professional Dreamer",
-      "text": "You live with one foot in reality and the other in another dimension — sometimes both feet there. Too sensitive by half: you absorb the room's energy like an emotional sponge, walk in happy and leave sad because you picked up someone's vibe in the corner. Creative in an inexplicable way — the art comes from a place even you can't name. Boundaries are an abstract concept, but your empathy is real. When someone needs to be heard without judgment, you're there.",
+      "text": "You live with one foot in reality and the other in another dimension — sometimes both feet there. Too sensitive by half: you absorb the room's energy like an emotional sponge, walk in happy and leave sad because you picked up someone's vibe in the corner. Creative in an inexplicable way — the art comes from a place even you can't name. Boundaries are an abstract concept, but your empathy is real. When someone needs to be heard without judgment, you're there. Here's to the fools who dream — crazy as they may seem.",
       "tags": [
         "imagination",
         "empathy",

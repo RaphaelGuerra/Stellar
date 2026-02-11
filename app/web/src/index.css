@@ -23,6 +23,8 @@
   --color-border-light: rgba(255, 255, 255, 0.04);
   --color-error: #f87171;
   --color-error-light: rgba(248, 113, 113, 0.1);
+  --color-rose-gold: #e8a0bf;
+  --color-rose-gold-light: rgba(232, 160, 191, 0.15);
 
   /* Element Colors */
   --color-fire: #f59e0b;
@@ -186,6 +188,31 @@ body {
   50% { opacity: 0.7; }
 }
 
+/* ===== Shooting Star ===== */
+.shooting-star {
+  position: absolute;
+  top: 10%;
+  right: 5%;
+  width: 80px;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.9), transparent);
+  border-radius: 1px;
+  transform: rotate(35deg);
+  animation: shootingStar 1.5s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes shootingStar {
+  0% {
+    opacity: 1;
+    transform: rotate(35deg) translate(0, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(35deg) translate(-400px, 300px);
+  }
+}
+
 /* ===== Layout ===== */
 .app {
   position: relative;
@@ -233,6 +260,46 @@ body {
 @keyframes gradientShift {
   0%, 100% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
+}
+
+.header__title-s {
+  position: relative;
+  display: inline-block;
+  transform: scale(1.15);
+  transform-origin: bottom left;
+  filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.4));
+}
+
+.header__title-s::after {
+  content: "+";
+  position: absolute;
+  top: -4px;
+  right: -10px;
+  font-size: 8px;
+  font-weight: 400;
+  color: var(--color-gold);
+  transform: rotate(45deg);
+  animation: sparkle-pulse 3s ease-in-out infinite;
+}
+
+@keyframes sparkle-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+.header__tagline {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-style: italic;
+  letter-spacing: 0.05em;
+  animation: tagline-fade 1.5s ease-out backwards;
+  animation-delay: 0.5s;
+}
+
+@keyframes tagline-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .header__meta {
@@ -355,6 +422,16 @@ body {
   color: var(--color-text);
   background: rgba(255, 255, 255, 0.08);
   box-shadow: var(--shadow-sm);
+}
+
+.duo-mode__btn--active[data-duo="romantic"] {
+  color: var(--color-rose-gold);
+  box-shadow: var(--shadow-sm), 0 0 12px rgba(232, 160, 191, 0.25);
+}
+
+.duo-mode__btn--active[data-duo="friend"] {
+  color: #a78bfa;
+  box-shadow: var(--shadow-sm), 0 0 12px rgba(167, 139, 250, 0.2);
 }
 
 /* ===== Action Section ===== */
@@ -1245,6 +1322,42 @@ body {
   background: linear-gradient(90deg, #f59e0b, #f97316);
 }
 
+/* Romantic mode warm treatment */
+.synastry-stats--romantic {
+  border: 1px solid rgba(232, 160, 191, 0.12);
+  border-radius: var(--radius-lg);
+  padding: var(--space-sm);
+  box-shadow: 0 0 20px rgba(232, 160, 191, 0.06);
+}
+
+.synastry-stats--romantic .synastry-stats__bar--attraction {
+  background: linear-gradient(90deg, #e8a0bf, #f472b6);
+}
+
+.synastry-stats--romantic .synastry-stats__bar--stability {
+  background: linear-gradient(90deg, #a78bfa, #c4b5fd);
+}
+
+/* Synastry card top-edge glow */
+.cards-grid--synastry.cards-grid--romantic .card::before {
+  background: linear-gradient(90deg, transparent, rgba(232, 160, 191, 0.5), rgba(244, 114, 182, 0.3), transparent);
+  opacity: 1;
+}
+
+.cards-grid--synastry.cards-grid--friend .card::before {
+  background: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.5), rgba(124, 106, 239, 0.3), transparent);
+  opacity: 1;
+}
+
+/* Synastry cards: slightly longer stagger in compatibility mode */
+.cards-grid--synastry .card:nth-child(1) { animation-delay: 0ms; }
+.cards-grid--synastry .card:nth-child(2) { animation-delay: 100ms; }
+.cards-grid--synastry .card:nth-child(3) { animation-delay: 200ms; }
+.cards-grid--synastry .card:nth-child(4) { animation-delay: 300ms; }
+.cards-grid--synastry .card:nth-child(5) { animation-delay: 400ms; }
+.cards-grid--synastry .card:nth-child(6) { animation-delay: 500ms; }
+.cards-grid--synastry .card:nth-child(n+7) { animation-delay: 600ms; }
+
 /* ===== Compatibility Timeline ===== */
 .timeline-controls {
   display: inline-flex;
@@ -1743,6 +1856,19 @@ body {
 
   .starfield {
     display: none;
+  }
+
+  .shooting-star {
+    display: none;
+  }
+
+  .header__title-s::after {
+    animation: none;
+    opacity: 0.8;
+  }
+
+  .header__tagline {
+    animation: none;
   }
 }
 
