@@ -43,6 +43,7 @@ interface BuildQuestOptions {
 
 export const QUEST_COMPLETION_XP = 40;
 export const QUEST_REFLECTION_XP = 20;
+export const ADVANCED_OVERLAYS_UNLOCK_XP = 420;
 const TRACKED_QUEST_IDS_LIMIT = 160;
 const DETAIL_UNLOCK_THRESHOLDS = [0, 80, 180, 320] as const;
 
@@ -191,6 +192,15 @@ export function getNextDetailUnlockXp(xp: number): number | null {
     if (xp < threshold) return threshold;
   }
   return null;
+}
+
+export function isAdvancedOverlaysUnlocked(xp: number): boolean {
+  return xp >= ADVANCED_OVERLAYS_UNLOCK_XP;
+}
+
+export function getAdvancedOverlaysUnlockXp(xp: number): number | null {
+  if (xp >= ADVANCED_OVERLAYS_UNLOCK_XP) return null;
+  return ADVANCED_OVERLAYS_UNLOCK_XP;
 }
 
 export function hasCompletedQuest(state: ProgressionState, questId: string): boolean {

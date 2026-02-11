@@ -283,7 +283,8 @@ function calculateAscendantLongitude(
 
   const numerator = -Math.cos(theta);
   const denominator = Math.sin(theta) * Math.cos(epsilon) + Math.tan(phi) * Math.sin(epsilon);
-  return normalizeAngle(Math.atan2(numerator, denominator) * 180 / Math.PI);
+  const westernHorizonLongitude = normalizeAngle(Math.atan2(numerator, denominator) * 180 / Math.PI);
+  return normalizeAngle(westernHorizonLongitude + 180);
 }
 
 export async function generateChart(input: ChartInput): Promise<ChartResult> {

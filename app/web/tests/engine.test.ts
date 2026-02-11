@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { Horizon, MakeTime, Observer, e_tilt } from "astronomy-engine";
 import { AmbiguousLocalTimeError, NonexistentLocalTimeError, generateChart } from "../src/lib/engine";
 import type { ChartInput } from "../src/lib/types";
 
@@ -9,6 +10,21 @@ const baseInput: ChartInput = {
   country: "US",
   daylight_saving: "auto",
 };
+
+function eclipticLongitudeToEquatorial(longitudeDegrees: number, obliquityDegrees: number) {
+  const longitude = longitudeDegrees * Math.PI / 180;
+  const obliquity = obliquityDegrees * Math.PI / 180;
+  const x = Math.cos(longitude);
+  const y = Math.sin(longitude) * Math.cos(obliquity);
+  const z = Math.sin(longitude) * Math.sin(obliquity);
+  let rightAscensionDegrees = Math.atan2(y, x) * 180 / Math.PI;
+  if (rightAscensionDegrees < 0) rightAscensionDegrees += 360;
+  const declinationDegrees = Math.atan2(z, Math.hypot(x, y)) * 180 / Math.PI;
+  return {
+    rightAscensionHours: rightAscensionDegrees / 15,
+    declinationDegrees,
+  };
+}
 
 describe("generateChart normalization", () => {
   it("computes standard offset and UTC for winter in New York", async () => {
@@ -144,6 +160,34 @@ describe("generateChart normalization", () => {
     expect(chart.angles?.ascendant.longitude).toBeGreaterThanOrEqual(0);
     expect(chart.angles?.ascendant.longitude).toBeLessThan(360);
     expect(chart.angles?.ascendant.longitude).not.toBe(chart.planets.Moon.longitude);
+  });
+
+  it("keeps the ascendant on the eastern horizon", async () => {
+    const chart = await generateChart({
+      ...baseInput,
+      city: "Rio de Janeiro",
+      country: "BR",
+      date: "1990-12-16",
+      time: "12:00",
+    });
+
+    const ascendantLongitude = chart.angles?.ascendant.longitude ?? 0;
+    const observationTime = MakeTime(new Date(chart.normalized.utcDateTime));
+    const obliquityDegrees = e_tilt(observationTime).tobl;
+    const { rightAscensionHours, declinationDegrees } = eclipticLongitudeToEquatorial(
+      ascendantLongitude,
+      obliquityDegrees
+    );
+    const horizon = Horizon(
+      observationTime,
+      new Observer(chart.normalized.location.lat, chart.normalized.location.lon, 0),
+      rightAscensionHours,
+      declinationDegrees,
+      "normal"
+    );
+
+    expect(horizon.azimuth).toBeGreaterThanOrEqual(45);
+    expect(horizon.azimuth).toBeLessThanOrEqual(135);
   });
 
   it("rejects nonexistent local time during DST spring-forward in New York when auto", async () => {

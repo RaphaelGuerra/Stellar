@@ -1188,6 +1188,124 @@ body {
   background: linear-gradient(90deg, #f59e0b, #f97316);
 }
 
+/* ===== Compatibility Timeline ===== */
+.timeline-controls {
+  display: inline-flex;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-sm);
+}
+
+.timeline-controls__btn {
+  border: 1px solid var(--color-border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-text);
+  border-radius: var(--radius-full);
+  padding: var(--space-xs) var(--space-md);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.timeline-controls__btn--active {
+  border-color: rgba(124, 106, 239, 0.4);
+  background: rgba(124, 106, 239, 0.16);
+}
+
+.timeline-meta {
+  display: grid;
+  gap: 4px;
+  margin-bottom: var(--space-sm);
+}
+
+.timeline-meta p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.timeline-grid {
+  display: grid;
+  gap: var(--space-sm);
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+.timeline-day {
+  padding: var(--space-sm);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.timeline-day__date,
+.timeline-day__score,
+.timeline-day__summary {
+  margin: 0;
+}
+
+.timeline-day__date {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-bottom: 2px;
+}
+
+.timeline-day__score {
+  font-size: var(--font-size-xs);
+  color: var(--color-text);
+}
+
+.timeline-day__summary {
+  margin-top: var(--space-xs);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+/* ===== Advanced Overlays ===== */
+.advanced-lock {
+  padding: var(--space-md);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.advanced-lock p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.advanced-lock p + p {
+  margin-top: var(--space-xs);
+}
+
+.advanced-grid {
+  display: grid;
+  gap: var(--space-md);
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.advanced-card {
+  padding: var(--space-md);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.advanced-card h3 {
+  margin: 0 0 var(--space-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+
+.advanced-card p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.advanced-card p + p {
+  margin-top: 4px;
+}
+
 /* ===== Relationship Quest ===== */
 .quest-panel {
   display: flex;

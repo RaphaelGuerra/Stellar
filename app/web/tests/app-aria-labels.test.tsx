@@ -184,6 +184,8 @@ describe("App aria labels localization", () => {
     expect(screen.getByRole("heading", { name: "Today for Us" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Sun, Moon, Ascendant" })).toBeTruthy();
     expect(screen.getAllByText("Houses: coming soon (not calculated yet)").length).toBeGreaterThan(0);
+    expect(screen.getByRole("heading", { name: "Compatibility timeline" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Advanced overlays" })).toBeTruthy();
     expect(screen.getByText(/Boost Window/)).toBeTruthy();
     expect(screen.getByText(/Pressure Point/)).toBeTruthy();
   });

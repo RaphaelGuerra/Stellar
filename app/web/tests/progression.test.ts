@@ -6,10 +6,12 @@ import {
   awardQuestReflection,
   buildRelationshipQuest,
   getDetailUnlockCount,
+  getAdvancedOverlaysUnlockXp,
   getLocalDayKey,
   getNextDetailUnlockXp,
   hasCompletedQuest,
   hasReflectedQuest,
+  isAdvancedOverlaysUnlocked,
 } from "../src/lib/progression";
 import type { ChartResult, PlanetName, ZodiacSign } from "../src/lib/types";
 
@@ -155,6 +157,10 @@ describe("progression", () => {
     expect(getNextDetailUnlockXp(0)).toBe(80);
     expect(getNextDetailUnlockXp(100)).toBe(180);
     expect(getNextDetailUnlockXp(400)).toBeNull();
+    expect(isAdvancedOverlaysUnlocked(100)).toBe(false);
+    expect(getAdvancedOverlaysUnlockXp(100)).toBe(420);
+    expect(isAdvancedOverlaysUnlocked(420)).toBe(true);
+    expect(getAdvancedOverlaysUnlockXp(420)).toBeNull();
   });
 
   it("builds local day keys in timezone and falls back safely", () => {

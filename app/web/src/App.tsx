@@ -11,17 +11,25 @@ import { AmbiguousLocalTimeError, NonexistentLocalTimeError, generateChart } fro
 import { buildChartComparison } from "./lib/synastry";
 import { buildDailyTransitOutlook } from "./lib/transits";
 import {
+  ADVANCED_OVERLAYS_UNLOCK_XP,
   DEFAULT_PROGRESSION_STATE,
   awardQuestCompletion,
   awardQuestReflection,
   buildRelationshipQuest,
+  getAdvancedOverlaysUnlockXp,
   getDetailUnlockCount,
   getLocalDayKey,
   getNextDetailUnlockXp,
   hasCompletedQuest,
   hasReflectedQuest,
+  isAdvancedOverlaysUnlocked,
   type RelationshipQuest,
 } from "./lib/progression";
+import {
+  buildAdvancedOverlaySummary,
+  buildCompatibilityForecast,
+  type ForecastRange,
+} from "./lib/phase5";
 import {
   HISTORY_LIMIT,
   readPersistedAppState,
@@ -231,6 +239,7 @@ function App() {
   const [resultVersion, setResultVersion] = useState(0);
   const [history, setHistory] = useState<PersistedHistoryEntry[]>(() => persisted?.history ?? []);
   const [progression, setProgression] = useState(() => persisted?.progression ?? DEFAULT_PROGRESSION_STATE);
+  const [forecastRange, setForecastRange] = useState<ForecastRange>(7);
   const [placements, setPlacements] = useState<PlacementSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -401,6 +410,23 @@ function App() {
       timeZone: chart.normalized.timezone,
     });
   }, [analysisMode, chart, comparison, duoMode, isCarioca]);
+
+  const compatibilityForecast = useMemo(() => {
+    if (analysisMode !== "compatibility" || !chart || !chartB) return null;
+    return buildCompatibilityForecast(chart, chartB, forecastRange, {
+      locale: isCarioca ? "pt" : "en",
+      duoMode,
+      timeZone: chart.normalized.timezone,
+    });
+  }, [analysisMode, chart, chartB, duoMode, forecastRange, isCarioca]);
+
+  const advancedOverlays = useMemo(() => {
+    if (analysisMode !== "compatibility" || !chart || !chartB) return null;
+    return buildAdvancedOverlaySummary(chart, chartB, isCarioca ? "pt" : "en");
+  }, [analysisMode, chart, chartB, isCarioca]);
+
+  const advancedUnlocked = isAdvancedOverlaysUnlocked(progression.xp);
+  const advancedUnlockTarget = getAdvancedOverlaysUnlockXp(progression.xp);
 
   const questCompleted = relationshipQuest
     ? hasCompletedQuest(progression, relationshipQuest.id)
@@ -748,6 +774,23 @@ function App() {
     questCompleted: isCarioca ? "Missao concluida" : "Quest completed",
     questReflect: isCarioca ? "Registrar reflexao (+20 XP)" : "Log reflection (+20 XP)",
     questReflected: isCarioca ? "Reflexao registrada" : "Reflection logged",
+    forecastTitle: isCarioca ? "Timeline de compatibilidade" : "Compatibility timeline",
+    forecastBadge: (days: number) => isCarioca ? `proximos ${days} dias` : `next ${days} days`,
+    forecastBest: isCarioca ? "Melhor janela" : "Best window",
+    forecastTough: isCarioca ? "Dia mais sensivel" : "Toughest day",
+    forecastVibe: isCarioca ? "Vibe" : "Vibe",
+    forecastRisk: isCarioca ? "Risco" : "Risk",
+    advancedTitle: isCarioca ? "Overlays avancados" : "Advanced overlays",
+    advancedBadge: isCarioca ? "composite + midpoints" : "composite + midpoints",
+    advancedLocked: isCarioca
+      ? `Desbloqueia com ${ADVANCED_OVERLAYS_UNLOCK_XP} XP`
+      : `Unlocks at ${ADVANCED_OVERLAYS_UNLOCK_XP} XP`,
+    advancedLockedHint: (xp: number) =>
+      isCarioca
+        ? `Faltam ${Math.max(0, xp - progression.xp)} XP para liberar.`
+        : `${Math.max(0, xp - progression.xp)} XP to unlock.`,
+    advancedCompositeTitle: isCarioca ? "Composite core" : "Composite core",
+    advancedMidpointTitle: isCarioca ? "Midpoints-chave" : "Key midpoints",
     todayForUsTitle:
       duoMode === "friend"
         ? isCarioca
@@ -1223,6 +1266,70 @@ function App() {
                   expandLabels={cardExpandLabels}
                 />
               </div>
+            </Section>
+          )}
+
+          {!loading && analysisMode === "compatibility" && compatibilityForecast && (
+            <Section icon="🗓️" title={t.forecastTitle} badge={t.forecastBadge(forecastRange)}>
+              <div className="timeline-controls" role="group" aria-label={t.forecastTitle}>
+                <button
+                  type="button"
+                  className={`timeline-controls__btn ${forecastRange === 7 ? "timeline-controls__btn--active" : ""}`}
+                  onClick={() => setForecastRange(7)}
+                >
+                  7d
+                </button>
+                <button
+                  type="button"
+                  className={`timeline-controls__btn ${forecastRange === 14 ? "timeline-controls__btn--active" : ""}`}
+                  onClick={() => setForecastRange(14)}
+                >
+                  14d
+                </button>
+              </div>
+              <div className="timeline-meta">
+                <p><strong>{t.forecastBest}:</strong> {compatibilityForecast.bestDay.dateLabel}</p>
+                <p><strong>{t.forecastTough}:</strong> {compatibilityForecast.toughestDay.dateLabel}</p>
+              </div>
+              <div className="timeline-grid">
+                {compatibilityForecast.days.map((day) => (
+                  <div key={day.dayKey} className="timeline-day">
+                    <p className="timeline-day__date">{day.dateLabel}</p>
+                    <p className="timeline-day__score">{t.forecastVibe}: {day.vibeScore}%</p>
+                    <p className="timeline-day__score">{t.forecastRisk}: {day.riskScore}%</p>
+                    <p className="timeline-day__summary">{day.summary}</p>
+                  </div>
+                ))}
+              </div>
+            </Section>
+          )}
+
+          {!loading && analysisMode === "compatibility" && advancedOverlays && (
+            <Section icon="🧠" title={t.advancedTitle} badge={t.advancedBadge}>
+              {!advancedUnlocked && (
+                <div className="advanced-lock">
+                  <p>{t.advancedLocked}</p>
+                  {advancedUnlockTarget != null && (
+                    <p>{t.advancedLockedHint(advancedUnlockTarget)}</p>
+                  )}
+                </div>
+              )}
+              {advancedUnlocked && (
+                <div className="advanced-grid">
+                  <div className="advanced-card">
+                    <h3>{t.advancedCompositeTitle}</h3>
+                    {advancedOverlays.compositeCore.map((item) => (
+                      <p key={item.key}><strong>{item.label}:</strong> {item.value}</p>
+                    ))}
+                  </div>
+                  <div className="advanced-card">
+                    <h3>{t.advancedMidpointTitle}</h3>
+                    {advancedOverlays.midpointHighlights.map((item) => (
+                      <p key={item.key}><strong>{item.label}:</strong> {item.value}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
             </Section>
           )}
 
