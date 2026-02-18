@@ -88,6 +88,8 @@ interface AtlasShortlistEntry {
   nearestLines: string[];
 }
 
+type AtlasGoalFocus = "career" | "relationships" | "home" | "growth";
+
 interface AtlasCrossingEntry {
   key: string;
   pairLabel: string;
@@ -420,7 +422,34 @@ function buildAtlasCrossings(
   return entries.sort((a, b) => a.distance - b.distance).slice(0, 8);
 }
 
-function buildAtlasShortlist(astrocartography: AstrocartographyResult | null): AtlasShortlistEntry[] {
+function atlasGoalWeight(line: AstrocartographyLine, goal: AtlasGoalFocus): number {
+  if (goal === "career") {
+    if (line.angle === "MC" && (line.point === "Sun" || line.point === "Jupiter")) return 2.2;
+    if (line.angle === "MC" || line.angle === "ASC") return 1.5;
+    if (line.point === "Saturn") return 1.2;
+    return 1;
+  }
+  if (goal === "relationships") {
+    if (line.angle === "DSC" && (line.point === "Venus" || line.point === "Moon")) return 2.3;
+    if (line.angle === "DSC") return 1.7;
+    if (line.point === "Venus" || line.point === "Jupiter") return 1.4;
+    return 1;
+  }
+  if (goal === "home") {
+    if (line.angle === "IC" && (line.point === "Moon" || line.point === "Venus")) return 2.3;
+    if (line.angle === "IC") return 1.7;
+    if (line.point === "Moon") return 1.5;
+    return 1;
+  }
+  if (line.point === "Jupiter" || line.point === "Sun") return 2;
+  if (line.angle === "ASC" || line.angle === "MC") return 1.6;
+  return 1.1;
+}
+
+function buildAtlasShortlist(
+  astrocartography: AstrocartographyResult | null,
+  goal: AtlasGoalFocus
+): AtlasShortlistEntry[] {
   if (!astrocartography || astrocartography.lines.length === 0) return [];
   const candidates: AtlasShortlistEntry[] = [];
   for (const label of SUPPORTED_CITIES) {
@@ -437,7 +466,10 @@ function buildAtlasShortlist(astrocartography: AstrocartographyResult | null): A
         .sort((left, right) => left.distance - right.distance)
         .slice(0, 4);
       if (nearest.length === 0 || nearest[0].distance > 6) continue;
-      const score = nearest.reduce((sum, hit) => sum + Math.max(0, 6 - hit.distance), 0);
+      const score = nearest.reduce(
+        (sum, hit) => sum + Math.max(0, 6 - hit.distance) * atlasGoalWeight(hit.line, goal),
+        0
+      );
       candidates.push({
         label,
         score: Math.round(score * 10) / 10,
@@ -824,6 +856,7 @@ function App() {
   const [lastReminderKey, setLastReminderKey] = useState<string>(
     () => persisted?.reminders.lastSentKey ?? ""
   );
+  const [atlasGoalFocus, setAtlasGoalFocus] = useState<AtlasGoalFocus>("career");
   const [atlasInspectorInput, setAtlasInspectorInput] = useState<string>(
     () => persisted?.atlasInspectorInput ?? persisted?.personA.locationInput ?? "Rio de Janeiro, BR"
   );
@@ -1065,8 +1098,8 @@ function App() {
   }, [analysisMode, chart, chartB, isCarioca]);
 
   const atlasShortlist = useMemo(
-    () => buildAtlasShortlist(astrocartography),
-    [astrocartography]
+    () => buildAtlasShortlist(astrocartography, atlasGoalFocus),
+    [astrocartography, atlasGoalFocus]
   );
   const atlasCrossings = useMemo(
     () => buildAtlasCrossings(astrocartography, isCarioca),
@@ -1479,6 +1512,7 @@ function App() {
     setReminderLeadDays(DEFAULT_REMINDER_RULES.leadDays);
     setReminderMaxOrb(DEFAULT_REMINDER_RULES.maxOrb);
     setLastReminderKey("");
+    setAtlasGoalFocus("career");
     setAtlasInspectorInput("Rio de Janeiro, BR");
     setAtlasInspectorResult(null);
     setAtlasInspectorLoading(false);
@@ -2278,6 +2312,11 @@ function App() {
       : "Vertical lines show where each angle expression is strongest globally.",
     atlasShortlistTitle: isCarioca ? "Melhores cidades por linhas" : "Best-fit location shortlist",
     atlasShortlistBadge: isCarioca ? "proximidade de linhas" : "line proximity",
+    atlasGoalFocusTitle: isCarioca ? "Objetivo principal" : "Primary goal",
+    atlasGoalCareer: isCarioca ? "Carreira" : "Career",
+    atlasGoalRelationships: isCarioca ? "Relacoes" : "Relationships",
+    atlasGoalHome: isCarioca ? "Casa/Familia" : "Home/Family",
+    atlasGoalGrowth: isCarioca ? "Crescimento" : "Growth",
     atlasShortlistEmpty: isCarioca
       ? "Sem matches fortes por enquanto. Tenta mudar data ou sistema de casas."
       : "No strong matches yet. Try another date or house system.",
@@ -3765,6 +3804,36 @@ function App() {
 
           {!loading && isAtlasArea && chart && (
             <Section icon="📍" title={t.atlasShortlistTitle} badge={t.atlasShortlistBadge}>
+              <div className="timeline-controls" role="group" aria-label={t.atlasGoalFocusTitle}>
+                <button
+                  type="button"
+                  className={`timeline-controls__btn ${atlasGoalFocus === "career" ? "timeline-controls__btn--active" : ""}`}
+                  onClick={() => setAtlasGoalFocus("career")}
+                >
+                  {t.atlasGoalCareer}
+                </button>
+                <button
+                  type="button"
+                  className={`timeline-controls__btn ${atlasGoalFocus === "relationships" ? "timeline-controls__btn--active" : ""}`}
+                  onClick={() => setAtlasGoalFocus("relationships")}
+                >
+                  {t.atlasGoalRelationships}
+                </button>
+                <button
+                  type="button"
+                  className={`timeline-controls__btn ${atlasGoalFocus === "home" ? "timeline-controls__btn--active" : ""}`}
+                  onClick={() => setAtlasGoalFocus("home")}
+                >
+                  {t.atlasGoalHome}
+                </button>
+                <button
+                  type="button"
+                  className={`timeline-controls__btn ${atlasGoalFocus === "growth" ? "timeline-controls__btn--active" : ""}`}
+                  onClick={() => setAtlasGoalFocus("growth")}
+                >
+                  {t.atlasGoalGrowth}
+                </button>
+              </div>
               {atlasShortlist.length === 0 ? (
                 <p className="timeline-day__summary">{t.atlasShortlistEmpty}</p>
               ) : (
