@@ -25,7 +25,15 @@ import { buildDailyTransitOutlook } from "./lib/transits";
 import { buildAstralMapModelCompatibility, buildAstralMapModelSingle } from "./lib/astralMap";
 import { buildMatchScorecards } from "./lib/matchScorecards";
 import { generateChartInWorker, runAstroWorkerTask } from "./lib/astroWorkerClient";
-import { DEFAULT_CHART_SETTINGS, HOUSE_SYSTEMS } from "./lib/constants";
+import {
+  ASPECT_SYMBOL,
+  ASTRO_POINTS,
+  DEFAULT_CHART_SETTINGS,
+  HOUSE_SYSTEMS,
+  PLANETS,
+  POINT_SYMBOL,
+  SIGN_SYMBOL,
+} from "./lib/constants";
 import {
   ADVANCED_OVERLAYS_UNLOCK_XP,
   DEFAULT_PROGRESSION_STATE,
@@ -60,13 +68,17 @@ import { validateChartInput, type ValidationErrorCode } from "./lib/validation";
 import { useGeoSearch, resolveLocationCandidates, type GeoSuggestion } from "./lib/useGeoSearch";
 import { SUPPORTED_CITIES, resolveCity } from "./lib/resolveCity";
 import type {
+  Aspect,
+  AstroPointName,
   ChartInput,
   ChartResult,
   ChartSettings,
   DuoMode,
   LifeArea,
+  PlanetName,
   PlanetPlacement,
   PrimaryArea,
+  ZodiacSign,
 } from "./lib/types";
 
 type AnalysisMode = "single" | "compatibility";
@@ -97,12 +109,78 @@ interface AtlasInspectorResultEntry {
   strongestCrossing?: AtlasCrossingEntry;
 }
 
+type DignityStatus = "domicile" | "exaltation" | "detriment" | "fall" | "neutral";
+
+interface PointTableRow {
+  point: AstroPointName;
+  symbol: string;
+  sign: ZodiacSign | "--";
+  degree: string;
+  longitude: string;
+}
+
+interface HouseTableRow {
+  house: number;
+  sign: ZodiacSign | "--";
+  degree: string;
+  longitude: string;
+}
+
+interface DignityTableRow {
+  planet: PlanetName;
+  sign: ZodiacSign;
+  status: DignityStatus;
+}
+
 const TRANSIT_PAGE_SIZE = 10;
 const DEFAULT_REMINDER_RULES = {
   enabled: false,
   leadDays: 1,
   maxOrb: 0.4,
 };
+
+const DIGNITY_RULES: Record<PlanetName, {
+  domicile: ZodiacSign[];
+  detriment: ZodiacSign[];
+  exaltation?: ZodiacSign;
+  fall?: ZodiacSign;
+}> = {
+  Sun: { domicile: ["Leo"], detriment: ["Aquarius"], exaltation: "Aries", fall: "Libra" },
+  Moon: { domicile: ["Cancer"], detriment: ["Capricorn"], exaltation: "Taurus", fall: "Scorpio" },
+  Mercury: {
+    domicile: ["Gemini", "Virgo"],
+    detriment: ["Sagittarius", "Pisces"],
+    exaltation: "Virgo",
+    fall: "Pisces",
+  },
+  Venus: { domicile: ["Taurus", "Libra"], detriment: ["Scorpio", "Aries"], exaltation: "Pisces", fall: "Virgo" },
+  Mars: { domicile: ["Aries", "Scorpio"], detriment: ["Libra", "Taurus"], exaltation: "Capricorn", fall: "Cancer" },
+  Jupiter: {
+    domicile: ["Sagittarius", "Pisces"],
+    detriment: ["Gemini", "Virgo"],
+    exaltation: "Cancer",
+    fall: "Capricorn",
+  },
+  Saturn: {
+    domicile: ["Capricorn", "Aquarius"],
+    detriment: ["Cancer", "Leo"],
+    exaltation: "Libra",
+    fall: "Aries",
+  },
+  Uranus: { domicile: ["Aquarius"], detriment: ["Leo"] },
+  Neptune: { domicile: ["Pisces"], detriment: ["Virgo"] },
+  Pluto: { domicile: ["Scorpio"], detriment: ["Taurus"] },
+};
+
+function formatDegreeValue(value: number | undefined): string {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "--";
+  return `${value.toFixed(1)}deg`;
+}
+
+function formatLongitudeValue(value: number | undefined): string {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "--";
+  return `${value.toFixed(2)}deg`;
+}
 
 function formatIsoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
@@ -456,6 +534,71 @@ function formatPlacementLabel(
   return `${placement.sign} ${placement.degree.toFixed(1)}°`;
 }
 
+function buildPointTableRows(chart: ChartResult): PointTableRow[] {
+  const points = chart.points ?? {};
+  const resolvePointPlacement = (point: AstroPointName): PlanetPlacement | undefined => {
+    if (point in points) {
+      return points[point];
+    }
+    if (point in chart.planets) {
+      return chart.planets[point as PlanetName];
+    }
+    if (point === "Ascendant") return chart.angles?.ascendant;
+    if (point === "Descendant") return chart.angles?.descendant;
+    if (point === "MC") return chart.angles?.mc;
+    if (point === "IC") return chart.angles?.ic;
+    if (point === "Vertex") return chart.angles?.vertex;
+    return undefined;
+  };
+  return ASTRO_POINTS.map((point) => {
+    const placement = resolvePointPlacement(point);
+    return {
+      point,
+      symbol: POINT_SYMBOL[point],
+      sign: placement?.sign ?? "--",
+      degree: formatDegreeValue(placement?.degree),
+      longitude: formatLongitudeValue(placement?.longitude),
+    };
+  });
+}
+
+function buildHouseTableRows(chart: ChartResult): HouseTableRow[] {
+  if (!chart.houses || chart.houses.length === 0) return [];
+  return [...chart.houses]
+    .sort((left, right) => left.house - right.house)
+    .map((house) => ({
+      house: house.house,
+      sign: house.sign,
+      degree: formatDegreeValue(house.degree),
+      longitude: formatLongitudeValue(house.longitude),
+    }));
+}
+
+function buildAspectTableRows(chart: ChartResult): Aspect[] {
+  return [...chart.aspects].sort((left, right) => (left.orb ?? 0) - (right.orb ?? 0));
+}
+
+function resolveDignityStatus(planet: PlanetName, sign: ZodiacSign): DignityStatus {
+  const rules = DIGNITY_RULES[planet];
+  if (rules.exaltation === sign) return "exaltation";
+  if (rules.fall === sign) return "fall";
+  if (rules.domicile.includes(sign)) return "domicile";
+  if (rules.detriment.includes(sign)) return "detriment";
+  return "neutral";
+}
+
+function buildDignityRows(chart: ChartResult): DignityTableRow[] {
+  return PLANETS
+    .map((planet) => {
+      const sign = chart.planets[planet].sign;
+      return {
+        planet,
+        sign,
+        status: resolveDignityStatus(planet, sign),
+      };
+    });
+}
+
 function App() {
   const { mode, setMode, content } = useContentMode();
   const isCarioca = mode === "carioca";
@@ -701,6 +844,14 @@ function App() {
     if (!chartB) return [];
     return buildPlacementsSummary(chartB);
   }, [chartB]);
+  const pointRowsA = useMemo(() => (chart ? buildPointTableRows(chart) : []), [chart]);
+  const pointRowsB = useMemo(() => (chartB ? buildPointTableRows(chartB) : []), [chartB]);
+  const houseRowsA = useMemo(() => (chart ? buildHouseTableRows(chart) : []), [chart]);
+  const houseRowsB = useMemo(() => (chartB ? buildHouseTableRows(chartB) : []), [chartB]);
+  const aspectRowsA = useMemo(() => (chart ? buildAspectTableRows(chart) : []), [chart]);
+  const aspectRowsB = useMemo(() => (chartB ? buildAspectTableRows(chartB) : []), [chartB]);
+  const dignityRowsA = useMemo(() => (chart ? buildDignityRows(chart) : []), [chart]);
+  const dignityRowsB = useMemo(() => (chartB ? buildDignityRows(chartB) : []), [chartB]);
 
   const comparison = useMemo(() => {
     if (analysisMode !== "compatibility" || !chart || !chartB) return null;
@@ -1586,6 +1737,28 @@ function App() {
     planetsTitle: isCarioca ? "Posicoes planetarias" : "Planet placements",
     aspectsTitle: isCarioca ? "Aspectos planetarios" : "Planetary aspects",
     aspectsBadge: (n: number) => isCarioca ? `${n} conexoes brabas` : `${n} connections`,
+    chartPointsTitle: isCarioca ? "Tabela completa de pontos" : "Full points table",
+    chartPointsBadge: (n: number) => isCarioca ? `${n} pontos` : `${n} points`,
+    chartHousesTitle: isCarioca ? "Tabela de casas" : "House table",
+    chartHousesBadge: (n: number) => isCarioca ? `${n} casas` : `${n} houses`,
+    chartAspectsTableTitle: isCarioca ? "Tabela de aspectos" : "Aspects table",
+    chartAspectsTableBadge: (n: number) => isCarioca ? `${n} aspectos` : `${n} aspects`,
+    chartDignitiesTitle: isCarioca ? "Resumo de dignidades" : "Dignities summary",
+    chartDignitiesBadge: (n: number) => isCarioca ? `${n} planetas` : `${n} planets`,
+    colPoint: isCarioca ? "Ponto" : "Point",
+    colHouse: isCarioca ? "Casa" : "House",
+    colAspect: isCarioca ? "Aspecto" : "Aspect",
+    colSign: isCarioca ? "Signo" : "Sign",
+    colDegree: isCarioca ? "Grau" : "Degree",
+    colLongitude: isCarioca ? "Longitude" : "Longitude",
+    colOrb: "Orb",
+    colStatus: isCarioca ? "Status" : "Status",
+    emptyTable: isCarioca ? "Sem dados para mostrar." : "No data available.",
+    dignityDomicile: isCarioca ? "Domicilio" : "Domicile",
+    dignityExaltation: isCarioca ? "Exaltacao" : "Exaltation",
+    dignityDetriment: isCarioca ? "Detrimento" : "Detriment",
+    dignityFall: isCarioca ? "Queda" : "Fall",
+    dignityNeutral: isCarioca ? "Neutro" : "Neutral",
     sunMoonInsightsTitle: isCarioca ? "Insights de Sol e Lua" : "Sun and Moon insights",
     housesStatus: isCarioca
       ? "Casas calculadas no sistema selecionado."
@@ -1798,6 +1971,16 @@ function App() {
   const cardExpandLabels = isCarioca
     ? { more: "Abrir mais", less: "Fechar" }
     : { more: "Show more", less: "Show less" };
+  const formatDignityStatusLabel = useCallback(
+    (status: DignityStatus) => {
+      if (status === "domicile") return t.dignityDomicile;
+      if (status === "exaltation") return t.dignityExaltation;
+      if (status === "detriment") return t.dignityDetriment;
+      if (status === "fall") return t.dignityFall;
+      return t.dignityNeutral;
+    },
+    [t.dignityDetriment, t.dignityDomicile, t.dignityExaltation, t.dignityFall, t.dignityNeutral]
+  );
   const matchAreaLabels: Record<LifeArea, string> = {
     love: t.matchAreaLove,
     friends: t.matchAreaFriends,
@@ -2230,6 +2413,336 @@ function App() {
                   <p><strong>{t.coreSun}:</strong> {formatPlacementLabel(chartB.planets.Sun, t.coreAscMissing)}</p>
                   <p><strong>{t.coreMoon}:</strong> {formatPlacementLabel(chartB.planets.Moon, t.coreAscMissing)}</p>
                   <p><strong>{t.coreAsc}:</strong> {formatPlacementLabel(chartB.angles?.ascendant, t.coreAscMissing)}</p>
+                </div>
+              </div>
+            </Section>
+          )}
+
+          {!loading && isChartArea && analysisMode === "single" && chart && (
+            <Section icon="📐" title={t.chartPointsTitle} badge={t.chartPointsBadge(pointRowsA.length)}>
+              <div className="table-block">
+                <table className="chart-table">
+                  <thead>
+                    <tr>
+                      <th>{t.colPoint}</th>
+                      <th>{t.colSign}</th>
+                      <th>{t.colDegree}</th>
+                      <th>{t.colLongitude}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pointRowsA.map((row) => (
+                      <tr key={`point-a-${row.point}`}>
+                        <td>{row.symbol} {row.point}</td>
+                        <td>{row.sign === "--" ? "--" : `${SIGN_SYMBOL[row.sign]} ${row.sign}`}</td>
+                        <td>{row.degree}</td>
+                        <td>{row.longitude}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="timeline-day__summary">{t.chartHousesTitle}</p>
+              {houseRowsA.length === 0 ? (
+                <p className="timeline-day__summary">{t.emptyTable}</p>
+              ) : (
+                <div className="table-block">
+                  <table className="chart-table">
+                    <thead>
+                      <tr>
+                        <th>{t.colHouse}</th>
+                        <th>{t.colSign}</th>
+                        <th>{t.colDegree}</th>
+                        <th>{t.colLongitude}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {houseRowsA.map((row) => (
+                        <tr key={`house-a-${row.house}`}>
+                          <td>{row.house}</td>
+                          <td>{row.sign === "--" ? "--" : `${SIGN_SYMBOL[row.sign]} ${row.sign}`}</td>
+                          <td>{row.degree}</td>
+                          <td>{row.longitude}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Section>
+          )}
+
+          {!loading && isChartArea && analysisMode === "single" && chart && (
+            <Section icon="📎" title={t.chartAspectsTableTitle} badge={t.chartAspectsTableBadge(aspectRowsA.length)}>
+              {aspectRowsA.length === 0 ? (
+                <p className="timeline-day__summary">{t.emptyTable}</p>
+              ) : (
+                <div className="table-block">
+                  <table className="chart-table">
+                    <thead>
+                      <tr>
+                        <th>{t.colAspect}</th>
+                        <th>{t.colOrb}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {aspectRowsA.map((aspect, index) => (
+                        <tr key={`aspect-a-${aspect.a}-${aspect.type}-${aspect.b}-${index}`}>
+                          <td>{aspect.a} {ASPECT_SYMBOL[aspect.type]} {aspect.type} {aspect.b}</td>
+                          <td>{aspect.orb?.toFixed(1) ?? "--"}deg</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Section>
+          )}
+
+          {!loading && isChartArea && analysisMode === "single" && chart && (
+            <Section icon="🏛️" title={t.chartDignitiesTitle} badge={t.chartDignitiesBadge(dignityRowsA.length)}>
+              <div className="table-block">
+                <table className="chart-table">
+                  <thead>
+                    <tr>
+                      <th>{t.colPoint}</th>
+                      <th>{t.colSign}</th>
+                      <th>{t.colStatus}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dignityRowsA.map((row) => (
+                      <tr key={`dignity-a-${row.planet}`}>
+                        <td>{row.planet}</td>
+                        <td>{SIGN_SYMBOL[row.sign]} {row.sign}</td>
+                        <td>{formatDignityStatusLabel(row.status)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Section>
+          )}
+
+          {!loading && isChartArea && analysisMode === "compatibility" && chart && chartB && (
+            <Section icon="📐" title={t.chartPointsTitle} badge={`${t.personA} + ${t.personB}`}>
+              <div className="timeline-grid">
+                <div className="timeline-day">
+                  <p className="timeline-day__date">{t.personA}</p>
+                  <div className="table-block">
+                    <table className="chart-table">
+                      <thead>
+                        <tr>
+                          <th>{t.colPoint}</th>
+                          <th>{t.colSign}</th>
+                          <th>{t.colDegree}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pointRowsA.map((row) => (
+                          <tr key={`point-compat-a-${row.point}`}>
+                            <td>{row.symbol} {row.point}</td>
+                            <td>{row.sign === "--" ? "--" : `${SIGN_SYMBOL[row.sign]} ${row.sign}`}</td>
+                            <td>{row.degree}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div className="timeline-day">
+                  <p className="timeline-day__date">{t.personB}</p>
+                  <div className="table-block">
+                    <table className="chart-table">
+                      <thead>
+                        <tr>
+                          <th>{t.colPoint}</th>
+                          <th>{t.colSign}</th>
+                          <th>{t.colDegree}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pointRowsB.map((row) => (
+                          <tr key={`point-compat-b-${row.point}`}>
+                            <td>{row.symbol} {row.point}</td>
+                            <td>{row.sign === "--" ? "--" : `${SIGN_SYMBOL[row.sign]} ${row.sign}`}</td>
+                            <td>{row.degree}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </Section>
+          )}
+
+          {!loading && isChartArea && analysisMode === "compatibility" && chart && chartB && (
+            <Section icon="🏠" title={t.chartHousesTitle} badge={`${t.personA} + ${t.personB}`}>
+              <div className="timeline-grid">
+                <div className="timeline-day">
+                  <p className="timeline-day__date">{t.personA}</p>
+                  {houseRowsA.length === 0 ? (
+                    <p className="timeline-day__summary">{t.emptyTable}</p>
+                  ) : (
+                    <div className="table-block">
+                      <table className="chart-table">
+                        <thead>
+                          <tr>
+                            <th>{t.colHouse}</th>
+                            <th>{t.colSign}</th>
+                            <th>{t.colDegree}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {houseRowsA.map((row) => (
+                            <tr key={`house-compat-a-${row.house}`}>
+                              <td>{row.house}</td>
+                              <td>{row.sign === "--" ? "--" : `${SIGN_SYMBOL[row.sign]} ${row.sign}`}</td>
+                              <td>{row.degree}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+                <div className="timeline-day">
+                  <p className="timeline-day__date">{t.personB}</p>
+                  {houseRowsB.length === 0 ? (
+                    <p className="timeline-day__summary">{t.emptyTable}</p>
+                  ) : (
+                    <div className="table-block">
+                      <table className="chart-table">
+                        <thead>
+                          <tr>
+                            <th>{t.colHouse}</th>
+                            <th>{t.colSign}</th>
+                            <th>{t.colDegree}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {houseRowsB.map((row) => (
+                            <tr key={`house-compat-b-${row.house}`}>
+                              <td>{row.house}</td>
+                              <td>{row.sign === "--" ? "--" : `${SIGN_SYMBOL[row.sign]} ${row.sign}`}</td>
+                              <td>{row.degree}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Section>
+          )}
+
+          {!loading && isChartArea && analysisMode === "compatibility" && chart && chartB && (
+            <Section icon="📎" title={t.chartAspectsTableTitle} badge={`${t.personA} + ${t.personB}`}>
+              <div className="timeline-grid">
+                <div className="timeline-day">
+                  <p className="timeline-day__date">{t.personA}</p>
+                  {aspectRowsA.length === 0 ? (
+                    <p className="timeline-day__summary">{t.emptyTable}</p>
+                  ) : (
+                    <div className="table-block">
+                      <table className="chart-table">
+                        <thead>
+                          <tr>
+                            <th>{t.colAspect}</th>
+                            <th>{t.colOrb}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {aspectRowsA.slice(0, 20).map((aspect, index) => (
+                            <tr key={`aspect-compat-a-${aspect.a}-${aspect.type}-${aspect.b}-${index}`}>
+                              <td>{aspect.a} {ASPECT_SYMBOL[aspect.type]} {aspect.b}</td>
+                              <td>{aspect.orb?.toFixed(1) ?? "--"}deg</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+                <div className="timeline-day">
+                  <p className="timeline-day__date">{t.personB}</p>
+                  {aspectRowsB.length === 0 ? (
+                    <p className="timeline-day__summary">{t.emptyTable}</p>
+                  ) : (
+                    <div className="table-block">
+                      <table className="chart-table">
+                        <thead>
+                          <tr>
+                            <th>{t.colAspect}</th>
+                            <th>{t.colOrb}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {aspectRowsB.slice(0, 20).map((aspect, index) => (
+                            <tr key={`aspect-compat-b-${aspect.a}-${aspect.type}-${aspect.b}-${index}`}>
+                              <td>{aspect.a} {ASPECT_SYMBOL[aspect.type]} {aspect.b}</td>
+                              <td>{aspect.orb?.toFixed(1) ?? "--"}deg</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Section>
+          )}
+
+          {!loading && isChartArea && analysisMode === "compatibility" && chart && chartB && (
+            <Section icon="🏛️" title={t.chartDignitiesTitle} badge={`${t.personA} + ${t.personB}`}>
+              <div className="timeline-grid">
+                <div className="timeline-day">
+                  <p className="timeline-day__date">{t.personA}</p>
+                  <div className="table-block">
+                    <table className="chart-table">
+                      <thead>
+                        <tr>
+                          <th>{t.colPoint}</th>
+                          <th>{t.colSign}</th>
+                          <th>{t.colStatus}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {dignityRowsA.map((row) => (
+                          <tr key={`dignity-compat-a-${row.planet}`}>
+                            <td>{row.planet}</td>
+                            <td>{SIGN_SYMBOL[row.sign]} {row.sign}</td>
+                            <td>{formatDignityStatusLabel(row.status)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div className="timeline-day">
+                  <p className="timeline-day__date">{t.personB}</p>
+                  <div className="table-block">
+                    <table className="chart-table">
+                      <thead>
+                        <tr>
+                          <th>{t.colPoint}</th>
+                          <th>{t.colSign}</th>
+                          <th>{t.colStatus}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {dignityRowsB.map((row) => (
+                          <tr key={`dignity-compat-b-${row.planet}`}>
+                            <td>{row.planet}</td>
+                            <td>{SIGN_SYMBOL[row.sign]} {row.sign}</td>
+                            <td>{formatDignityStatusLabel(row.status)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             </Section>

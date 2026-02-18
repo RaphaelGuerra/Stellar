@@ -1378,8 +1378,20 @@ body {
 /* ===== Compatibility Timeline ===== */
 .timeline-controls {
   display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-xs);
   margin-bottom: var(--space-sm);
+}
+
+.timeline-controls input[type="date"],
+.timeline-controls input[type="text"] {
+  border: 1px solid var(--color-border);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--color-text);
+  border-radius: var(--radius-sm);
+  padding: 7px var(--space-sm);
+  font-size: var(--font-size-xs);
 }
 
 .timeline-controls__btn {
@@ -1444,6 +1456,32 @@ body {
   margin-top: var(--space-xs);
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
+}
+
+.table-block {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.chart-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 360px;
+}
+
+.chart-table th,
+.chart-table td {
+  padding: 7px var(--space-sm);
+  border-bottom: 1px solid var(--color-border-light);
+  text-align: left;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.chart-table th {
+  color: var(--color-text);
+  font-weight: 700;
 }
 
 /* ===== Advanced Overlays ===== */
