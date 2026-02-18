@@ -23,11 +23,23 @@ export interface PersistedHistoryEntry {
   chartB?: ChartResult;
 }
 
+export interface PersistedReminderRules {
+  enabled: boolean;
+  leadDays: number;
+  maxOrb: number;
+  lastSentKey?: string;
+}
+
 export interface PersistedAppState {
   primaryArea: PrimaryArea;
   analysisMode: PersistedAnalysisMode;
   duoMode: DuoMode;
   chartSettings: ChartSettings;
+  timeTravelDate: string;
+  transitDayPage: number;
+  selectedTransitDate?: string;
+  reminders: PersistedReminderRules;
+  atlasInspectorInput: string;
   personA: PersistedPersonState;
   personB: PersistedPersonState;
   lastChartA?: ChartResult;
@@ -44,6 +56,12 @@ const PROGRESSION_IDS_LIMIT = 160;
 const APP_STATE_MAX_AGE_MS = APP_STATE_RETENTION_DAYS * 24 * 60 * 60 * 1000;
 const APP_STATE_SCHEMA_VERSION = 3;
 const PRIVACY_SCHEMA_VERSION = 1;
+const MAX_TRANSIT_PAGE = 36;
+const DEFAULT_REMINDER_RULES: PersistedReminderRules = {
+  enabled: false,
+  leadDays: 1,
+  maxOrb: 0.4,
+};
 
 export interface PersistedPrivacySettings {
   persistLocalData: boolean;
@@ -92,6 +110,12 @@ function isChartResult(value: unknown): value is ChartResult {
     isObject(value.planets) &&
     Array.isArray(value.aspects)
   );
+}
+
+function isIsoDate(value: unknown): value is string {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const parsed = Date.parse(`${value}T00:00:00Z`);
+  return Number.isFinite(parsed);
 }
 
 function normalizePersonState(value: unknown, fallbackLocation: string): PersistedPersonState {
@@ -147,6 +171,35 @@ function normalizeIdList(value: unknown): string[] {
   return Array.from(
     new Set(value.filter((entry): entry is string => typeof entry === "string" && entry.length > 0))
   ).slice(0, PROGRESSION_IDS_LIMIT);
+}
+
+function normalizeTransitDayPage(value: unknown): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(MAX_TRANSIT_PAGE, Math.round(value)));
+}
+
+function normalizeReminderRules(value: unknown): PersistedReminderRules {
+  if (!isObject(value)) return { ...DEFAULT_REMINDER_RULES };
+  const leadDays =
+    typeof value.leadDays === "number" && Number.isFinite(value.leadDays)
+      ? Math.max(0, Math.min(7, Math.round(value.leadDays)))
+      : DEFAULT_REMINDER_RULES.leadDays;
+  const maxOrb =
+    typeof value.maxOrb === "number" && Number.isFinite(value.maxOrb)
+      ? Math.max(0.1, Math.min(2, Math.round(value.maxOrb * 10) / 10))
+      : DEFAULT_REMINDER_RULES.maxOrb;
+  return {
+    enabled: value.enabled === true,
+    leadDays,
+    maxOrb,
+    lastSentKey: typeof value.lastSentKey === "string" ? value.lastSentKey : undefined,
+  };
+}
+
+function normalizeAtlasInspectorInput(value: unknown, fallbackLocation: string): string {
+  if (typeof value !== "string") return fallbackLocation;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : fallbackLocation;
 }
 
 function normalizeProgression(value: unknown): ProgressionState {
@@ -208,6 +261,10 @@ export function readPersistedAppState(): PersistedAppState | null {
 
     const analysisMode = isAnalysisMode(payload.analysisMode) ? payload.analysisMode : "single";
     const duoMode = isDuoMode(payload.duoMode) ? payload.duoMode : "romantic";
+    const defaultTimeTravelDate = new Date().toISOString().slice(0, 10);
+
+    const personA = normalizePersonState(payload.personA, "Rio de Janeiro, BR");
+    const personB = normalizePersonState(payload.personB, "New York, US");
 
     return {
       primaryArea: isPrimaryArea(payload.primaryArea) ? payload.primaryArea : "chart",
@@ -216,8 +273,13 @@ export function readPersistedAppState(): PersistedAppState | null {
       chartSettings: normalizeChartSettings(
         isObject(payload.chartSettings) ? (payload.chartSettings as Partial<ChartSettings>) : DEFAULT_CHART_SETTINGS
       ),
-      personA: normalizePersonState(payload.personA, "Rio de Janeiro, BR"),
-      personB: normalizePersonState(payload.personB, "New York, US"),
+      timeTravelDate: isIsoDate(payload.timeTravelDate) ? payload.timeTravelDate : defaultTimeTravelDate,
+      transitDayPage: normalizeTransitDayPage(payload.transitDayPage),
+      selectedTransitDate: isIsoDate(payload.selectedTransitDate) ? payload.selectedTransitDate : undefined,
+      reminders: normalizeReminderRules(payload.reminders),
+      atlasInspectorInput: normalizeAtlasInspectorInput(payload.atlasInspectorInput, personA.locationInput),
+      personA,
+      personB,
       lastChartA: isChartResult(payload.lastChartA) ? payload.lastChartA : undefined,
       lastChartB: isChartResult(payload.lastChartB) ? payload.lastChartB : undefined,
       history: normalizeHistory(payload.history),
@@ -236,6 +298,13 @@ export function writePersistedAppState(state: PersistedAppState) {
       updatedAt: new Date().toISOString(),
       state: {
         ...state,
+        timeTravelDate: isIsoDate(state.timeTravelDate)
+          ? state.timeTravelDate
+          : new Date().toISOString().slice(0, 10),
+        transitDayPage: normalizeTransitDayPage(state.transitDayPage),
+        selectedTransitDate: isIsoDate(state.selectedTransitDate) ? state.selectedTransitDate : undefined,
+        reminders: normalizeReminderRules(state.reminders),
+        atlasInspectorInput: normalizeAtlasInspectorInput(state.atlasInspectorInput, state.personA.locationInput),
         history: normalizeHistory(state.history).slice(0, HISTORY_LIMIT),
       },
     };

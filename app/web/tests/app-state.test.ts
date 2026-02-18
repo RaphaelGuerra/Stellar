@@ -60,6 +60,16 @@ describe("app state persistence", () => {
         orbMode: "tight",
         includeMinorAspects: true,
       },
+      timeTravelDate: "2026-02-14",
+      transitDayPage: 2,
+      selectedTransitDate: "2026-02-16",
+      reminders: {
+        enabled: true,
+        leadDays: 2,
+        maxOrb: 0.5,
+        lastSentKey: "k-1",
+      },
+      atlasInspectorInput: "Lisbon, PT",
       personA: {
         date: "1991-05-10",
         time: "08:30",
@@ -90,6 +100,12 @@ describe("app state persistence", () => {
     expect(loaded?.analysisMode).toBe("compatibility");
     expect(loaded?.duoMode).toBe("friend");
     expect(loaded?.chartSettings.houseSystem).toBe("WholeSign");
+    expect(loaded?.timeTravelDate).toBe("2026-02-14");
+    expect(loaded?.transitDayPage).toBe(2);
+    expect(loaded?.selectedTransitDate).toBe("2026-02-16");
+    expect(loaded?.reminders.enabled).toBe(true);
+    expect(loaded?.reminders.maxOrb).toBe(0.5);
+    expect(loaded?.atlasInspectorInput).toBe("Lisbon, PT");
     expect(loaded?.personA.locationInput).toBe("Rio de Janeiro, BR");
     expect(loaded?.personB.daylightSaving).toBe(false);
     expect(loaded?.progression.xp).toBe(120);
@@ -106,6 +122,15 @@ describe("app state persistence", () => {
     expect(loaded?.duoMode).toBe("romantic");
     expect(loaded?.primaryArea).toBe("chart");
     expect(loaded?.chartSettings.houseSystem).toBe("Placidus");
+    expect(loaded?.timeTravelDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(loaded?.transitDayPage).toBe(0);
+    expect(loaded?.selectedTransitDate).toBeUndefined();
+    expect(loaded?.reminders).toEqual({
+      enabled: false,
+      leadDays: 1,
+      maxOrb: 0.4,
+      lastSentKey: undefined,
+    });
     expect(loaded?.personA.locationInput).toBe("Rio de Janeiro, BR");
     expect(loaded?.history).toEqual([]);
     expect(loaded?.progression).toEqual({
@@ -137,6 +162,14 @@ describe("app state persistence", () => {
             orbMode: "standard",
             includeMinorAspects: false,
           },
+          timeTravelDate: "2025-01-01",
+          transitDayPage: 0,
+          reminders: {
+            enabled: false,
+            leadDays: 1,
+            maxOrb: 0.4,
+          },
+          atlasInspectorInput: "Rio de Janeiro, BR",
           personA: {
             date: "1990-01-01",
             time: "12:00",
@@ -186,6 +219,14 @@ describe("app state persistence", () => {
         orbMode: "standard",
         includeMinorAspects: false,
       },
+      timeTravelDate: "2026-02-01",
+      transitDayPage: 0,
+      reminders: {
+        enabled: false,
+        leadDays: 1,
+        maxOrb: 0.4,
+      },
+      atlasInspectorInput: "Rio de Janeiro, BR",
       personA: {
         date: "1990-01-01",
         time: "12:00",
@@ -249,5 +290,8 @@ describe("app state persistence", () => {
     expect(loaded?.primaryArea).toBe("chart");
     expect(loaded?.chartSettings.houseSystem).toBe("Placidus");
     expect(loaded?.analysisMode).toBe("compatibility");
+    expect(loaded?.timeTravelDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(loaded?.reminders.enabled).toBe(false);
+    expect(loaded?.atlasInspectorInput).toBe("Rio de Janeiro, BR");
   });
 });

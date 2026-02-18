@@ -84,6 +84,49 @@ interface AtlasCrossingEntry {
   interpretation: string;
 }
 
+interface AtlasInspectorLineEntry {
+  key: string;
+  label: string;
+  distance: number;
+  interpretation: string;
+}
+
+interface AtlasInspectorResultEntry {
+  locationLabel: string;
+  nearestLines: AtlasInspectorLineEntry[];
+  strongestCrossing?: AtlasCrossingEntry;
+}
+
+const TRANSIT_PAGE_SIZE = 10;
+const DEFAULT_REMINDER_RULES = {
+  enabled: false,
+  leadDays: 1,
+  maxOrb: 0.4,
+};
+
+function formatIsoDate(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function parseIsoDate(value: string): Date {
+  const parsed = Date.parse(`${value}T00:00:00Z`);
+  if (!Number.isFinite(parsed)) return new Date();
+  return new Date(parsed);
+}
+
+function shiftIsoDate(value: string, days: number): string {
+  const next = parseIsoDate(value);
+  next.setUTCDate(next.getUTCDate() + days);
+  return formatIsoDate(next);
+}
+
+function dayDistanceFrom(startDate: string, endDate: string): number {
+  const start = Date.parse(`${startDate}T00:00:00Z`);
+  const end = Date.parse(`${endDate}T00:00:00Z`);
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return Number.NaN;
+  return Math.round((end - start) / 86400000);
+}
+
 function toLocationLabel(city: string, country: string): string {
   const trimmedCity = city.trim();
   const trimmedCountry = country.trim();
@@ -184,6 +227,28 @@ function buildCrossingInterpretation(
   return isCarioca ? "Mistura neutra; observa no dia a dia." : "Mixed neutral crossing; validate through lived experience.";
 }
 
+function buildAtlasLineInterpretation(line: AstrocartographyLine, isCarioca: boolean): string {
+  const tone = classifyAtlasPoint(line.point);
+  if (line.angle === "MC") {
+    return isCarioca
+      ? "Linha de visibilidade publica e direcao de carreira."
+      : "Career and public visibility line.";
+  }
+  if (line.angle === "ASC") {
+    return isCarioca ? "Linha de identidade e reinvencao pessoal." : "Identity and personal reinvention line.";
+  }
+  if (line.angle === "DSC") {
+    return isCarioca ? "Linha de encontros, parceria e espelhamento." : "Partnership and relational mirroring line.";
+  }
+  if (tone === "supportive") {
+    return isCarioca ? "Tom favoravel, com apoio natural." : "Supportive tone with natural ease.";
+  }
+  if (tone === "intense") {
+    return isCarioca ? "Tom intenso, pede estrategia e limite." : "Intense tone that rewards strategy and boundaries.";
+  }
+  return isCarioca ? "Tom neutro, valida no cotidiano." : "Neutral tone; validate through lived experience.";
+}
+
 function buildAtlasCrossings(
   astrocartography: AstrocartographyResult | null,
   isCarioca: boolean
@@ -237,6 +302,39 @@ function buildAtlasShortlist(astrocartography: AstrocartographyResult | null): A
     }
   }
   return candidates.sort((left, right) => right.score - left.score).slice(0, 6);
+}
+
+function buildAtlasInspectorResult(
+  astrocartography: AstrocartographyResult | null,
+  location: GeoSuggestion,
+  crossings: AtlasCrossingEntry[],
+  isCarioca: boolean
+): AtlasInspectorResultEntry | null {
+  if (!astrocartography || astrocartography.lines.length === 0) return null;
+  const signedLongitude = toSignedLongitude(location.lon);
+  const nearestLines = astrocartography.lines
+    .map((line) => ({
+      line,
+      distance: longitudeDistanceDegrees(signedLongitude, line.longitude),
+    }))
+    .sort((left, right) => left.distance - right.distance)
+    .slice(0, 5)
+    .map((entry) => ({
+      key: `${entry.line.point}-${entry.line.angle}-${entry.line.longitude}`,
+      label: `${entry.line.point} ${entry.line.angle}`,
+      distance: Math.round(entry.distance * 10) / 10,
+      interpretation: buildAtlasLineInterpretation(entry.line, isCarioca),
+    }));
+  const nearestLabels = new Set(nearestLines.map((line) => line.label));
+  const strongestCrossing = crossings.find((crossing) => {
+    const [left, right] = crossing.pairLabel.split(" × ");
+    return nearestLabels.has(left) || nearestLabels.has(right);
+  });
+  return {
+    locationLabel: location.label,
+    nearestLines,
+    strongestCrossing,
+  };
 }
 
 const EN_VALIDATION_MESSAGES: Record<ValidationErrorCode, string> = {
@@ -362,6 +460,7 @@ function App() {
   const { mode, setMode, content } = useContentMode();
   const isCarioca = mode === "carioca";
   const persisted = useMemo(() => readPersistedAppState(), []);
+  const todayIso = useMemo(() => formatIsoDate(new Date()), []);
   const [persistLocalData, setPersistLocalData] = useState(
     () => readPrivacySettings().persistLocalData
   );
@@ -372,6 +471,9 @@ function App() {
   const [duoMode, setDuoMode] = useState<DuoMode>(() => persisted?.duoMode ?? "romantic");
   const [chartSettings, setChartSettings] = useState<ChartSettings>(
     () => persisted?.chartSettings ?? DEFAULT_CHART_SETTINGS
+  );
+  const [timeTravelDate, setTimeTravelDate] = useState<string>(
+    () => persisted?.timeTravelDate ?? todayIso
   );
 
   // Person A state
@@ -418,6 +520,8 @@ function App() {
   const [showShootingStar, setShowShootingStar] = useState(false);
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [transitRange, setTransitRange] = useState<7 | 30>(7);
+  const [transitDayPage, setTransitDayPage] = useState<number>(() => persisted?.transitDayPage ?? 0);
+  const [selectedTransitDate, setSelectedTransitDate] = useState<string>(() => persisted?.selectedTransitDate ?? "");
   const [transitFeed, setTransitFeed] = useState<TransitRangeResult | null>(null);
   const [progressed, setProgressed] = useState<SecondaryProgressionResult | null>(null);
   const [solarReturn, setSolarReturn] = useState<ReturnChartResult | null>(null);
@@ -428,6 +532,24 @@ function App() {
   const [davisonChart, setDavisonChart] = useState<ChartResult | null>(null);
   const [relationshipTransitFeed, setRelationshipTransitFeed] = useState<TransitRangeResult | null>(null);
   const [astrocartography, setAstrocartography] = useState<AstrocartographyResult | null>(null);
+  const [remindersEnabled, setRemindersEnabled] = useState<boolean>(
+    () => persisted?.reminders.enabled ?? DEFAULT_REMINDER_RULES.enabled
+  );
+  const [reminderLeadDays, setReminderLeadDays] = useState<number>(
+    () => persisted?.reminders.leadDays ?? DEFAULT_REMINDER_RULES.leadDays
+  );
+  const [reminderMaxOrb, setReminderMaxOrb] = useState<number>(
+    () => persisted?.reminders.maxOrb ?? DEFAULT_REMINDER_RULES.maxOrb
+  );
+  const [lastReminderKey, setLastReminderKey] = useState<string>(
+    () => persisted?.reminders.lastSentKey ?? ""
+  );
+  const [atlasInspectorInput, setAtlasInspectorInput] = useState<string>(
+    () => persisted?.atlasInspectorInput ?? persisted?.personA.locationInput ?? "Rio de Janeiro, BR"
+  );
+  const [atlasInspectorResult, setAtlasInspectorResult] = useState<AtlasInspectorResultEntry | null>(null);
+  const [atlasInspectorLoading, setAtlasInspectorLoading] = useState(false);
+  const [atlasInspectorError, setAtlasInspectorError] = useState<string | null>(null);
 
   // Clear stale state when switching analysis mode
   useEffect(() => {
@@ -480,6 +602,16 @@ function App() {
       analysisMode,
       duoMode,
       chartSettings,
+      timeTravelDate,
+      transitDayPage,
+      selectedTransitDate: selectedTransitDate || undefined,
+      reminders: {
+        enabled: remindersEnabled,
+        leadDays: reminderLeadDays,
+        maxOrb: reminderMaxOrb,
+        lastSentKey: lastReminderKey || undefined,
+      },
+      atlasInspectorInput,
       personA: {
         date: dateA,
         time: timeA,
@@ -510,9 +642,17 @@ function App() {
     geoA.locationInput,
     geoB.locationInput,
     history,
+    lastReminderKey,
+    atlasInspectorInput,
     persistLocalData,
     primaryArea,
     progression,
+    reminderLeadDays,
+    reminderMaxOrb,
+    remindersEnabled,
+    selectedTransitDate,
+    timeTravelDate,
+    transitDayPage,
     timeA,
     timeB,
   ]);
@@ -644,6 +784,33 @@ function App() {
     () => buildAtlasCrossings(astrocartography, isCarioca),
     [astrocartography, isCarioca]
   );
+  const transitPageCount = useMemo(() => {
+    if (!transitFeed || transitFeed.days.length === 0) return 1;
+    return Math.max(1, Math.ceil(transitFeed.days.length / TRANSIT_PAGE_SIZE));
+  }, [transitFeed]);
+  const pagedTransitDays = useMemo(() => {
+    if (!transitFeed) return [];
+    const safePage = Math.max(0, Math.min(transitDayPage, transitPageCount - 1));
+    const start = safePage * TRANSIT_PAGE_SIZE;
+    return transitFeed.days.slice(start, start + TRANSIT_PAGE_SIZE);
+  }, [transitDayPage, transitFeed, transitPageCount]);
+  const selectedTransitDay = useMemo(() => {
+    if (!transitFeed || transitFeed.days.length === 0) return null;
+    const exact = transitFeed.days.find((day) => day.date === selectedTransitDate);
+    return exact ?? pagedTransitDays[0] ?? transitFeed.days[0] ?? null;
+  }, [pagedTransitDays, selectedTransitDate, transitFeed]);
+  const selectedTransitExactHits = useMemo(() => {
+    if (!transitFeed || !selectedTransitDay) return [];
+    return transitFeed.exactHits.filter((hit) => hit.date === selectedTransitDay.date);
+  }, [selectedTransitDay, transitFeed]);
+  const upcomingReminderHits = useMemo(() => {
+    if (!transitFeed) return [];
+    return transitFeed.exactHits.filter((hit) => {
+      if (hit.orb > reminderMaxOrb) return false;
+      const deltaDays = dayDistanceFrom(timeTravelDate, hit.date);
+      return Number.isFinite(deltaDays) && deltaDays >= 0 && deltaDays <= reminderLeadDays;
+    });
+  }, [reminderLeadDays, reminderMaxOrb, timeTravelDate, transitFeed]);
 
   useEffect(() => {
     if (astralMapModel) return;
@@ -665,12 +832,11 @@ function App() {
       return;
     }
     let canceled = false;
-    const now = new Date();
-    const start = now.toISOString().slice(0, 10);
-    const endDate = new Date(now.getTime() + (transitRange - 1) * 86400000);
-    const end = endDate.toISOString().slice(0, 10);
-    const progressionDate = new Date(now.getTime() + 30 * 86400000).toISOString().slice(0, 10);
-    const lunarMonth = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+    const anchorDate = parseIsoDate(timeTravelDate);
+    const start = timeTravelDate;
+    const end = shiftIsoDate(timeTravelDate, transitRange - 1);
+    const progressionDate = shiftIsoDate(timeTravelDate, 30);
+    const lunarMonth = `${anchorDate.getUTCFullYear()}-${String(anchorDate.getUTCMonth() + 1).padStart(2, "0")}`;
     if (primaryArea === "transits") {
       runAstroWorkerTask<TransitRangeResult>({
         type: "generateTransits",
@@ -698,7 +864,7 @@ function App() {
         runAstroWorkerTask<ReturnChartResult>({
           type: "generateSolarReturn",
           baseChart: chart,
-          year: now.getUTCFullYear(),
+          year: anchorDate.getUTCFullYear(),
           settings: chartSettings,
         }),
         runAstroWorkerTask<ReturnChartResult>({
@@ -710,6 +876,7 @@ function App() {
         runAstroWorkerTask<AnnualProfectionResult>({
           type: "generateAnnualProfections",
           baseChart: chart,
+          date: timeTravelDate,
         }),
       ])
         .then(([nextProgressed, nextSolarReturn, nextLunarReturn, nextProfections]) => {
@@ -759,7 +926,7 @@ function App() {
     return () => {
       canceled = true;
     };
-  }, [chart, chartSettings, primaryArea, transitRange]);
+  }, [chart, chartSettings, primaryArea, timeTravelDate, transitRange]);
 
   useEffect(() => {
     if (analysisMode !== "compatibility" || !chart || !chartB) {
@@ -805,10 +972,8 @@ function App() {
       return;
     }
     let canceled = false;
-    const now = new Date();
-    const start = now.toISOString().slice(0, 10);
-    const endDate = new Date(now.getTime() + 29 * 86400000);
-    const end = endDate.toISOString().slice(0, 10);
+    const start = timeTravelDate;
+    const end = shiftIsoDate(timeTravelDate, 29);
     runAstroWorkerTask<TransitRangeResult>({
       type: "generateTransits",
       baseChart: compositeChart,
@@ -826,7 +991,70 @@ function App() {
     return () => {
       canceled = true;
     };
-  }, [analysisMode, chartSettings, compositeChart, primaryArea]);
+  }, [analysisMode, chartSettings, compositeChart, primaryArea, timeTravelDate]);
+
+  useEffect(() => {
+    if (!transitFeed || transitFeed.days.length === 0) {
+      if (selectedTransitDate !== "") setSelectedTransitDate("");
+      if (transitDayPage !== 0) setTransitDayPage(0);
+      return;
+    }
+    const maxPage = Math.max(0, Math.ceil(transitFeed.days.length / TRANSIT_PAGE_SIZE) - 1);
+    if (transitDayPage > maxPage) {
+      setTransitDayPage(maxPage);
+      return;
+    }
+    const selectedIndex = transitFeed.days.findIndex((day) => day.date === selectedTransitDate);
+    if (selectedIndex === -1) {
+      setSelectedTransitDate(transitFeed.days[0].date);
+      return;
+    }
+    const selectedPage = Math.floor(selectedIndex / TRANSIT_PAGE_SIZE);
+    if (selectedPage !== transitDayPage) {
+      setTransitDayPage(selectedPage);
+    }
+  }, [selectedTransitDate, transitDayPage, transitFeed]);
+
+  useEffect(() => {
+    setAtlasInspectorResult(null);
+    setAtlasInspectorError(null);
+  }, [astrocartography, chart?.normalized.utcDateTime]);
+
+  useEffect(() => {
+    if (!remindersEnabled) return;
+    if (typeof window === "undefined" || typeof Notification === "undefined") return;
+    if (Notification.permission !== "default") return;
+    void Notification.requestPermission().catch(() => undefined);
+  }, [remindersEnabled]);
+
+  useEffect(() => {
+    if (!remindersEnabled || upcomingReminderHits.length === 0) return;
+    const next = upcomingReminderHits[0];
+    const reminderKey = [
+      timeTravelDate,
+      next.date,
+      next.transitPlanet,
+      next.aspect,
+      next.natalPlanet,
+      reminderLeadDays,
+      reminderMaxOrb.toFixed(1),
+    ].join("|");
+    if (reminderKey === lastReminderKey) return;
+    if (typeof window !== "undefined" && typeof Notification !== "undefined" && Notification.permission === "granted") {
+      const title = isCarioca ? "Lembrete de transito" : "Transit reminder";
+      const body = `${next.date}: ${next.transitPlanet} ${next.aspect} ${next.natalPlanet} (orb ${next.orb.toFixed(1)}deg)`;
+      new Notification(title, { body });
+    }
+    setLastReminderKey(reminderKey);
+  }, [
+    isCarioca,
+    lastReminderKey,
+    reminderLeadDays,
+    reminderMaxOrb,
+    remindersEnabled,
+    timeTravelDate,
+    upcomingReminderHits,
+  ]);
 
   const advancedUnlocked = isAdvancedOverlaysUnlocked(progression.xp);
   const advancedUnlockTarget = getAdvancedOverlaysUnlockXp(progression.xp);
@@ -875,8 +1103,11 @@ function App() {
     setPlacements([]);
     setHistory([]);
     setProgression(DEFAULT_PROGRESSION_STATE);
+    setTimeTravelDate(todayIso);
     setForecastRange(7);
     setTransitRange(7);
+    setTransitDayPage(0);
+    setSelectedTransitDate("");
     setTransitFeed(null);
     setProgressed(null);
     setSolarReturn(null);
@@ -887,6 +1118,14 @@ function App() {
     setDavisonChart(null);
     setRelationshipTransitFeed(null);
     setAstrocartography(null);
+    setRemindersEnabled(DEFAULT_REMINDER_RULES.enabled);
+    setReminderLeadDays(DEFAULT_REMINDER_RULES.leadDays);
+    setReminderMaxOrb(DEFAULT_REMINDER_RULES.maxOrb);
+    setLastReminderKey("");
+    setAtlasInspectorInput("Rio de Janeiro, BR");
+    setAtlasInspectorResult(null);
+    setAtlasInspectorLoading(false);
+    setAtlasInspectorError(null);
     setError(null);
     setResultVersion((prev) => prev + 1);
   }
@@ -1179,6 +1418,84 @@ function App() {
     URL.revokeObjectURL(url);
   }
 
+  function handleTimeTravelShift(days: number) {
+    setTimeTravelDate((current) => shiftIsoDate(current, days));
+  }
+
+  function handleTimeTravelReset() {
+    setTimeTravelDate(todayIso);
+  }
+
+  async function handleInspectAtlasLocation(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setAtlasInspectorError(null);
+    if (!astrocartography) {
+      setAtlasInspectorResult(null);
+      setAtlasInspectorError(
+        isCarioca
+          ? "Gera o atlas primeiro pra inspecionar local."
+          : "Generate atlas lines first to inspect a location."
+      );
+      return;
+    }
+    const query = atlasInspectorInput.trim();
+    if (query.length < 3) {
+      setAtlasInspectorResult(null);
+      setAtlasInspectorError(
+        isCarioca
+          ? "Manda pelo menos 3 letras da cidade."
+          : "Type at least 3 characters to search a location."
+      );
+      return;
+    }
+    setAtlasInspectorLoading(true);
+    try {
+      const candidates = await resolveLocationCandidates(query, isCarioca, 6);
+      if (candidates === null) {
+        setAtlasInspectorResult(null);
+        setAtlasInspectorError(
+          isCarioca
+            ? "Busca de cidade indisponivel agora."
+            : "Location search is temporarily unavailable."
+        );
+        return;
+      }
+      if (candidates.length === 0) {
+        setAtlasInspectorResult(null);
+        setAtlasInspectorError(
+          isCarioca
+            ? "Nao achei essa localizacao. Tenta cidade + pais."
+            : "Location not found. Try city + country."
+        );
+        return;
+      }
+      if (candidates.length > 1) {
+        setAtlasInspectorResult(null);
+        setAtlasInspectorError(
+          isCarioca
+            ? "Localizacao ambigua. Especifica melhor com pais."
+            : "Ambiguous location. Add country for a specific result."
+        );
+        return;
+      }
+      const resolved = candidates[0];
+      const nextResult = buildAtlasInspectorResult(astrocartography, resolved, atlasCrossings, isCarioca);
+      if (!nextResult) {
+        setAtlasInspectorResult(null);
+        setAtlasInspectorError(
+          isCarioca
+            ? "Nao foi possivel analisar esse ponto."
+            : "Could not analyze this location right now."
+        );
+        return;
+      }
+      setAtlasInspectorInput(resolved.label);
+      setAtlasInspectorResult(nextResult);
+    } finally {
+      setAtlasInspectorLoading(false);
+    }
+  }
+
   const formLabels = {
     date: isCarioca ? "Data" : "Date",
     time: isCarioca ? "Hora" : "Time",
@@ -1399,9 +1716,29 @@ function App() {
     historySingle: isCarioca ? "Solo" : "Single",
     historyCompatibility: isCarioca ? "Sinastria" : "Compatibility",
     transitsTitle: isCarioca ? "Feed de transitos" : "Transit feed",
+    timeTravelTitle: isCarioca ? "Navegador de data" : "Time travel date",
+    timeTravelBack: isCarioca ? "-7 dias" : "-7 days",
+    timeTravelForward: isCarioca ? "+7 dias" : "+7 days",
+    timeTravelToday: isCarioca ? "Hoje" : "Today",
     transitsExactHits: isCarioca ? "Aspectos exatos" : "Exact hits",
     transitsStrongest: isCarioca ? "Mais fortes do dia" : "Strongest today",
+    transitsPage: (page: number, total: number) =>
+      isCarioca ? `Pagina ${page}/${total}` : `Page ${page}/${total}`,
+    transitsPrev: isCarioca ? "Anterior" : "Prev",
+    transitsNext: isCarioca ? "Proximo" : "Next",
+    transitsSelectedDay: isCarioca ? "Dia selecionado" : "Selected day",
+    transitsNoHitsDay: isCarioca ? "Sem hits relevantes nesse dia." : "No strong hits on this day.",
+    transitsReminderTitle: isCarioca ? "Regras de lembrete local" : "Local reminder rules",
+    transitsReminderLeadDays: isCarioca ? "Antecedencia" : "Lead time",
+    transitsReminderOrb: isCarioca ? "Orb maximo" : "Max orb",
+    transitsReminderStatus: isCarioca ? "Status de notificacao" : "Notification status",
+    transitsReminderPermissionMissing: isCarioca ? "Notificacoes nao permitidas no navegador." : "Notifications are not allowed in this browser.",
+    transitsReminderPermissionPrompt: isCarioca ? "Ativa o lembrete pra solicitar permissao." : "Enable reminders to request permission.",
+    transitsReminderPermissionDenied: isCarioca ? "Permissao negada; o lembrete fica so no feed." : "Permission denied; reminders stay in-app only.",
+    transitsReminderPermissionGranted: isCarioca ? "Permissao ativa; alertas locais habilitados." : "Permission granted; local alerts enabled.",
+    transitsReminderUpcoming: isCarioca ? "Proximos alertas pela regra" : "Upcoming rule matches",
     timingTitle: isCarioca ? "Timing astrologico" : "Astrology timing",
+    timingAsOf: isCarioca ? "Referencia" : "Reference date",
     timingProgressed: isCarioca ? "Progressoes secundarias" : "Secondary progression",
     timingSolarReturn: isCarioca ? "Retorno solar" : "Solar return",
     timingLunarReturn: isCarioca ? "Retorno lunar" : "Lunar return",
@@ -1422,6 +1759,16 @@ function App() {
     atlasCrossingsEmpty: isCarioca
       ? "Sem cruzamentos fortes no momento."
       : "No strong crossings detected right now.",
+    atlasInspectorTitle: isCarioca ? "Inspecionar localizacao" : "Inspect location",
+    atlasInspectorHint: isCarioca
+      ? "Busca uma cidade e ve as linhas mais proximas."
+      : "Search a location and inspect the nearest lines.",
+    atlasInspectorButton: isCarioca ? "Inspecionar" : "Inspect",
+    atlasInspectorLoading: isCarioca ? "Inspecionando..." : "Inspecting...",
+    atlasInspectorCrossing: isCarioca ? "Cruzamento dominante" : "Strongest crossing",
+    atlasInspectorEmpty: isCarioca
+      ? "Sem leitura ainda. Escolhe uma cidade e clica em inspecionar."
+      : "No location analysis yet. Enter a city and inspect.",
     libraryTitle: isCarioca ? "Biblioteca astrologica" : "Astrology library",
     libraryGlossary: isCarioca ? "Glossario base para consulta rapida." : "Core glossary for quick reference.",
     libraryTemplates: isCarioca ? "Templates de interpretacao e journal." : "Interpretation and journaling templates.",
@@ -1473,6 +1820,14 @@ function App() {
     { key: "atlas", label: t.areaAtlas },
     { key: "library", label: t.areaLibrary },
   ];
+  const notificationStatus =
+    typeof window === "undefined" || typeof Notification === "undefined"
+      ? t.transitsReminderPermissionMissing
+      : Notification.permission === "granted"
+        ? t.transitsReminderPermissionGranted
+        : Notification.permission === "denied"
+          ? t.transitsReminderPermissionDenied
+          : t.transitsReminderPermissionPrompt;
 
   return (
     <>
@@ -2105,30 +2460,90 @@ function App() {
           )}
 
           {!loading && isTransitsArea && chart && transitFeed && (
-            <Section icon="🌗" title={t.transitsTitle} badge={`${transitRange}d`}>
+            <Section icon="🌗" title={t.transitsTitle} badge={`${transitRange}d · ${timeTravelDate}`}>
+              <div className="timeline-controls" role="group" aria-label={t.timeTravelTitle}>
+                <button
+                  type="button"
+                  className="timeline-controls__btn"
+                  onClick={() => handleTimeTravelShift(-7)}
+                >
+                  {t.timeTravelBack}
+                </button>
+                <input
+                  type="date"
+                  value={timeTravelDate}
+                  onChange={(event) => setTimeTravelDate(event.target.value)}
+                />
+                <button
+                  type="button"
+                  className="timeline-controls__btn"
+                  onClick={handleTimeTravelReset}
+                >
+                  {t.timeTravelToday}
+                </button>
+                <button
+                  type="button"
+                  className="timeline-controls__btn"
+                  onClick={() => handleTimeTravelShift(7)}
+                >
+                  {t.timeTravelForward}
+                </button>
+              </div>
               <div className="timeline-controls" role="group" aria-label={t.transitsTitle}>
                 <button
                   type="button"
                   className={`timeline-controls__btn ${transitRange === 7 ? "timeline-controls__btn--active" : ""}`}
-                  onClick={() => setTransitRange(7)}
+                  onClick={() => {
+                    setTransitRange(7);
+                    setTransitDayPage(0);
+                  }}
                 >
                   7d
                 </button>
                 <button
                   type="button"
                   className={`timeline-controls__btn ${transitRange === 30 ? "timeline-controls__btn--active" : ""}`}
-                  onClick={() => setTransitRange(30)}
+                  onClick={() => {
+                    setTransitRange(30);
+                    setTransitDayPage(0);
+                  }}
                 >
                   30d
+                </button>
+                <button
+                  type="button"
+                  className="timeline-controls__btn"
+                  disabled={transitDayPage <= 0}
+                  onClick={() => setTransitDayPage((page) => Math.max(0, page - 1))}
+                >
+                  {t.transitsPrev}
+                </button>
+                <span className="timeline-day__summary">
+                  {t.transitsPage(Math.min(transitDayPage + 1, transitPageCount), transitPageCount)}
+                </span>
+                <button
+                  type="button"
+                  className="timeline-controls__btn"
+                  disabled={transitDayPage >= transitPageCount - 1}
+                  onClick={() => setTransitDayPage((page) => Math.min(transitPageCount - 1, page + 1))}
+                >
+                  {t.transitsNext}
                 </button>
               </div>
               <div className="timeline-meta">
                 <p><strong>{t.transitsExactHits}:</strong> {transitFeed.exactHits.length}</p>
+                <p><strong>{t.transitsSelectedDay}:</strong> {selectedTransitDay?.date ?? "--"}</p>
               </div>
               <div className="timeline-grid">
-                {transitFeed.days.slice(0, 10).map((day) => (
+                {pagedTransitDays.map((day) => (
                   <div key={day.date} className="timeline-day">
-                    <p className="timeline-day__date">{day.date}</p>
+                    <button
+                      type="button"
+                      className={`timeline-controls__btn ${selectedTransitDay?.date === day.date ? "timeline-controls__btn--active" : ""}`}
+                      onClick={() => setSelectedTransitDate(day.date)}
+                    >
+                      {day.date}
+                    </button>
                     <p className="timeline-day__summary">{t.transitsStrongest}</p>
                     {day.strongestHits.slice(0, 3).map((hit) => (
                       <p key={`${day.date}-${hit.transitPlanet}-${hit.natalPlanet}-${hit.aspect}`} className="timeline-day__summary">
@@ -2138,11 +2553,107 @@ function App() {
                   </div>
                 ))}
               </div>
+              <div className="timeline-grid">
+                <div className="timeline-day">
+                  <p className="timeline-day__date">{selectedTransitDay?.date ?? "--"}</p>
+                  {selectedTransitDay?.strongestHits.length ? (
+                    selectedTransitDay.strongestHits.map((hit) => (
+                      <p key={`${selectedTransitDay.date}-detail-${hit.transitPlanet}-${hit.aspect}-${hit.natalPlanet}`} className="timeline-day__summary">
+                        {hit.transitPlanet} {hit.aspect} {hit.natalPlanet} (orb {hit.orb.toFixed(1)}deg)
+                      </p>
+                    ))
+                  ) : (
+                    <p className="timeline-day__summary">{t.transitsNoHitsDay}</p>
+                  )}
+                  {selectedTransitExactHits.length > 0 && (
+                    <>
+                      <p className="timeline-day__summary"><strong>{t.transitsExactHits}:</strong> {selectedTransitExactHits.length}</p>
+                      {selectedTransitExactHits.slice(0, 5).map((hit) => (
+                        <p key={`exact-${hit.date}-${hit.transitPlanet}-${hit.aspect}-${hit.natalPlanet}`} className="timeline-day__summary">
+                          {hit.transitPlanet} {hit.aspect} {hit.natalPlanet} (orb {hit.orb.toFixed(1)}deg)
+                        </p>
+                      ))}
+                    </>
+                  )}
+                </div>
+                <div className="timeline-day">
+                  <p className="timeline-day__date">{t.transitsReminderTitle}</p>
+                  <label className="privacy-controls__toggle">
+                    <input
+                      type="checkbox"
+                      checked={remindersEnabled}
+                      onChange={(event) => setRemindersEnabled(event.target.checked)}
+                    />
+                    <span>{t.transitsReminderTitle}</span>
+                  </label>
+                  <label className="privacy-controls__toggle">
+                    <span>{t.transitsReminderLeadDays}</span>
+                    <select
+                      value={reminderLeadDays}
+                      onChange={(event) => setReminderLeadDays(Number(event.target.value))}
+                    >
+                      <option value={0}>0d</option>
+                      <option value={1}>1d</option>
+                      <option value={2}>2d</option>
+                      <option value={3}>3d</option>
+                    </select>
+                  </label>
+                  <label className="privacy-controls__toggle">
+                    <span>{t.transitsReminderOrb}</span>
+                    <select
+                      value={reminderMaxOrb}
+                      onChange={(event) => setReminderMaxOrb(Number(event.target.value))}
+                    >
+                      <option value={0.3}>0.3deg</option>
+                      <option value={0.5}>0.5deg</option>
+                      <option value={1}>1.0deg</option>
+                    </select>
+                  </label>
+                  <p className="timeline-day__summary"><strong>{t.transitsReminderStatus}:</strong> {notificationStatus}</p>
+                  <p className="timeline-day__summary"><strong>{t.transitsReminderUpcoming}:</strong> {upcomingReminderHits.length}</p>
+                  {upcomingReminderHits.slice(0, 3).map((hit) => (
+                    <p key={`reminder-${hit.date}-${hit.transitPlanet}-${hit.aspect}-${hit.natalPlanet}`} className="timeline-day__summary">
+                      {hit.date}: {hit.transitPlanet} {hit.aspect} {hit.natalPlanet} (orb {hit.orb.toFixed(1)}deg)
+                    </p>
+                  ))}
+                </div>
+              </div>
             </Section>
           )}
 
           {!loading && isTimingArea && chart && (
-            <Section icon="⏳" title={t.timingTitle} badge={chartSettings.houseSystem}>
+            <Section icon="⏳" title={t.timingTitle} badge={`${chartSettings.houseSystem} · ${timeTravelDate}`}>
+              <div className="timeline-controls" role="group" aria-label={t.timeTravelTitle}>
+                <button
+                  type="button"
+                  className="timeline-controls__btn"
+                  onClick={() => handleTimeTravelShift(-7)}
+                >
+                  {t.timeTravelBack}
+                </button>
+                <input
+                  type="date"
+                  value={timeTravelDate}
+                  onChange={(event) => setTimeTravelDate(event.target.value)}
+                />
+                <button
+                  type="button"
+                  className="timeline-controls__btn"
+                  onClick={handleTimeTravelReset}
+                >
+                  {t.timeTravelToday}
+                </button>
+                <button
+                  type="button"
+                  className="timeline-controls__btn"
+                  onClick={() => handleTimeTravelShift(7)}
+                >
+                  {t.timeTravelForward}
+                </button>
+              </div>
+              <div className="timeline-meta">
+                <p><strong>{t.timingAsOf}:</strong> {timeTravelDate}</p>
+              </div>
               <div className="timeline-grid">
                 {progressed && (
                   <div className="timeline-day">
@@ -2207,7 +2718,7 @@ function App() {
           )}
 
           {!loading && isRelationshipsArea && analysisMode === "compatibility" && relationshipTransitFeed && (
-            <Section icon="🌠" title={t.relationshipsTransitTimeline} badge="30d">
+            <Section icon="🌠" title={t.relationshipsTransitTimeline} badge={`30d · ${timeTravelDate}`}>
               <div className="timeline-meta">
                 <p><strong>{t.relationshipsTransitExact}:</strong> {relationshipTransitFeed.exactHits.length}</p>
               </div>
@@ -2272,6 +2783,53 @@ function App() {
                       <p className="timeline-day__summary">{entry.interpretation}</p>
                     </div>
                   ))}
+                </div>
+              )}
+            </Section>
+          )}
+
+          {!loading && isAtlasArea && chart && (
+            <Section icon="📌" title={t.atlasInspectorTitle}>
+              <p className="timeline-day__summary">{t.atlasInspectorHint}</p>
+              <form className="timeline-controls" onSubmit={handleInspectAtlasLocation}>
+                <input
+                  type="text"
+                  value={atlasInspectorInput}
+                  placeholder={formLabels.searchPlaceholder}
+                  onChange={(event) => setAtlasInspectorInput(event.target.value)}
+                />
+                <button type="submit" className="timeline-controls__btn" disabled={atlasInspectorLoading}>
+                  {atlasInspectorLoading ? t.atlasInspectorLoading : t.atlasInspectorButton}
+                </button>
+              </form>
+              {atlasInspectorError && (
+                <p className="form__error" role="alert">
+                  {atlasInspectorError}
+                </p>
+              )}
+              {!atlasInspectorError && !atlasInspectorResult && (
+                <p className="timeline-day__summary">{t.atlasInspectorEmpty}</p>
+              )}
+              {atlasInspectorResult && (
+                <div className="timeline-grid">
+                  <div className="timeline-day">
+                    <p className="timeline-day__date">{atlasInspectorResult.locationLabel}</p>
+                    {atlasInspectorResult.nearestLines.map((line) => (
+                      <p key={line.key} className="timeline-day__summary">
+                        {line.label} ({line.distance.toFixed(1)}deg): {line.interpretation}
+                      </p>
+                    ))}
+                  </div>
+                  {atlasInspectorResult.strongestCrossing && (
+                    <div className="timeline-day">
+                      <p className="timeline-day__date">{t.atlasInspectorCrossing}</p>
+                      <p className="timeline-day__summary">{atlasInspectorResult.strongestCrossing.pairLabel}</p>
+                      <p className="timeline-day__summary">
+                        Delta {atlasInspectorResult.strongestCrossing.distance.toFixed(1)}deg
+                      </p>
+                      <p className="timeline-day__summary">{atlasInspectorResult.strongestCrossing.interpretation}</p>
+                    </div>
+                  )}
                 </div>
               )}
             </Section>
