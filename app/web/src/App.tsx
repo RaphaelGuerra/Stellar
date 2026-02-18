@@ -133,6 +133,18 @@ interface DignityTableRow {
   status: DignityStatus;
 }
 
+interface TransitThemeEntry {
+  key: string;
+  label: string;
+  count: number;
+  bestOrb: number;
+}
+
+interface TransitExactHitDayGroup {
+  date: string;
+  hits: TransitRangeResult["exactHits"];
+}
+
 interface TarotCardEntry {
   name: string;
   meaningEn: string;
@@ -671,6 +683,53 @@ function buildDignityRows(chart: ChartResult): DignityTableRow[] {
     });
 }
 
+function buildTransitThemes(
+  feed: TransitRangeResult | null,
+  windowDays: number,
+  isCarioca: boolean
+): TransitThemeEntry[] {
+  if (!feed || feed.days.length === 0 || feed.exactHits.length === 0) return [];
+  const windowDates = new Set(feed.days.slice(0, Math.max(1, windowDays)).map((day) => day.date));
+  const map = new Map<string, TransitThemeEntry>();
+  for (const hit of feed.exactHits) {
+    if (!windowDates.has(hit.date)) continue;
+    const key = `${hit.transitPlanet}-${hit.aspect}`;
+    const existing = map.get(key);
+    if (existing) {
+      existing.count += 1;
+      if (hit.orb < existing.bestOrb) existing.bestOrb = hit.orb;
+      continue;
+    }
+    map.set(key, {
+      key,
+      label: isCarioca
+        ? `${hit.transitPlanet} ${hit.aspect}: foco em ${hit.natalPlanet}`
+        : `${hit.transitPlanet} ${hit.aspect}: focus on ${hit.natalPlanet}`,
+      count: 1,
+      bestOrb: hit.orb,
+    });
+  }
+  return Array.from(map.values())
+    .sort((left, right) => right.count - left.count || left.bestOrb - right.bestOrb)
+    .slice(0, 4);
+}
+
+function groupExactHitsByDate(feed: TransitRangeResult | null): TransitExactHitDayGroup[] {
+  if (!feed || feed.exactHits.length === 0) return [];
+  const map = new Map<string, TransitRangeResult["exactHits"]>();
+  for (const hit of feed.exactHits) {
+    const list = map.get(hit.date) ?? [];
+    list.push(hit);
+    map.set(hit.date, list);
+  }
+  return Array.from(map.entries())
+    .map(([date, hits]) => ({
+      date,
+      hits: [...hits].sort((left, right) => left.orb - right.orb),
+    }))
+    .sort((left, right) => left.date.localeCompare(right.date));
+}
+
 function App() {
   const { mode, setMode, content } = useContentMode();
   const isCarioca = mode === "carioca";
@@ -736,7 +795,7 @@ function App() {
   const [geoRestored, setGeoRestored] = useState(false);
   const [showShootingStar, setShowShootingStar] = useState(false);
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
-  const [transitRange, setTransitRange] = useState<7 | 30>(7);
+  const [transitRange, setTransitRange] = useState<1 | 7 | 30>(7);
   const [transitDayPage, setTransitDayPage] = useState<number>(() => persisted?.transitDayPage ?? 0);
   const [selectedTransitDate, setSelectedTransitDate] = useState<string>(() => persisted?.selectedTransitDate ?? "");
   const [transitFeed, setTransitFeed] = useState<TransitRangeResult | null>(null);
@@ -748,6 +807,8 @@ function App() {
   const [compositeChart, setCompositeChart] = useState<ChartResult | null>(null);
   const [davisonChart, setDavisonChart] = useState<ChartResult | null>(null);
   const [relationshipTransitFeed, setRelationshipTransitFeed] = useState<TransitRangeResult | null>(null);
+  const [relationshipTransitDayPage, setRelationshipTransitDayPage] = useState(0);
+  const [selectedRelationshipTransitDate, setSelectedRelationshipTransitDate] = useState("");
   const [astrocartography, setAstrocartography] = useState<AstrocartographyResult | null>(null);
   const [exportMessage, setExportMessage] = useState<string>("");
   const [tarotDraw, setTarotDraw] = useState<TarotCardEntry | null>(null);
@@ -1038,6 +1099,18 @@ function App() {
     if (!transitFeed || !selectedTransitDay) return [];
     return transitFeed.exactHits.filter((hit) => hit.date === selectedTransitDay.date);
   }, [selectedTransitDay, transitFeed]);
+  const transitShortThemes = useMemo(
+    () => buildTransitThemes(transitFeed, 3, isCarioca),
+    [isCarioca, transitFeed]
+  );
+  const transitLongThemes = useMemo(
+    () => buildTransitThemes(transitFeed, transitRange === 1 ? 1 : transitRange === 7 ? 7 : 30, isCarioca),
+    [isCarioca, transitFeed, transitRange]
+  );
+  const transitExactHitCalendar = useMemo(
+    () => groupExactHitsByDate(transitFeed),
+    [transitFeed]
+  );
   const upcomingReminderHits = useMemo(() => {
     if (!transitFeed) return [];
     return transitFeed.exactHits.filter((hit) => {
@@ -1046,6 +1119,25 @@ function App() {
       return Number.isFinite(deltaDays) && deltaDays >= 0 && deltaDays <= reminderLeadDays;
     });
   }, [reminderLeadDays, reminderMaxOrb, timeTravelDate, transitFeed]);
+  const relationshipTransitPageCount = useMemo(() => {
+    if (!relationshipTransitFeed || relationshipTransitFeed.days.length === 0) return 1;
+    return Math.max(1, Math.ceil(relationshipTransitFeed.days.length / TRANSIT_PAGE_SIZE));
+  }, [relationshipTransitFeed]);
+  const pagedRelationshipTransitDays = useMemo(() => {
+    if (!relationshipTransitFeed) return [];
+    const safePage = Math.max(0, Math.min(relationshipTransitDayPage, relationshipTransitPageCount - 1));
+    const start = safePage * TRANSIT_PAGE_SIZE;
+    return relationshipTransitFeed.days.slice(start, start + TRANSIT_PAGE_SIZE);
+  }, [relationshipTransitDayPage, relationshipTransitFeed, relationshipTransitPageCount]);
+  const selectedRelationshipTransitDay = useMemo(() => {
+    if (!relationshipTransitFeed || relationshipTransitFeed.days.length === 0) return null;
+    const exact = relationshipTransitFeed.days.find((day) => day.date === selectedRelationshipTransitDate);
+    return exact ?? pagedRelationshipTransitDays[0] ?? relationshipTransitFeed.days[0] ?? null;
+  }, [pagedRelationshipTransitDays, relationshipTransitFeed, selectedRelationshipTransitDate]);
+  const selectedRelationshipExactHits = useMemo(() => {
+    if (!relationshipTransitFeed || !selectedRelationshipTransitDay) return [];
+    return relationshipTransitFeed.exactHits.filter((hit) => hit.date === selectedRelationshipTransitDay.date);
+  }, [relationshipTransitFeed, selectedRelationshipTransitDay]);
 
   useEffect(() => {
     if (astralMapModel) return;
@@ -1251,6 +1343,34 @@ function App() {
   }, [selectedTransitDate, transitDayPage, transitFeed]);
 
   useEffect(() => {
+    if (!relationshipTransitFeed || relationshipTransitFeed.days.length === 0) {
+      if (selectedRelationshipTransitDate !== "") setSelectedRelationshipTransitDate("");
+      if (relationshipTransitDayPage !== 0) setRelationshipTransitDayPage(0);
+      return;
+    }
+    const maxPage = Math.max(0, Math.ceil(relationshipTransitFeed.days.length / TRANSIT_PAGE_SIZE) - 1);
+    if (relationshipTransitDayPage > maxPage) {
+      setRelationshipTransitDayPage(maxPage);
+      return;
+    }
+    const selectedIndex = relationshipTransitFeed.days.findIndex(
+      (day) => day.date === selectedRelationshipTransitDate
+    );
+    if (selectedIndex === -1) {
+      setSelectedRelationshipTransitDate(relationshipTransitFeed.days[0].date);
+      return;
+    }
+    const selectedPage = Math.floor(selectedIndex / TRANSIT_PAGE_SIZE);
+    if (selectedPage !== relationshipTransitDayPage) {
+      setRelationshipTransitDayPage(selectedPage);
+    }
+  }, [
+    relationshipTransitDayPage,
+    relationshipTransitFeed,
+    selectedRelationshipTransitDate,
+  ]);
+
+  useEffect(() => {
     setAtlasInspectorResult(null);
     setAtlasInspectorError(null);
   }, [astrocartography, chart?.normalized.utcDateTime]);
@@ -1352,6 +1472,8 @@ function App() {
     setCompositeChart(null);
     setDavisonChart(null);
     setRelationshipTransitFeed(null);
+    setRelationshipTransitDayPage(0);
+    setSelectedRelationshipTransitDate("");
     setAstrocartography(null);
     setRemindersEnabled(DEFAULT_REMINDER_RULES.enabled);
     setReminderLeadDays(DEFAULT_REMINDER_RULES.leadDays);
@@ -2111,12 +2233,19 @@ function App() {
     timeTravelToday: isCarioca ? "Hoje" : "Today",
     transitsExactHits: isCarioca ? "Aspectos exatos" : "Exact hits",
     transitsStrongest: isCarioca ? "Mais fortes do dia" : "Strongest today",
+    transitsRangeToday: isCarioca ? "Hoje" : "Today",
+    transitsRangeWeek: isCarioca ? "Semana" : "Week",
+    transitsRangeMonth: isCarioca ? "Mes" : "Month",
     transitsPage: (page: number, total: number) =>
       isCarioca ? `Pagina ${page}/${total}` : `Page ${page}/${total}`,
     transitsPrev: isCarioca ? "Anterior" : "Prev",
     transitsNext: isCarioca ? "Proximo" : "Next",
     transitsSelectedDay: isCarioca ? "Dia selecionado" : "Selected day",
     transitsNoHitsDay: isCarioca ? "Sem hits relevantes nesse dia." : "No strong hits on this day.",
+    transitsThemeShort: isCarioca ? "Temas de curto prazo" : "Short-term themes",
+    transitsThemeLong: isCarioca ? "Temas de longo prazo" : "Long-term themes",
+    transitsThemeCount: isCarioca ? "ocorrencias" : "occurrences",
+    transitsExactCalendar: isCarioca ? "Calendario de exatos" : "Exact-hit calendar",
     transitsReminderTitle: isCarioca ? "Regras de lembrete local" : "Local reminder rules",
     transitsReminderLeadDays: isCarioca ? "Antecedencia" : "Lead time",
     transitsReminderOrb: isCarioca ? "Orb maximo" : "Max orb",
@@ -2137,6 +2266,10 @@ function App() {
     relationshipsDavison: isCarioca ? "Mapa Davison" : "Davison chart",
     relationshipsTransitTimeline: isCarioca ? "Timeline de transitos da relacao" : "Relationship transit timeline",
     relationshipsTransitExact: isCarioca ? "Aspectos exatos da relacao" : "Relationship exact hits",
+    relationshipsTransitSelectedDay: isCarioca ? "Dia da relacao" : "Relationship day",
+    relationshipsTransitNoHits: isCarioca
+      ? "Sem hits de relacao nesse dia."
+      : "No relationship hits on this day.",
     atlasTitle: isCarioca ? "Astrocartografia" : "Astrocartography",
     atlasMapTitle: isCarioca ? "Mapa global de linhas" : "Global line map",
     atlasMapBadge: isCarioca ? "MC/IC/ASC/DSC" : "MC/IC/ASC/DSC",
@@ -3253,13 +3386,23 @@ function App() {
               <div className="timeline-controls" role="group" aria-label={t.transitsTitle}>
                 <button
                   type="button"
+                  className={`timeline-controls__btn ${transitRange === 1 ? "timeline-controls__btn--active" : ""}`}
+                  onClick={() => {
+                    setTransitRange(1);
+                    setTransitDayPage(0);
+                  }}
+                >
+                  {t.transitsRangeToday}
+                </button>
+                <button
+                  type="button"
                   className={`timeline-controls__btn ${transitRange === 7 ? "timeline-controls__btn--active" : ""}`}
                   onClick={() => {
                     setTransitRange(7);
                     setTransitDayPage(0);
                   }}
                 >
-                  7d
+                  {t.transitsRangeWeek}
                 </button>
                 <button
                   type="button"
@@ -3269,7 +3412,7 @@ function App() {
                     setTransitDayPage(0);
                   }}
                 >
-                  30d
+                  {t.transitsRangeMonth}
                 </button>
                 <button
                   type="button"
@@ -3294,6 +3437,8 @@ function App() {
               <div className="timeline-meta">
                 <p><strong>{t.transitsExactHits}:</strong> {transitFeed.exactHits.length}</p>
                 <p><strong>{t.transitsSelectedDay}:</strong> {selectedTransitDay?.date ?? "--"}</p>
+                <p><strong>{t.transitsThemeShort}:</strong> {transitShortThemes.length}</p>
+                <p><strong>{t.transitsThemeLong}:</strong> {transitLongThemes.length}</p>
               </div>
               <div className="timeline-grid">
                 {pagedTransitDays.map((day) => (
@@ -3335,6 +3480,40 @@ function App() {
                         </p>
                       ))}
                     </>
+                  )}
+                </div>
+                <div className="timeline-day">
+                  <p className="timeline-day__date">{t.transitsThemeShort}</p>
+                  {transitShortThemes.length === 0 ? (
+                    <p className="timeline-day__summary">{t.transitsNoHitsDay}</p>
+                  ) : (
+                    transitShortThemes.map((theme) => (
+                      <p key={`short-theme-${theme.key}`} className="timeline-day__summary">
+                        {theme.label} ({theme.count} {t.transitsThemeCount}, orb {theme.bestOrb.toFixed(1)}deg)
+                      </p>
+                    ))
+                  )}
+                  <p className="timeline-day__date">{t.transitsThemeLong}</p>
+                  {transitLongThemes.length === 0 ? (
+                    <p className="timeline-day__summary">{t.transitsNoHitsDay}</p>
+                  ) : (
+                    transitLongThemes.map((theme) => (
+                      <p key={`long-theme-${theme.key}`} className="timeline-day__summary">
+                        {theme.label} ({theme.count} {t.transitsThemeCount}, orb {theme.bestOrb.toFixed(1)}deg)
+                      </p>
+                    ))
+                  )}
+                </div>
+                <div className="timeline-day">
+                  <p className="timeline-day__date">{t.transitsExactCalendar}</p>
+                  {transitExactHitCalendar.length === 0 ? (
+                    <p className="timeline-day__summary">{t.transitsNoHitsDay}</p>
+                  ) : (
+                    transitExactHitCalendar.slice(0, 10).map((entry) => (
+                      <p key={`calendar-${entry.date}`} className="timeline-day__summary">
+                        {entry.date}: {entry.hits.length} hits
+                      </p>
+                    ))
                   )}
                 </div>
                 <div className="timeline-day">
@@ -3480,13 +3659,46 @@ function App() {
 
           {!loading && isRelationshipsArea && analysisMode === "compatibility" && relationshipTransitFeed && (
             <Section icon="🌠" title={t.relationshipsTransitTimeline} badge={`30d · ${timeTravelDate}`}>
+              <div className="timeline-controls" role="group" aria-label={t.relationshipsTransitTimeline}>
+                <button
+                  type="button"
+                  className="timeline-controls__btn"
+                  disabled={relationshipTransitDayPage <= 0}
+                  onClick={() => setRelationshipTransitDayPage((page) => Math.max(0, page - 1))}
+                >
+                  {t.transitsPrev}
+                </button>
+                <span className="timeline-day__summary">
+                  {t.transitsPage(
+                    Math.min(relationshipTransitDayPage + 1, relationshipTransitPageCount),
+                    relationshipTransitPageCount
+                  )}
+                </span>
+                <button
+                  type="button"
+                  className="timeline-controls__btn"
+                  disabled={relationshipTransitDayPage >= relationshipTransitPageCount - 1}
+                  onClick={() =>
+                    setRelationshipTransitDayPage((page) => Math.min(relationshipTransitPageCount - 1, page + 1))
+                  }
+                >
+                  {t.transitsNext}
+                </button>
+              </div>
               <div className="timeline-meta">
                 <p><strong>{t.relationshipsTransitExact}:</strong> {relationshipTransitFeed.exactHits.length}</p>
+                <p><strong>{t.relationshipsTransitSelectedDay}:</strong> {selectedRelationshipTransitDay?.date ?? "--"}</p>
               </div>
               <div className="timeline-grid">
-                {relationshipTransitFeed.days.slice(0, 10).map((day) => (
+                {pagedRelationshipTransitDays.map((day) => (
                   <div key={`relationship-${day.date}`} className="timeline-day">
-                    <p className="timeline-day__date">{day.date}</p>
+                    <button
+                      type="button"
+                      className={`timeline-controls__btn ${selectedRelationshipTransitDay?.date === day.date ? "timeline-controls__btn--active" : ""}`}
+                      onClick={() => setSelectedRelationshipTransitDate(day.date)}
+                    >
+                      {day.date}
+                    </button>
                     {day.strongestHits.slice(0, 3).map((hit) => (
                       <p key={`${day.date}-${hit.transitPlanet}-${hit.natalPlanet}-${hit.aspect}`} className="timeline-day__summary">
                         {hit.transitPlanet} {hit.aspect} {hit.natalPlanet} (orb {hit.orb.toFixed(1)}deg)
@@ -3494,6 +3706,30 @@ function App() {
                     ))}
                   </div>
                 ))}
+              </div>
+              <div className="timeline-grid">
+                <div className="timeline-day">
+                  <p className="timeline-day__date">{selectedRelationshipTransitDay?.date ?? "--"}</p>
+                  {selectedRelationshipTransitDay?.strongestHits.length ? (
+                    selectedRelationshipTransitDay.strongestHits.map((hit) => (
+                      <p key={`relationship-detail-${hit.date}-${hit.transitPlanet}-${hit.aspect}-${hit.natalPlanet}`} className="timeline-day__summary">
+                        {hit.transitPlanet} {hit.aspect} {hit.natalPlanet} (orb {hit.orb.toFixed(1)}deg)
+                      </p>
+                    ))
+                  ) : (
+                    <p className="timeline-day__summary">{t.relationshipsTransitNoHits}</p>
+                  )}
+                  {selectedRelationshipExactHits.length > 0 && (
+                    <>
+                      <p className="timeline-day__summary"><strong>{t.relationshipsTransitExact}:</strong> {selectedRelationshipExactHits.length}</p>
+                      {selectedRelationshipExactHits.slice(0, 5).map((hit) => (
+                        <p key={`relationship-exact-${hit.date}-${hit.transitPlanet}-${hit.aspect}-${hit.natalPlanet}`} className="timeline-day__summary">
+                          {hit.transitPlanet} {hit.aspect} {hit.natalPlanet} (orb {hit.orb.toFixed(1)}deg)
+                        </p>
+                      ))}
+                    </>
+                  )}
+                </div>
               </div>
             </Section>
           )}
