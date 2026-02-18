@@ -9,6 +9,7 @@ import { PersonForm } from "./components/PersonForm";
 import { AstralMapThumbnail } from "./components/AstralMapThumbnail";
 import { AstralMapModal } from "./components/AstralMapModal";
 import { MatchScorecards } from "./components/MatchScorecards";
+import { AstrocartographyMap } from "./components/AstrocartographyMap";
 import { buildCards, buildPlacementsSummary, type CardModel, type PlacementSummary } from "./lib/cards";
 import {
   AmbiguousLocalTimeError,
@@ -105,6 +106,8 @@ interface AtlasInspectorLineEntry {
 
 interface AtlasInspectorResultEntry {
   locationLabel: string;
+  locationLat: number;
+  locationLon: number;
   nearestLines: AtlasInspectorLineEntry[];
   strongestCrossing?: AtlasCrossingEntry;
 }
@@ -410,6 +413,8 @@ function buildAtlasInspectorResult(
   });
   return {
     locationLabel: location.label,
+    locationLat: location.lat,
+    locationLon: location.lon,
     nearestLines,
     strongestCrossing,
   };
@@ -934,6 +939,10 @@ function App() {
   const atlasCrossings = useMemo(
     () => buildAtlasCrossings(astrocartography, isCarioca),
     [astrocartography, isCarioca]
+  );
+  const atlasHighlightedLabels = useMemo(
+    () => atlasInspectorResult?.nearestLines.map((line) => line.label) ?? [],
+    [atlasInspectorResult]
   );
   const transitPageCount = useMemo(() => {
     if (!transitFeed || transitFeed.days.length === 0) return 1;
@@ -1922,6 +1931,11 @@ function App() {
     relationshipsTransitTimeline: isCarioca ? "Timeline de transitos da relacao" : "Relationship transit timeline",
     relationshipsTransitExact: isCarioca ? "Aspectos exatos da relacao" : "Relationship exact hits",
     atlasTitle: isCarioca ? "Astrocartografia" : "Astrocartography",
+    atlasMapTitle: isCarioca ? "Mapa global de linhas" : "Global line map",
+    atlasMapBadge: isCarioca ? "MC/IC/ASC/DSC" : "MC/IC/ASC/DSC",
+    atlasMapHint: isCarioca
+      ? "Linhas verticais mostram onde cada ponto angular fica mais forte."
+      : "Vertical lines show where each angle expression is strongest globally.",
     atlasShortlistTitle: isCarioca ? "Melhores cidades por linhas" : "Best-fit location shortlist",
     atlasShortlistBadge: isCarioca ? "proximidade de linhas" : "line proximity",
     atlasShortlistEmpty: isCarioca
@@ -3251,7 +3265,23 @@ function App() {
           )}
 
           {!loading && isAtlasArea && chart && astrocartography && (
-            <Section icon="🧭" title={t.atlasTitle} badge={`${astrocartography.lines.length} lines`}>
+            <Section icon="🧭" title={t.atlasTitle} badge={`${astrocartography.lines.length} lines · ${t.atlasMapBadge}`}>
+              <p className="timeline-day__summary">{t.atlasMapHint}</p>
+              <AstrocartographyMap
+                lines={astrocartography.lines}
+                highlightedLabels={atlasHighlightedLabels}
+                location={
+                  atlasInspectorResult
+                    ? {
+                        label: atlasInspectorResult.locationLabel,
+                        lat: atlasInspectorResult.locationLat,
+                        lon: atlasInspectorResult.locationLon,
+                      }
+                    : null
+                }
+                label={t.atlasMapTitle}
+              />
+              <p className="timeline-day__summary">{t.atlasMapTitle}</p>
               <div className="timeline-grid">
                 {astrocartography.lines.slice(0, 24).map((line, index) => (
                   <div key={`${line.point}-${line.angle}-${index}`} className="timeline-day">
