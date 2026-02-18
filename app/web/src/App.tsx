@@ -11,15 +11,13 @@ import { AstralMapModal } from "./components/AstralMapModal";
 import { MatchScorecards } from "./components/MatchScorecards";
 import { AstrocartographyMap } from "./components/AstrocartographyMap";
 import { buildCards, buildPlacementsSummary, type CardModel, type PlacementSummary } from "./lib/cards";
-import {
-  AmbiguousLocalTimeError,
-  NonexistentLocalTimeError,
-  type AnnualProfectionResult,
-  type AstrocartographyLine,
-  type AstrocartographyResult,
-  type ReturnChartResult,
-  type SecondaryProgressionResult,
-  type TransitRangeResult,
+import type {
+  AnnualProfectionResult,
+  AstrocartographyLine,
+  AstrocartographyResult,
+  ReturnChartResult,
+  SecondaryProgressionResult,
+  TransitRangeResult,
 } from "./lib/engine";
 import { buildChartComparison } from "./lib/synastry";
 import { buildDailyTransitOutlook } from "./lib/transits";
@@ -517,12 +515,12 @@ function hasErrorName(error: unknown, name: string): boolean {
 }
 
 function formatRuntimeError(error: unknown, isCarioca: boolean): string {
-  if (error instanceof NonexistentLocalTimeError || hasErrorName(error, "NonexistentLocalTimeError")) {
+  if (hasErrorName(error, "NonexistentLocalTimeError")) {
     return isCarioca
       ? "Esse horario nem existe nessa cidade, porra. Ajusta a hora e tenta de novo."
       : "That local time does not exist in this timezone. Please adjust the time and try again.";
   }
-  if (error instanceof AmbiguousLocalTimeError || hasErrorName(error, "AmbiguousLocalTimeError")) {
+  if (hasErrorName(error, "AmbiguousLocalTimeError")) {
     return isCarioca
       ? "Esse horario ficou duplicado por causa de horario de verao. Escolhe Sim ou Nao e manda brasa."
       : "That local time is ambiguous due to daylight saving time. Choose Yes or No for daylight saving and try again.";
