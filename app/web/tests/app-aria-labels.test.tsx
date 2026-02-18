@@ -4,8 +4,10 @@
 
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
+import { Router } from "wouter";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "../src/App";
+import { AppProvider } from "../src/context/AppContext";
 import {
   APP_STATE_STORAGE_KEY,
   PRIVACY_SETTINGS_STORAGE_KEY,
@@ -37,6 +39,7 @@ vi.mock("../src/lib/useGeoSearch", () => {
 });
 
 beforeEach(() => {
+  window.history.pushState({}, "", "/");
   const store = new Map<string, string>();
   const storage: Storage = {
     getItem: (key: string) => store.get(key) ?? null,
@@ -129,9 +132,19 @@ function buildChart(longitudes: Partial<Record<PlanetName, number>>): ChartResul
   };
 }
 
+function renderApp() {
+  return render(
+    <Router>
+      <AppProvider>
+        <App />
+      </AppProvider>
+    </Router>
+  );
+}
+
 describe("App aria labels localization", () => {
   it("switches landmark/group labels from English to Carioca mode", () => {
-    render(<App />);
+    renderApp();
 
     expect(screen.getByRole("main").getAttribute("aria-label")).toBe("Birth chart generator");
     expect(screen.getByRole("group", { name: "Content mode" })).toBeTruthy();
@@ -147,7 +160,7 @@ describe("App aria labels localization", () => {
   });
 
   it("shows duo mode toggle only in compatibility mode", () => {
-    render(<App />);
+    renderApp();
 
     expect(screen.queryByRole("group", { name: "Duo mode" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Compatibility" }));
@@ -182,7 +195,7 @@ describe("App aria labels localization", () => {
       })
     );
 
-    render(<App />);
+    renderApp();
 
     const mapHeading = screen.getByRole("heading", { name: "Astral map" });
     const normalizedHeading = screen.getByRole("heading", { name: "Normalized data" });
@@ -228,7 +241,7 @@ describe("App aria labels localization", () => {
       })
     );
 
-    render(<App />);
+    renderApp();
 
     fireEvent.click(screen.getByRole("button", { name: "Open full-resolution map" }));
     expect(screen.getByRole("dialog", { name: "Full-resolution astral map" })).toBeTruthy();
@@ -263,7 +276,7 @@ describe("App aria labels localization", () => {
       })
     );
 
-    render(<App />);
+    renderApp();
     fireEvent.click(screen.getByRole("button", { name: "Carioca, porra" }));
     fireEvent.click(screen.getByRole("button", { name: "Transitos" }));
 
@@ -303,7 +316,7 @@ describe("App aria labels localization", () => {
       })
     );
 
-    render(<App />);
+    renderApp();
     fireEvent.click(screen.getByRole("button", { name: "Relationships" }));
 
     expect(await screen.findByRole("heading", { name: "Relationship quest" })).toBeTruthy();
@@ -343,7 +356,7 @@ describe("App aria labels localization", () => {
       })
     );
 
-    render(<App />);
+    renderApp();
 
     const persistToggle = screen.getByRole("checkbox", { name: "Save data on this device" });
     fireEvent.click(persistToggle);
