@@ -19,6 +19,7 @@ import type {
   PlanetName,
   SynastryStatKey,
 } from "./types";
+import type { TransitRangeResult } from "./engine";
 
 export type TransitLocale = "pt" | "en";
 
@@ -606,4 +607,67 @@ export function buildDailyTransitOutlook(
       ? buildInsight(watchoutHit, "watchout", locale, duoMode)
       : buildFallbackInsight("watchout", locale, duoMode),
   };
+}
+
+// ---------------------------------------------------------------------------
+// Transit theme + calendar helpers (used by TransitsView)
+// ---------------------------------------------------------------------------
+
+export interface TransitThemeEntry {
+  key: string;
+  label: string;
+  count: number;
+  bestOrb: number;
+}
+
+export interface TransitExactHitDayGroup {
+  date: string;
+  hits: TransitRangeResult["exactHits"];
+}
+
+export function buildTransitThemes(
+  feed: TransitRangeResult | null,
+  windowDays: number,
+  isCarioca: boolean
+): TransitThemeEntry[] {
+  if (!feed || feed.days.length === 0 || feed.exactHits.length === 0) return [];
+  const windowDates = new Set(feed.days.slice(0, Math.max(1, windowDays)).map((day) => day.date));
+  const map = new Map<string, TransitThemeEntry>();
+  for (const hit of feed.exactHits) {
+    if (!windowDates.has(hit.date)) continue;
+    const key = `${hit.transitPlanet}-${hit.aspect}`;
+    const existing = map.get(key);
+    if (existing) {
+      existing.count += 1;
+      if (hit.orb < existing.bestOrb) existing.bestOrb = hit.orb;
+      continue;
+    }
+    map.set(key, {
+      key,
+      label: isCarioca
+        ? `${hit.transitPlanet} ${hit.aspect}: foco em ${hit.natalPlanet}`
+        : `${hit.transitPlanet} ${hit.aspect}: focus on ${hit.natalPlanet}`,
+      count: 1,
+      bestOrb: hit.orb,
+    });
+  }
+  return Array.from(map.values())
+    .sort((left, right) => right.count - left.count || left.bestOrb - right.bestOrb)
+    .slice(0, 4);
+}
+
+export function groupExactHitsByDate(feed: TransitRangeResult | null): TransitExactHitDayGroup[] {
+  if (!feed || feed.exactHits.length === 0) return [];
+  const map = new Map<string, TransitRangeResult["exactHits"]>();
+  for (const hit of feed.exactHits) {
+    const list = map.get(hit.date) ?? [];
+    list.push(hit);
+    map.set(hit.date, list);
+  }
+  return Array.from(map.entries())
+    .map(([date, hits]) => ({
+      date,
+      hits: [...hits].sort((left, right) => left.orb - right.orb),
+    }))
+    .sort((left, right) => left.date.localeCompare(right.date));
 }
