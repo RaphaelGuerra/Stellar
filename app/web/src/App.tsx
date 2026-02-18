@@ -624,6 +624,7 @@ function App() {
   const persisted = useMemo(() => readPersistedAppState(), []);
   const todayIso = useMemo(() => formatIsoDate(new Date()), []);
   const sharedImportInputRef = useRef<HTMLInputElement | null>(null);
+  const reportExportRef = useRef<HTMLDivElement | null>(null);
   const [persistLocalData, setPersistLocalData] = useState(
     () => readPrivacySettings().persistLocalData
   );
@@ -695,6 +696,7 @@ function App() {
   const [davisonChart, setDavisonChart] = useState<ChartResult | null>(null);
   const [relationshipTransitFeed, setRelationshipTransitFeed] = useState<TransitRangeResult | null>(null);
   const [astrocartography, setAstrocartography] = useState<AstrocartographyResult | null>(null);
+  const [exportMessage, setExportMessage] = useState<string>("");
   const [remindersEnabled, setRemindersEnabled] = useState<boolean>(
     () => persisted?.reminders.enabled ?? DEFAULT_REMINDER_RULES.enabled
   );
@@ -1301,6 +1303,7 @@ function App() {
     setAtlasInspectorResult(null);
     setAtlasInspectorLoading(false);
     setAtlasInspectorError(null);
+    setExportMessage("");
     setError(null);
     setResultVersion((prev) => prev + 1);
   }
@@ -1448,6 +1451,7 @@ function App() {
 
   function handleLoadHistory(entry: PersistedHistoryEntry) {
     setError(null);
+    setExportMessage("");
     setShowDaylightSavingOverrideA(false);
     setShowDaylightSavingOverrideB(false);
     setAnalysisMode(entry.analysisMode);
@@ -1468,6 +1472,7 @@ function App() {
   async function handleGenerateChart(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setExportMessage("");
     setShowDaylightSavingOverrideA(false);
     setShowDaylightSavingOverrideB(false);
     setLoading(true);
@@ -1593,6 +1598,59 @@ function App() {
     URL.revokeObjectURL(url);
   }
 
+  async function captureReportCanvas(): Promise<HTMLCanvasElement | null> {
+    if (!reportExportRef.current) return null;
+    const html2canvas = (await import("html2canvas")).default;
+    return html2canvas(reportExportRef.current, {
+      backgroundColor: "#090f1f",
+      scale: 2,
+      useCORS: true,
+    });
+  }
+
+  function buildReportFileName(): string {
+    const now = new Date();
+    return `stellar-report-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  }
+
+  async function handleExportReportPng() {
+    if (!chart) return;
+    try {
+      const canvas = await captureReportCanvas();
+      if (!canvas) throw new Error("Missing capture canvas");
+      const link = document.createElement("a");
+      link.href = canvas.toDataURL("image/png");
+      link.download = `${buildReportFileName()}.png`;
+      link.click();
+      setExportMessage(t.exportReportDonePng);
+    } catch {
+      setExportMessage(t.exportReportError);
+    }
+  }
+
+  async function handleExportReportPdf() {
+    if (!chart) return;
+    try {
+      const canvas = await captureReportCanvas();
+      if (!canvas) throw new Error("Missing capture canvas");
+      const image = canvas.toDataURL("image/png");
+      const [{ jsPDF }] = await Promise.all([import("jspdf")]);
+      const ratio = canvas.width / canvas.height;
+      const width = 820;
+      const height = Math.round(width / ratio);
+      const pdf = new jsPDF({
+        orientation: width > height ? "landscape" : "portrait",
+        unit: "pt",
+        format: [width, height],
+      });
+      pdf.addImage(image, "PNG", 0, 0, width, height);
+      pdf.save(`${buildReportFileName()}.pdf`);
+      setExportMessage(t.exportReportDonePdf);
+    } catch {
+      setExportMessage(t.exportReportError);
+    }
+  }
+
   function handleOpenSharedImport() {
     sharedImportInputRef.current?.click();
   }
@@ -1627,6 +1685,7 @@ function App() {
       }
 
       setError(null);
+      setExportMessage("");
       setShowDaylightSavingOverrideA(false);
       setShowDaylightSavingOverrideB(false);
 
@@ -1972,6 +2031,11 @@ function App() {
     historyTitle: isCarioca ? "Historico salvo" : "Saved history",
     historyLoad: isCarioca ? "Carregar" : "Load",
     exportJson: isCarioca ? "Exportar JSON" : "Export JSON",
+    exportReportPng: isCarioca ? "Exportar PNG (relatorio)" : "Export PNG report",
+    exportReportPdf: isCarioca ? "Exportar PDF (relatorio)" : "Export PDF report",
+    exportReportDonePng: isCarioca ? "Relatorio PNG exportado." : "PNG report exported.",
+    exportReportDonePdf: isCarioca ? "Relatorio PDF exportado." : "PDF report exported.",
+    exportReportError: isCarioca ? "Nao foi possivel exportar o relatorio." : "Could not export report.",
     importSharedJson: isCarioca ? "Importar perfil compartilhado" : "Import shared profile",
     historySingle: isCarioca ? "Solo" : "Single",
     historyCompatibility: isCarioca ? "Sinastria" : "Compatibility",
@@ -2138,7 +2202,7 @@ function App() {
           <ModeToggle mode={mode} setMode={setMode} ariaLabel={ariaLabels.contentMode} />
         </header>
 
-        <main role="main" aria-label={ariaLabels.chartGenerator}>
+        <main role="main" aria-label={ariaLabels.chartGenerator} ref={reportExportRef}>
           <section className={`action-section ${hasResults ? "action-section--compact" : ""}`}>
             <form className="form" onSubmit={handleGenerateChart} aria-label={ariaLabels.birthDataForm}>
               <div className="analysis-mode" role="group" aria-label={ariaLabels.primaryArea}>
@@ -2326,9 +2390,17 @@ function App() {
                   {t.importSharedJson}
                 </button>
                 {hasResults && (
-                  <button type="button" className="btn-ghost" onClick={handleExportJson}>
-                    {t.exportJson}
-                  </button>
+                  <>
+                    <button type="button" className="btn-ghost" onClick={handleExportJson}>
+                      {t.exportJson}
+                    </button>
+                    <button type="button" className="btn-ghost" onClick={handleExportReportPng}>
+                      {t.exportReportPng}
+                    </button>
+                    <button type="button" className="btn-ghost" onClick={handleExportReportPdf}>
+                      {t.exportReportPdf}
+                    </button>
+                  </>
                 )}
                 <input
                   ref={sharedImportInputRef}
@@ -2338,6 +2410,7 @@ function App() {
                   style={{ display: "none" }}
                 />
               </div>
+              {exportMessage && <p className="privacy-controls__hint">{exportMessage}</p>}
 
               <div className="privacy-controls" role="group" aria-label={ariaLabels.privacyControls}>
                 <p className="privacy-controls__title">{t.privacyTitle}</p>
