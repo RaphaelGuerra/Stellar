@@ -8,6 +8,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AstralMapModal } from "../src/components/AstralMapModal";
 import type { AstralMapModel, MapPlanetPoint } from "../src/lib/types";
 
+const addImageMock = vi.fn();
+const saveMock = vi.fn();
+
+vi.mock("jspdf", () => ({
+  jsPDF: vi.fn().mockImplementation(() => ({
+    addImage: addImageMock,
+    save: saveMock,
+  })),
+}));
+
 function makePoint(id: string, chart: "A" | "B", x: number, y: number): MapPlanetPoint {
   const planet = (id === "1" ? "Sun" : id === "2" ? "Moon" : "Venus") as MapPlanetPoint["planet"];
   return {
@@ -43,9 +53,11 @@ const model: AstralMapModel = {
 
 const labels = {
   close: "Close",
-  download: "Download PNG",
-  downloadDone: "PNG downloaded successfully.",
-  downloadError: "Could not generate PNG.",
+  downloadPng: "Download PNG",
+  downloadPdf: "Download PDF",
+  downloadDonePng: "PNG downloaded successfully.",
+  downloadDonePdf: "PDF downloaded successfully.",
+  downloadError: "Could not generate file.",
   filters: "Aspect filters",
   allAspects: "All",
   legendOuterA: "outer ring",
@@ -56,6 +68,8 @@ const labels = {
 };
 
 beforeEach(() => {
+  addImageMock.mockClear();
+  saveMock.mockClear();
   Object.defineProperty(URL, "createObjectURL", {
     configurable: true,
     writable: true,
@@ -123,6 +137,24 @@ describe("AstralMapModal", () => {
 
     expect(await screen.findByText("PNG downloaded successfully.")).toBeTruthy();
     expect(URL.createObjectURL).toHaveBeenCalled();
+  });
+
+  it("exports PDF and shows success feedback", async () => {
+    render(
+      <AstralMapModal
+        isOpen
+        model={model}
+        title="Full-resolution astral map"
+        onClose={vi.fn()}
+        labels={labels}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Download PDF" }));
+
+    expect(await screen.findByText("PDF downloaded successfully.")).toBeTruthy();
+    expect(addImageMock).toHaveBeenCalled();
+    expect(saveMock).toHaveBeenCalled();
   });
 
   it("filters visible aspect lines by aspect button", () => {

@@ -5,8 +5,10 @@ import type { AspectName, AstralMapModel } from "../lib/types";
 
 interface AstralMapModalLabels {
   close: string;
-  download: string;
-  downloadDone: string;
+  downloadPng: string;
+  downloadPdf: string;
+  downloadDonePng: string;
+  downloadDonePdf: string;
   downloadError: string;
   filters: string;
   allAspects: string;
@@ -32,17 +34,17 @@ function buildFileName(): string {
   const day = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(
     now.getDate()
   ).padStart(2, "0")}`;
-  return `stellar-astral-map-${day}.png`;
+  return `stellar-astral-map-${day}`;
 }
 
-async function exportSvgToPng(svgElement: SVGSVGElement): Promise<void> {
+async function renderSvgToCanvas(svgElement: SVGSVGElement): Promise<HTMLCanvasElement> {
   const serializer = new XMLSerializer();
   const source = serializer.serializeToString(svgElement);
   const blob = new Blob([source], { type: "image/svg+xml;charset=utf-8" });
   const url = URL.createObjectURL(blob);
 
   try {
-    await new Promise<void>((resolve, reject) => {
+    return await new Promise<HTMLCanvasElement>((resolve, reject) => {
       const image = new Image();
       image.onload = () => {
         const canvas = document.createElement("canvas");
@@ -56,13 +58,7 @@ async function exportSvgToPng(svgElement: SVGSVGElement): Promise<void> {
         context.fillStyle = "#090f1f";
         context.fillRect(0, 0, canvas.width, canvas.height);
         context.drawImage(image, 0, 0, canvas.width, canvas.height);
-
-        const dataUrl = canvas.toDataURL("image/png");
-        const link = document.createElement("a");
-        link.href = dataUrl;
-        link.download = buildFileName();
-        link.click();
-        resolve();
+        resolve(canvas);
       };
       image.onerror = () => reject(new Error("Image load failed"));
       image.src = url;
@@ -70,6 +66,32 @@ async function exportSvgToPng(svgElement: SVGSVGElement): Promise<void> {
   } finally {
     URL.revokeObjectURL(url);
   }
+}
+
+async function exportSvgToPng(svgElement: SVGSVGElement): Promise<void> {
+  const canvas = await renderSvgToCanvas(svgElement);
+  const dataUrl = canvas.toDataURL("image/png");
+  const link = document.createElement("a");
+  link.href = dataUrl;
+  link.download = `${buildFileName()}.png`;
+  link.click();
+}
+
+async function exportSvgToPdf(svgElement: SVGSVGElement): Promise<void> {
+  const [{ jsPDF }, canvas] = await Promise.all([
+    import("jspdf"),
+    renderSvgToCanvas(svgElement),
+  ]);
+  const imageData = canvas.toDataURL("image/png");
+  const width = 800;
+  const height = 800;
+  const pdf = new jsPDF({
+    orientation: "portrait",
+    unit: "pt",
+    format: [width, height],
+  });
+  pdf.addImage(imageData, "PNG", 0, 0, width, height);
+  pdf.save(`${buildFileName()}.pdf`);
 }
 
 export function AstralMapModal({ isOpen, model, title, onClose, labels }: AstralMapModalProps) {
@@ -116,7 +138,7 @@ export function AstralMapModal({ isOpen, model, title, onClose, labels }: Astral
     setActiveAspectTypes(new Set(ALL_ASPECT_TYPES));
   };
 
-  const handleDownload = async () => {
+  const handleDownloadPng = async () => {
     const svg = containerRef.current?.querySelector("svg");
     if (!svg) {
       setDownloadMessage(labels.downloadError);
@@ -125,7 +147,22 @@ export function AstralMapModal({ isOpen, model, title, onClose, labels }: Astral
 
     try {
       await exportSvgToPng(svg);
-      setDownloadMessage(labels.downloadDone);
+      setDownloadMessage(labels.downloadDonePng);
+    } catch {
+      setDownloadMessage(labels.downloadError);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    const svg = containerRef.current?.querySelector("svg");
+    if (!svg) {
+      setDownloadMessage(labels.downloadError);
+      return;
+    }
+
+    try {
+      await exportSvgToPdf(svg);
+      setDownloadMessage(labels.downloadDonePdf);
     } catch {
       setDownloadMessage(labels.downloadError);
     }
@@ -143,8 +180,11 @@ export function AstralMapModal({ isOpen, model, title, onClose, labels }: Astral
         <div className="astral-map-modal__header">
           <h2>{title}</h2>
           <div className="astral-map-modal__actions">
-            <button type="button" onClick={handleDownload}>
-              {labels.download}
+            <button type="button" onClick={handleDownloadPng}>
+              {labels.downloadPng}
+            </button>
+            <button type="button" onClick={handleDownloadPdf}>
+              {labels.downloadPdf}
             </button>
             <button type="button" onClick={onClose}>
               {labels.close}

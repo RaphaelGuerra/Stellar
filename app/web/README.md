@@ -20,6 +20,7 @@ A cosmic birth chart generator with personalized astrological interpretations. C
 - Timing modules: secondary progression, solar/lunar return, annual profection, Saturn return tracker
 - Relationship modules: synastry + composite + Davison charts
 - Astrocartography line generation
+- Export support: PNG/PDF astral map + JSON session export
 - Full accessibility and responsive design
 - All calculations run locally — no data leaves your device
 

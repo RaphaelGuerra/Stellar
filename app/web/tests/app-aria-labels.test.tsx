@@ -191,7 +191,7 @@ describe("App aria labels localization", () => {
       (mapHeading.compareDocumentPosition(normalizedHeading) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0
     ).toBe(true);
     expect(screen.getByRole("heading", { name: "Sun, Moon, Ascendant" })).toBeTruthy();
-    expect(screen.getAllByText("Houses: coming soon (not calculated yet)").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("House cusps calculated using the selected system.").length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole("button", { name: "Transits" }));
     expect(await screen.findByRole("heading", { name: "Today for Us" })).toBeTruthy();

@@ -56,6 +56,41 @@ export interface AstroEngineAdapter {
   generateChart(input: ChartInput, settings: ChartSettings): Promise<ChartResult>;
 }
 
+interface SwissRuntime {
+  swe: {
+    init: () => Promise<void>;
+    dateToJulianDay: (date: Date) => number;
+    calculatePosition: (julianDay: number, body: number, flags?: number) => { longitude: number };
+    calculateHouses: (
+      julianDay: number,
+      latitude: number,
+      longitude: number,
+      houseSystem: string
+    ) => { cusps: number[]; ascendant: number; mc: number; vertex: number };
+  };
+  constants: {
+    Planet: Record<PlanetName, number>;
+    LunarPoint: {
+      MeanNode: number;
+      TrueNode: number;
+      MeanApogee: number;
+    };
+    Asteroid: {
+      Chiron: number;
+    };
+    HouseSystem: {
+      Placidus: string;
+      Koch: string;
+      Equal: string;
+      WholeSign: string;
+    };
+    CalculationFlag: {
+      MoshierEphemeris: number;
+      Speed: number;
+    };
+  };
+}
+
 const PLANET_BODIES: Record<PlanetName, Body> = {
   Sun: Body.Sun,
   Moon: Body.Moon,
@@ -71,6 +106,38 @@ const PLANET_BODIES: Record<PlanetName, Body> = {
 
 const FORMATTER_CACHE = new Map<string, Intl.DateTimeFormat>();
 const OFFSET_STATS_CACHE = new Map<string, OffsetStats>();
+let SWISS_RUNTIME_PROMISE: Promise<SwissRuntime | null> | null = null;
+
+async function loadSwissRuntime(): Promise<SwissRuntime | null> {
+  if (SWISS_RUNTIME_PROMISE) return SWISS_RUNTIME_PROMISE;
+  SWISS_RUNTIME_PROMISE = (async () => {
+    try {
+      const module = await import("@swisseph/browser");
+      const swe = new module.SwissEphemeris();
+      await swe.init();
+      return {
+        swe: {
+          init: () => swe.init(),
+          dateToJulianDay: (date: Date) => swe.dateToJulianDay(date),
+          calculatePosition: (julianDay: number, body: number, flags?: number) =>
+            swe.calculatePosition(julianDay, body, flags),
+          calculateHouses: (julianDay: number, latitude: number, longitude: number, houseSystem: string) =>
+            swe.calculateHouses(julianDay, latitude, longitude, houseSystem as never),
+        },
+        constants: {
+          Planet: module.Planet as SwissRuntime["constants"]["Planet"],
+          LunarPoint: module.LunarPoint as SwissRuntime["constants"]["LunarPoint"],
+          Asteroid: module.Asteroid as SwissRuntime["constants"]["Asteroid"],
+          HouseSystem: module.HouseSystem as SwissRuntime["constants"]["HouseSystem"],
+          CalculationFlag: module.CalculationFlag as SwissRuntime["constants"]["CalculationFlag"],
+        },
+      };
+    } catch {
+      return null;
+    }
+  })();
+  return SWISS_RUNTIME_PROMISE;
+}
 
 function getFormatter(timeZone: string) {
   const cached = FORMATTER_CACHE.get(timeZone);
@@ -312,23 +379,22 @@ function buildPlanetMap(time: Date): Record<PlanetName, PlanetPlacement> {
   return result;
 }
 
-function buildAspects(time: Date, settings: ChartSettings): Aspect[] {
+function buildAspectsFromLongitudes(
+  longitudes: Readonly<Record<PlanetName, number>>,
+  settings: ChartSettings
+): Aspect[] {
   const aspects: Aspect[] = [];
-  const longitudes = new Map<PlanetName, number>();
-  for (const planet of PLANETS) {
-    longitudes.set(planet, getPlanetLongitude(PLANET_BODIES[planet], time));
-  }
   const orbMultiplier =
     settings.orbMode === "tight" ? 0.8 : settings.orbMode === "wide" ? 1.2 : 1;
 
   for (let i = 0; i < PLANETS.length; i++) {
     const a = PLANETS[i];
-    const lonA = longitudes.get(a);
-    if (lonA === undefined) continue;
+    const lonA = longitudes[a];
+    if (!Number.isFinite(lonA)) continue;
     for (let j = i + 1; j < PLANETS.length; j++) {
       const b = PLANETS[j];
-      const lonB = longitudes.get(b);
-      if (lonB === undefined) continue;
+      const lonB = longitudes[b];
+      if (!Number.isFinite(lonB)) continue;
       const delta = Math.abs(lonA - lonB);
       const separation = delta > 180 ? 360 - delta : delta;
       for (const aspect of ASPECT_DEFS) {
@@ -347,6 +413,14 @@ function buildAspects(time: Date, settings: ChartSettings): Aspect[] {
   }
   aspects.sort((left, right) => (left.orb ?? 0) - (right.orb ?? 0));
   return aspects;
+}
+
+function buildAspects(time: Date, settings: ChartSettings): Aspect[] {
+  const longitudes = {} as Record<PlanetName, number>;
+  for (const planet of PLANETS) {
+    longitudes[planet] = getPlanetLongitude(PLANET_BODIES[planet], time);
+  }
+  return buildAspectsFromLongitudes(longitudes, settings);
 }
 
 function calculateAscendantLongitude(time: Date, latitudeDegrees: number, longitudeDegrees: number): number {
@@ -391,6 +465,22 @@ function buildHouses(settings: ChartSettings, ascendantLongitude: number, warnin
 
   return Array.from({ length: 12 }, (_, index) => {
     const cuspLongitude = normalizeAngle(house1Longitude + index * 30);
+    const signPlacement = longitudeToSign(cuspLongitude);
+    return {
+      house: houseFromCusp(index),
+      sign: signPlacement.sign,
+      degree: signPlacement.degree,
+      longitude: cuspLongitude,
+      system: settings.houseSystem,
+    };
+  });
+}
+
+function buildHousePlacementsFromCusps(settings: ChartSettings, cusps: number[]): HousePlacement[] {
+  const hasLeadingPadding = cusps.length >= 13;
+  return Array.from({ length: 12 }, (_, index) => {
+    const raw = hasLeadingPadding ? cusps[index + 1] : cusps[index];
+    const cuspLongitude = normalizeAngle(Number.isFinite(raw) ? raw : index * 30);
     const signPlacement = longitudeToSign(cuspLongitude);
     return {
       house: houseFromCusp(index),
@@ -549,19 +639,156 @@ class SwissEphemerisAdapter implements AstroEngineAdapter {
   readonly name = "SwissEphemerisAdapter" as const;
   readonly engine = "swiss-ephemeris" as const;
   private readonly fallback = new AstronomyEngineAdapter();
+  private runtimePromise: Promise<SwissRuntime | null> | null = null;
+
+  private getRuntime() {
+    if (!this.runtimePromise) {
+      this.runtimePromise = loadSwissRuntime();
+    }
+    return this.runtimePromise;
+  }
+
+  private mapHouseSystem(
+    houseSystem: ChartSettings["houseSystem"],
+    swissHouseSystem: SwissRuntime["constants"]["HouseSystem"]
+  ): string {
+    if (houseSystem === "Placidus") return swissHouseSystem.Placidus;
+    if (houseSystem === "Koch") return swissHouseSystem.Koch;
+    if (houseSystem === "WholeSign") return swissHouseSystem.WholeSign;
+    return swissHouseSystem.Equal;
+  }
 
   async generateChart(input: ChartInput, settings: ChartSettings): Promise<ChartResult> {
-    const base = await this.fallback.generateChart(input, settings);
+    const runtime = await this.getRuntime();
+    if (!runtime) {
+      const base = await this.fallback.generateChart(input, settings);
+      return {
+        ...base,
+        meta: {
+          ...base.meta,
+          adapter: this.name,
+          warnings: [
+            "Swiss Ephemeris unavailable in this runtime; using astronomy-engine fallback.",
+            ...base.meta.warnings,
+          ],
+        },
+      };
+    }
+
+    const resolvedCity = input.location ?? resolveCity({ city: input.city, country: input.country });
+    const warnings: string[] = [];
+    const normalizedTime = computeNormalizedTime(input, resolvedCity.timezone);
+    const julianDay = runtime.swe.dateToJulianDay(normalizedTime.observationTime);
+    const calcFlags =
+      runtime.constants.CalculationFlag.MoshierEphemeris |
+      runtime.constants.CalculationFlag.Speed;
+
+    const planets = {} as Record<PlanetName, PlanetPlacement>;
+    const longitudes = {} as Record<PlanetName, number>;
+    for (const planet of PLANETS) {
+      const body = runtime.constants.Planet[planet];
+      const result = runtime.swe.calculatePosition(julianDay, body, calcFlags);
+      const longitude = normalizeAngle(result.longitude);
+      longitudes[planet] = longitude;
+      planets[planet] = placementFromLongitude(longitude);
+    }
+    const aspects = buildAspectsFromLongitudes(longitudes, settings);
+
+    const houseSystem = this.mapHouseSystem(settings.houseSystem, runtime.constants.HouseSystem);
+    const houseData = runtime.swe.calculateHouses(
+      julianDay,
+      resolvedCity.lat,
+      resolvedCity.lon,
+      houseSystem
+    );
+    const ascendantLongitude = normalizeAngle(houseData.ascendant);
+    const mcLongitude = normalizeAngle(houseData.mc);
+    const vertexLongitude = normalizeAngle(
+      Number.isFinite(houseData.vertex) ? houseData.vertex : ascendantLongitude + 90
+    );
+    const houses = buildHousePlacementsFromCusps(settings, houseData.cusps);
+
+    const safePointLongitude = (body: number): number | null => {
+      try {
+        const result = runtime.swe.calculatePosition(julianDay, body, calcFlags);
+        return normalizeAngle(result.longitude);
+      } catch {
+        return null;
+      }
+    };
+
+    const meanNodeLongitude = safePointLongitude(runtime.constants.LunarPoint.MeanNode);
+    const trueNodeLongitude = safePointLongitude(runtime.constants.LunarPoint.TrueNode);
+    const lilithLongitude = safePointLongitude(runtime.constants.LunarPoint.MeanApogee);
+    const chironLongitude = safePointLongitude(runtime.constants.Asteroid.Chiron);
+
+    if (meanNodeLongitude == null) warnings.push("Mean Node unavailable; using lunar approximation.");
+    if (trueNodeLongitude == null) warnings.push("True Node unavailable; using Mean Node approximation.");
+    if (lilithLongitude == null) warnings.push("Lilith unavailable; using mean-apogee approximation.");
+    if (chironLongitude == null) warnings.push("Chiron unavailable; using Saturn-relative approximation.");
+
+    const sunLongitude = planets.Sun.longitude ?? 0;
+    const moonLongitude = planets.Moon.longitude ?? 0;
+    const fortuneLongitude = normalizeAngle(ascendantLongitude + moonLongitude - sunLongitude);
+    const t = (julianDay - 2451545.0) / 36525;
+    const fallbackMeanNode = normalizeAngle(
+      125.04452 - 1934.136261 * t + 0.0020708 * t * t + (t * t * t) / 450000
+    );
+    const fallbackLilith = normalizeAngle(
+      83.3532465 + 4069.0137287 * t - 0.01032 * t * t - (t * t * t) / 80053
+    );
+
+    const points: Partial<Record<AstroPointName, PlanetPlacement>> = {};
+    for (const planet of PLANETS) {
+      points[planet] = planets[planet];
+    }
+    const derivedLongitudes: Partial<Record<AstroPointName, number>> = {
+      MeanNode: meanNodeLongitude ?? fallbackMeanNode,
+      TrueNode: trueNodeLongitude ?? meanNodeLongitude ?? fallbackMeanNode,
+      Lilith: lilithLongitude ?? fallbackLilith,
+      Chiron: chironLongitude ?? normalizeAngle((planets.Saturn.longitude ?? 0) + 120),
+      Fortune: fortuneLongitude,
+      Ascendant: ascendantLongitude,
+      Descendant: normalizeAngle(ascendantLongitude + 180),
+      MC: mcLongitude,
+      IC: normalizeAngle(mcLongitude + 180),
+      Vertex: vertexLongitude,
+    };
+    for (const [point, longitude] of Object.entries(derivedLongitudes) as Array<[AstroPointName, number]>) {
+      points[point] = placementFromLongitude(longitude);
+    }
+
     return {
-      ...base,
+      input,
+      settings,
+      normalized: {
+        localDateTime: normalizedTime.localDateTime,
+        utcDateTime: normalizedTime.utcDateTime,
+        timezone: resolvedCity.timezone,
+        offsetMinutes: normalizedTime.offsetMinutes,
+        daylightSaving: normalizedTime.daylightSaving,
+        location: {
+          lat: resolvedCity.lat,
+          lon: resolvedCity.lon,
+        },
+      },
+      points,
+      planets,
+      angles: {
+        ascendant: placementFromLongitude(ascendantLongitude),
+        descendant: placementFromLongitude(normalizeAngle(ascendantLongitude + 180)),
+        mc: placementFromLongitude(mcLongitude),
+        ic: placementFromLongitude(normalizeAngle(mcLongitude + 180)),
+        vertex: placementFromLongitude(vertexLongitude),
+      },
+      houses,
+      aspects,
+      pointAspects: undefined,
       meta: {
-        ...base.meta,
         engine: this.engine,
         adapter: this.name,
-        warnings: [
-          "Swiss Ephemeris adapter currently uses astronomy-engine fallback in this build.",
-          ...base.meta.warnings,
-        ],
+        settingsHash: serializeSettings(settings),
+        warnings,
       },
     };
   }

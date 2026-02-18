@@ -971,6 +971,45 @@ function App() {
     }
   }
 
+  function handleExportJson() {
+    if (!chart) return;
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      primaryArea,
+      analysisMode,
+      duoMode,
+      chartSettings,
+      chartA: chart,
+      chartB: analysisMode === "compatibility" ? chartB : null,
+      transits: transitFeed,
+      timing: {
+        progressed,
+        solarReturn,
+        lunarReturn,
+        profections,
+        saturnReturnHits,
+      },
+      relationships: {
+        compositeChart,
+        davisonChart,
+      },
+      atlas: astrocartography,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: "application/json;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const now = new Date();
+    const day = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(
+      now.getDate()
+    ).padStart(2, "0")}`;
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `stellar-export-${day}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   const formLabels = {
     date: isCarioca ? "Data" : "Date",
     time: isCarioca ? "Hora" : "Time",
@@ -1033,7 +1072,9 @@ function App() {
     aspectsTitle: isCarioca ? "Aspectos planetarios" : "Planetary aspects",
     aspectsBadge: (n: number) => isCarioca ? `${n} conexoes brabas` : `${n} connections`,
     sunMoonInsightsTitle: isCarioca ? "Insights de Sol e Lua" : "Sun and Moon insights",
-    housesStatus: isCarioca ? "Casas: em breve (ainda nao calculado)" : "Houses: coming soon (not calculated yet)",
+    housesStatus: isCarioca
+      ? "Casas calculadas no sistema selecionado."
+      : "House cusps calculated using the selected system.",
     astralMapTitle: isCarioca ? "Mapa astral visual" : "Astral map",
     astralMapBadge:
       analysisMode === "compatibility"
@@ -1060,9 +1101,11 @@ function App() {
     astralMapOpen: isCarioca ? "Abrir mapa em resolucao total" : "Open full-resolution map",
     astralMapModalTitle: isCarioca ? "Mapa astral em alta resolucao" : "Full-resolution astral map",
     astralMapClose: isCarioca ? "Fechar" : "Close",
-    astralMapDownload: isCarioca ? "Baixar PNG" : "Download PNG",
-    astralMapDownloadDone: isCarioca ? "PNG baixado com sucesso." : "PNG downloaded successfully.",
-    astralMapDownloadError: isCarioca ? "Nao foi possivel gerar o PNG." : "Could not generate PNG.",
+    astralMapDownloadPng: isCarioca ? "Baixar PNG" : "Download PNG",
+    astralMapDownloadPdf: isCarioca ? "Baixar PDF" : "Download PDF",
+    astralMapDownloadDonePng: isCarioca ? "PNG baixado com sucesso." : "PNG downloaded successfully.",
+    astralMapDownloadDonePdf: isCarioca ? "PDF baixado com sucesso." : "PDF downloaded successfully.",
+    astralMapDownloadError: isCarioca ? "Nao foi possivel gerar o arquivo." : "Could not generate file.",
     astralMapFilters: isCarioca ? "Filtro de aspectos" : "Aspect filters",
     astralMapAllAspects: isCarioca ? "Todos" : "All",
     astralMapLegendOuterA: isCarioca ? "anel externo" : "outer ring",
@@ -1071,8 +1114,8 @@ function App() {
     astralMapLegendTension: isCarioca ? "tensao" : "tension",
     astralMapLegendIntense: isCarioca ? "intenso" : "intense",
     astralMapHouseBeta: isCarioca
-      ? "Casas em modo beta: sistema equal-house a partir do Ascendente."
-      : "Houses are beta: equal-house system derived from Ascendant.",
+      ? "Casas seguem o sistema selecionado; fallback equal-house so se faltar dado."
+      : "Houses follow the selected system; equal-house is only a fallback when data is missing.",
     astralMapAscFallback: isCarioca
       ? "Ascendente ausente no dado salvo. Usando fallback em 0 deg Aries."
       : "Ascendant missing in saved data. Using fallback at 0deg Aries.",
@@ -1154,6 +1197,7 @@ function App() {
     duoModeFriend: isCarioca ? "Amizade" : "Friend",
     historyTitle: isCarioca ? "Historico salvo" : "Saved history",
     historyLoad: isCarioca ? "Carregar" : "Load",
+    exportJson: isCarioca ? "Exportar JSON" : "Export JSON",
     historySingle: isCarioca ? "Solo" : "Single",
     historyCompatibility: isCarioca ? "Sinastria" : "Compatibility",
     transitsTitle: isCarioca ? "Feed de transitos" : "Transit feed",
@@ -1419,6 +1463,14 @@ function App() {
                     </button>
                   </div>
                 </>
+              )}
+
+              {hasResults && (
+                <div className="form__row form__row--actions">
+                  <button type="button" className="btn-ghost" onClick={handleExportJson}>
+                    {t.exportJson}
+                  </button>
+                </div>
               )}
 
               <div className="privacy-controls" role="group" aria-label={ariaLabels.privacyControls}>
@@ -2033,8 +2085,10 @@ function App() {
         onClose={() => setIsMapModalOpen(false)}
         labels={{
           close: t.astralMapClose,
-          download: t.astralMapDownload,
-          downloadDone: t.astralMapDownloadDone,
+          downloadPng: t.astralMapDownloadPng,
+          downloadPdf: t.astralMapDownloadPdf,
+          downloadDonePng: t.astralMapDownloadDonePng,
+          downloadDonePdf: t.astralMapDownloadDonePdf,
           downloadError: t.astralMapDownloadError,
           filters: t.astralMapFilters,
           allAspects: t.astralMapAllAspects,

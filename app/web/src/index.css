@@ -507,6 +507,29 @@ body {
   box-shadow: none;
 }
 
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: 10px var(--space-lg);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--color-text-secondary);
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-ghost:hover {
+  color: var(--color-text);
+  border-color: var(--color-cyan);
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.18);
+}
+
 /* ===== Loading State ===== */
 .loading-state {
   display: flex;
