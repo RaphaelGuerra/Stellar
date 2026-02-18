@@ -1,4 +1,4 @@
-import type { AspectName, PlanetName, ZodiacSign } from "./types";
+import type { AspectName, AstroPointName, ChartSettings, HouseSystem, PlanetName, ZodiacSign } from "./types";
 
 export type ElementName = "fire" | "earth" | "air" | "water";
 
@@ -30,6 +30,30 @@ export const PLANETS: PlanetName[] = [
   "Pluto",
 ];
 
+export const ASTRO_POINTS: AstroPointName[] = [
+  ...PLANETS,
+  "TrueNode",
+  "MeanNode",
+  "Chiron",
+  "Lilith",
+  "Fortune",
+  "Ascendant",
+  "Descendant",
+  "MC",
+  "IC",
+  "Vertex",
+];
+
+export const HOUSE_SYSTEMS: HouseSystem[] = ["Placidus", "WholeSign", "Equal", "Koch"];
+
+export const DEFAULT_CHART_SETTINGS: ChartSettings = {
+  zodiac: "tropical",
+  houseSystem: "Placidus",
+  aspectProfile: "major",
+  orbMode: "standard",
+  includeMinorAspects: false,
+};
+
 export const PLANET_SYMBOL: Record<PlanetName, string> = {
   Sun: "\u2609",
   Moon: "\u263D",
@@ -41,6 +65,20 @@ export const PLANET_SYMBOL: Record<PlanetName, string> = {
   Uranus: "\u2645",
   Neptune: "\u2646",
   Pluto: "\u2647",
+};
+
+export const POINT_SYMBOL: Record<AstroPointName, string> = {
+  ...PLANET_SYMBOL,
+  TrueNode: "\u260A",
+  MeanNode: "\u260B",
+  Chiron: "\u26B7",
+  Lilith: "\u26B8",
+  Fortune: "\u2297",
+  Ascendant: "ASC",
+  Descendant: "DSC",
+  MC: "MC",
+  IC: "IC",
+  Vertex: "VTX",
 };
 
 export const SIGN_SYMBOL: Record<ZodiacSign, string> = {
@@ -112,10 +150,37 @@ export function getPlanetSymbol(planet: PlanetName): string {
   return PLANET_SYMBOL[planet];
 }
 
+export function getPointSymbol(point: AstroPointName): string {
+  return POINT_SYMBOL[point];
+}
+
 export function getSignSymbol(sign: ZodiacSign): string {
   return SIGN_SYMBOL[sign];
 }
 
 export function getElement(sign: ZodiacSign): ElementName {
   return SIGN_ELEMENT[sign];
+}
+
+export function normalizeChartSettings(settings?: Partial<ChartSettings>): ChartSettings {
+  return {
+    zodiac: "tropical",
+    houseSystem: settings?.houseSystem ?? DEFAULT_CHART_SETTINGS.houseSystem,
+    aspectProfile: settings?.aspectProfile ?? DEFAULT_CHART_SETTINGS.aspectProfile,
+    orbMode: settings?.orbMode ?? DEFAULT_CHART_SETTINGS.orbMode,
+    includeMinorAspects:
+      typeof settings?.includeMinorAspects === "boolean"
+        ? settings.includeMinorAspects
+        : DEFAULT_CHART_SETTINGS.includeMinorAspects,
+  };
+}
+
+export function serializeSettings(settings: ChartSettings): string {
+  return JSON.stringify({
+    zodiac: settings.zodiac,
+    houseSystem: settings.houseSystem,
+    aspectProfile: settings.aspectProfile,
+    orbMode: settings.orbMode,
+    includeMinorAspects: settings.includeMinorAspects,
+  });
 }

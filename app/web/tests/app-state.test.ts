@@ -50,8 +50,16 @@ afterEach(() => {
 describe("app state persistence", () => {
   it("writes and reads persisted app state", () => {
     const state: PersistedAppState = {
+      primaryArea: "relationships",
       analysisMode: "compatibility",
       duoMode: "friend",
+      chartSettings: {
+        zodiac: "tropical",
+        houseSystem: "WholeSign",
+        aspectProfile: "major",
+        orbMode: "tight",
+        includeMinorAspects: true,
+      },
       personA: {
         date: "1991-05-10",
         time: "08:30",
@@ -78,8 +86,10 @@ describe("app state persistence", () => {
     const loaded = readPersistedAppState();
 
     expect(loaded).not.toBeNull();
+    expect(loaded?.primaryArea).toBe("relationships");
     expect(loaded?.analysisMode).toBe("compatibility");
     expect(loaded?.duoMode).toBe("friend");
+    expect(loaded?.chartSettings.houseSystem).toBe("WholeSign");
     expect(loaded?.personA.locationInput).toBe("Rio de Janeiro, BR");
     expect(loaded?.personB.daylightSaving).toBe(false);
     expect(loaded?.progression.xp).toBe(120);
@@ -94,6 +104,8 @@ describe("app state persistence", () => {
     expect(loaded).not.toBeNull();
     expect(loaded?.analysisMode).toBe("single");
     expect(loaded?.duoMode).toBe("romantic");
+    expect(loaded?.primaryArea).toBe("chart");
+    expect(loaded?.chartSettings.houseSystem).toBe("Placidus");
     expect(loaded?.personA.locationInput).toBe("Rio de Janeiro, BR");
     expect(loaded?.history).toEqual([]);
     expect(loaded?.progression).toEqual({
@@ -117,6 +129,14 @@ describe("app state persistence", () => {
         state: {
           analysisMode: "single",
           duoMode: "romantic",
+          primaryArea: "chart",
+          chartSettings: {
+            zodiac: "tropical",
+            houseSystem: "Placidus",
+            aspectProfile: "major",
+            orbMode: "standard",
+            includeMinorAspects: false,
+          },
           personA: {
             date: "1990-01-01",
             time: "12:00",
@@ -156,8 +176,16 @@ describe("app state persistence", () => {
 
   it("clears persisted app state on demand", () => {
     writePersistedAppState({
+      primaryArea: "chart",
       analysisMode: "single",
       duoMode: "romantic",
+      chartSettings: {
+        zodiac: "tropical",
+        houseSystem: "Placidus",
+        aspectProfile: "major",
+        orbMode: "standard",
+        includeMinorAspects: false,
+      },
       personA: {
         date: "1990-01-01",
         time: "12:00",
@@ -182,5 +210,44 @@ describe("app state persistence", () => {
     expect(window.localStorage.getItem(APP_STATE_STORAGE_KEY)).not.toBeNull();
     clearPersistedAppState();
     expect(window.localStorage.getItem(APP_STATE_STORAGE_KEY)).toBeNull();
+  });
+
+  it("migrates v2 payloads without primaryArea or chartSettings into v3 defaults", () => {
+    window.localStorage.setItem(
+      APP_STATE_STORAGE_KEY,
+      JSON.stringify({
+        schemaVersion: 2,
+        updatedAt: new Date().toISOString(),
+        state: {
+          analysisMode: "compatibility",
+          duoMode: "romantic",
+          personA: {
+            date: "1990-01-01",
+            time: "12:00",
+            daylightSaving: "auto",
+            locationInput: "Rio de Janeiro, BR",
+          },
+          personB: {
+            date: "1992-02-02",
+            time: "18:00",
+            daylightSaving: "auto",
+            locationInput: "New York, US",
+          },
+          history: [],
+          progression: {
+            xp: 0,
+            streak: 0,
+            completedQuestIds: [],
+            reflectedQuestIds: [],
+          },
+        },
+      })
+    );
+
+    const loaded = readPersistedAppState();
+    expect(loaded).not.toBeNull();
+    expect(loaded?.primaryArea).toBe("chart");
+    expect(loaded?.chartSettings.houseSystem).toBe("Placidus");
+    expect(loaded?.analysisMode).toBe("compatibility");
   });
 });

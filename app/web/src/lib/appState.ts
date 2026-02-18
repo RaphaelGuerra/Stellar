@@ -1,4 +1,5 @@
-import type { ChartResult, DuoMode } from "./types";
+import type { ChartResult, ChartSettings, DuoMode, PrimaryArea } from "./types";
+import { DEFAULT_CHART_SETTINGS, normalizeChartSettings } from "./constants";
 import {
   DEFAULT_PROGRESSION_STATE,
   type ProgressionState,
@@ -23,8 +24,10 @@ export interface PersistedHistoryEntry {
 }
 
 export interface PersistedAppState {
+  primaryArea: PrimaryArea;
   analysisMode: PersistedAnalysisMode;
   duoMode: DuoMode;
+  chartSettings: ChartSettings;
   personA: PersistedPersonState;
   personB: PersistedPersonState;
   lastChartA?: ChartResult;
@@ -39,7 +42,7 @@ export const HISTORY_LIMIT = 12;
 export const APP_STATE_RETENTION_DAYS = 30;
 const PROGRESSION_IDS_LIMIT = 160;
 const APP_STATE_MAX_AGE_MS = APP_STATE_RETENTION_DAYS * 24 * 60 * 60 * 1000;
-const APP_STATE_SCHEMA_VERSION = 2;
+const APP_STATE_SCHEMA_VERSION = 3;
 const PRIVACY_SCHEMA_VERSION = 1;
 
 export interface PersistedPrivacySettings {
@@ -68,6 +71,17 @@ function isAnalysisMode(value: unknown): value is PersistedAnalysisMode {
 
 function isDuoMode(value: unknown): value is DuoMode {
   return value === "romantic" || value === "friend";
+}
+
+function isPrimaryArea(value: unknown): value is PrimaryArea {
+  return (
+    value === "chart" ||
+    value === "transits" ||
+    value === "timing" ||
+    value === "relationships" ||
+    value === "atlas" ||
+    value === "library"
+  );
 }
 
 function isChartResult(value: unknown): value is ChartResult {
@@ -196,8 +210,12 @@ export function readPersistedAppState(): PersistedAppState | null {
     const duoMode = isDuoMode(payload.duoMode) ? payload.duoMode : "romantic";
 
     return {
+      primaryArea: isPrimaryArea(payload.primaryArea) ? payload.primaryArea : "chart",
       analysisMode,
       duoMode,
+      chartSettings: normalizeChartSettings(
+        isObject(payload.chartSettings) ? (payload.chartSettings as Partial<ChartSettings>) : DEFAULT_CHART_SETTINGS
+      ),
       personA: normalizePersonState(payload.personA, "Rio de Janeiro, BR"),
       personB: normalizePersonState(payload.personB, "New York, US"),
       lastChartA: isChartResult(payload.lastChartA) ? payload.lastChartA : undefined,

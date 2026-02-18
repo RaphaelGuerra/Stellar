@@ -10,11 +10,21 @@ import { AstralMapThumbnail } from "./components/AstralMapThumbnail";
 import { AstralMapModal } from "./components/AstralMapModal";
 import { MatchScorecards } from "./components/MatchScorecards";
 import { buildCards, buildPlacementsSummary, type CardModel, type PlacementSummary } from "./lib/cards";
-import { AmbiguousLocalTimeError, NonexistentLocalTimeError, generateChart } from "./lib/engine";
+import {
+  AmbiguousLocalTimeError,
+  NonexistentLocalTimeError,
+  type AnnualProfectionResult,
+  type AstrocartographyResult,
+  type ReturnChartResult,
+  type SecondaryProgressionResult,
+  type TransitRangeResult,
+} from "./lib/engine";
 import { buildChartComparison } from "./lib/synastry";
 import { buildDailyTransitOutlook } from "./lib/transits";
 import { buildAstralMapModelCompatibility, buildAstralMapModelSingle } from "./lib/astralMap";
 import { buildMatchScorecards } from "./lib/matchScorecards";
+import { generateChartInWorker, runAstroWorkerTask } from "./lib/astroWorkerClient";
+import { DEFAULT_CHART_SETTINGS, HOUSE_SYSTEMS } from "./lib/constants";
 import {
   ADVANCED_OVERLAYS_UNLOCK_XP,
   DEFAULT_PROGRESSION_STATE,
@@ -48,7 +58,15 @@ import {
 import { validateChartInput, type ValidationErrorCode } from "./lib/validation";
 import { useGeoSearch, resolveLocationCandidates, type GeoSuggestion } from "./lib/useGeoSearch";
 import { SUPPORTED_CITIES } from "./lib/resolveCity";
-import type { ChartInput, ChartResult, DuoMode, LifeArea, PlanetPlacement } from "./lib/types";
+import type {
+  ChartInput,
+  ChartResult,
+  ChartSettings,
+  DuoMode,
+  LifeArea,
+  PlanetPlacement,
+  PrimaryArea,
+} from "./lib/types";
 
 type AnalysisMode = "single" | "compatibility";
 
@@ -125,13 +143,21 @@ function formatValidationMessages(errors: readonly ValidationErrorCode[], isCari
   return errors.map((code) => dictionary[code]);
 }
 
+function hasErrorName(error: unknown, name: string): boolean {
+  if (error instanceof Error && error.name === name) return true;
+  if (typeof error === "object" && error !== null && "name" in error) {
+    return (error as { name?: unknown }).name === name;
+  }
+  return false;
+}
+
 function formatRuntimeError(error: unknown, isCarioca: boolean): string {
-  if (error instanceof NonexistentLocalTimeError) {
+  if (error instanceof NonexistentLocalTimeError || hasErrorName(error, "NonexistentLocalTimeError")) {
     return isCarioca
       ? "Esse horario nem existe nessa cidade, porra. Ajusta a hora e tenta de novo."
       : "That local time does not exist in this timezone. Please adjust the time and try again.";
   }
-  if (error instanceof AmbiguousLocalTimeError) {
+  if (error instanceof AmbiguousLocalTimeError || hasErrorName(error, "AmbiguousLocalTimeError")) {
     return isCarioca
       ? "Esse horario ficou duplicado por causa de horario de verao. Escolhe Sim ou Nao e manda brasa."
       : "That local time is ambiguous due to daylight saving time. Choose Yes or No for daylight saving and try again.";
@@ -213,7 +239,11 @@ function App() {
   const [analysisMode, setAnalysisMode] = useState<AnalysisMode>(
     () => persisted?.analysisMode ?? "single"
   );
+  const [primaryArea, setPrimaryArea] = useState<PrimaryArea>(() => persisted?.primaryArea ?? "chart");
   const [duoMode, setDuoMode] = useState<DuoMode>(() => persisted?.duoMode ?? "romantic");
+  const [chartSettings, setChartSettings] = useState<ChartSettings>(
+    () => persisted?.chartSettings ?? DEFAULT_CHART_SETTINGS
+  );
 
   // Person A state
   const [dateA, setDateA] = useState(() => persisted?.personA.date ?? "1990-01-01");
@@ -258,6 +288,16 @@ function App() {
   const [geoRestored, setGeoRestored] = useState(false);
   const [showShootingStar, setShowShootingStar] = useState(false);
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
+  const [transitRange, setTransitRange] = useState<7 | 30>(7);
+  const [transitFeed, setTransitFeed] = useState<TransitRangeResult | null>(null);
+  const [progressed, setProgressed] = useState<SecondaryProgressionResult | null>(null);
+  const [solarReturn, setSolarReturn] = useState<ReturnChartResult | null>(null);
+  const [lunarReturn, setLunarReturn] = useState<ReturnChartResult | null>(null);
+  const [profections, setProfections] = useState<AnnualProfectionResult | null>(null);
+  const [saturnReturnHits, setSaturnReturnHits] = useState<Array<{ date: string; orb: number }> | null>(null);
+  const [compositeChart, setCompositeChart] = useState<ChartResult | null>(null);
+  const [davisonChart, setDavisonChart] = useState<ChartResult | null>(null);
+  const [astrocartography, setAstrocartography] = useState<AstrocartographyResult | null>(null);
 
   // Clear stale state when switching analysis mode
   useEffect(() => {
@@ -306,8 +346,10 @@ function App() {
   useEffect(() => {
     if (!persistLocalData) return;
     writePersistedAppState({
+      primaryArea,
       analysisMode,
       duoMode,
+      chartSettings,
       personA: {
         date: dateA,
         time: timeA,
@@ -327,6 +369,7 @@ function App() {
     });
   }, [
     analysisMode,
+    chartSettings,
     chart,
     chartB,
     dateA,
@@ -338,6 +381,7 @@ function App() {
     geoB.locationInput,
     history,
     persistLocalData,
+    primaryArea,
     progression,
     timeA,
     timeB,
@@ -467,6 +511,155 @@ function App() {
     setIsMapModalOpen(false);
   }, [astralMapModel]);
 
+  useEffect(() => {
+    if (!chart) {
+      setTransitFeed(null);
+      setProgressed(null);
+      setSolarReturn(null);
+      setLunarReturn(null);
+      setProfections(null);
+      setSaturnReturnHits(null);
+      setAstrocartography(null);
+      return;
+    }
+    if (primaryArea !== "transits" && primaryArea !== "timing" && primaryArea !== "atlas") {
+      return;
+    }
+    let canceled = false;
+    const now = new Date();
+    const start = now.toISOString().slice(0, 10);
+    const endDate = new Date(now.getTime() + (transitRange - 1) * 86400000);
+    const end = endDate.toISOString().slice(0, 10);
+    const progressionDate = new Date(now.getTime() + 30 * 86400000).toISOString().slice(0, 10);
+    const lunarMonth = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+    if (primaryArea === "transits") {
+      runAstroWorkerTask<TransitRangeResult>({
+        type: "generateTransits",
+        baseChart: chart,
+        range: { from: start, to: end },
+        settings: chartSettings,
+      })
+        .then((nextTransitFeed) => {
+          if (canceled) return;
+          setTransitFeed(nextTransitFeed);
+        })
+        .catch(() => {
+          if (canceled) return;
+          setTransitFeed(null);
+        });
+    }
+    if (primaryArea === "timing") {
+      Promise.all([
+        runAstroWorkerTask<SecondaryProgressionResult>({
+          type: "generateSecondaryProgressions",
+          baseChart: chart,
+          date: progressionDate,
+          settings: chartSettings,
+        }),
+        runAstroWorkerTask<ReturnChartResult>({
+          type: "generateSolarReturn",
+          baseChart: chart,
+          year: now.getUTCFullYear(),
+          settings: chartSettings,
+        }),
+        runAstroWorkerTask<ReturnChartResult>({
+          type: "generateLunarReturn",
+          baseChart: chart,
+          month: lunarMonth,
+          settings: chartSettings,
+        }),
+        runAstroWorkerTask<AnnualProfectionResult>({
+          type: "generateAnnualProfections",
+          baseChart: chart,
+        }),
+      ])
+        .then(([nextProgressed, nextSolarReturn, nextLunarReturn, nextProfections]) => {
+          if (canceled) return;
+          setProgressed(nextProgressed);
+          setSolarReturn(nextSolarReturn);
+          setLunarReturn(nextLunarReturn);
+          setProfections(nextProfections);
+        })
+        .catch(() => {
+          if (canceled) return;
+          setProgressed(null);
+          setSolarReturn(null);
+          setLunarReturn(null);
+          setProfections(null);
+        });
+      runAstroWorkerTask<Array<{ date: string; orb: number }>>({
+        type: "generateSaturnReturnTracker",
+        baseChart: chart,
+        settings: chartSettings,
+      })
+        .then((nextSaturnHits) => {
+          if (canceled) return;
+          setSaturnReturnHits(nextSaturnHits);
+        })
+        .catch(() => {
+          if (canceled) return;
+          setSaturnReturnHits(null);
+        });
+    }
+    if (primaryArea === "atlas") {
+      runAstroWorkerTask<AstrocartographyResult>({
+        type: "generateAstrocartography",
+        baseChart: chart,
+        settings: chartSettings,
+      })
+        .then((nextAstrocartography) => {
+          if (canceled) return;
+          setAstrocartography(nextAstrocartography);
+        })
+        .catch(() => {
+          if (canceled) return;
+          setAstrocartography(null);
+        });
+    }
+
+    return () => {
+      canceled = true;
+    };
+  }, [chart, chartSettings, primaryArea, transitRange]);
+
+  useEffect(() => {
+    if (analysisMode !== "compatibility" || !chart || !chartB) {
+      setCompositeChart(null);
+      setDavisonChart(null);
+      return;
+    }
+    let canceled = false;
+    Promise.all([
+      runAstroWorkerTask<ChartResult>({
+        type: "generateComposite",
+        chartA: chart,
+        chartB,
+        method: "midpoint",
+        settings: chartSettings,
+      }),
+      runAstroWorkerTask<ChartResult>({
+        type: "generateComposite",
+        chartA: chart,
+        chartB,
+        method: "davison",
+        settings: chartSettings,
+      }),
+    ])
+      .then(([midpoint, davison]) => {
+        if (canceled) return;
+        setCompositeChart(midpoint);
+        setDavisonChart(davison);
+      })
+      .catch(() => {
+        if (canceled) return;
+        setCompositeChart(null);
+        setDavisonChart(null);
+      });
+    return () => {
+      canceled = true;
+    };
+  }, [analysisMode, chart, chartB, chartSettings]);
+
   const advancedUnlocked = isAdvancedOverlaysUnlocked(progression.xp);
   const advancedUnlockTarget = getAdvancedOverlaysUnlockXp(progression.xp);
 
@@ -490,8 +683,10 @@ function App() {
 
   function handleClearLocalData() {
     clearPersistedAppState();
+    setPrimaryArea("chart");
     setAnalysisMode("single");
     setDuoMode("romantic");
+    setChartSettings(DEFAULT_CHART_SETTINGS);
     setDateA("1990-01-01");
     setTimeA("12:00");
     setDaylightSavingA("auto");
@@ -513,6 +708,16 @@ function App() {
     setHistory([]);
     setProgression(DEFAULT_PROGRESSION_STATE);
     setForecastRange(7);
+    setTransitRange(7);
+    setTransitFeed(null);
+    setProgressed(null);
+    setSolarReturn(null);
+    setLunarReturn(null);
+    setProfections(null);
+    setSaturnReturnHits(null);
+    setCompositeChart(null);
+    setDavisonChart(null);
+    setAstrocartography(null);
     setError(null);
     setResultVersion((prev) => prev + 1);
   }
@@ -695,7 +900,7 @@ function App() {
       if (!inputA) return;
 
       if (analysisMode === "single") {
-        const newChart = await generateChart(inputA);
+        const newChart = await generateChartInWorker(inputA, chartSettings);
         setChart(newChart);
         setChartB(null);
         setCards(buildCards(content, newChart, mode));
@@ -718,14 +923,14 @@ function App() {
       const personALabel = isCarioca ? "Pessoa A" : "Person A";
       const personBLabel = isCarioca ? "Pessoa B" : "Person B";
       const [resultA, resultB] = await Promise.allSettled([
-        generateChart(inputA),
-        generateChart(inputResolvedB),
+        generateChartInWorker(inputA, chartSettings),
+        generateChartInWorker(inputResolvedB, chartSettings),
       ]);
 
       const ambiguousA =
-        resultA.status === "rejected" && resultA.reason instanceof AmbiguousLocalTimeError;
+        resultA.status === "rejected" && hasErrorName(resultA.reason, "AmbiguousLocalTimeError");
       const ambiguousB =
-        resultB.status === "rejected" && resultB.reason instanceof AmbiguousLocalTimeError;
+        resultB.status === "rejected" && hasErrorName(resultB.reason, "AmbiguousLocalTimeError");
       setShowDaylightSavingOverrideA(ambiguousA);
       setShowDaylightSavingOverrideB(ambiguousB);
 
@@ -757,7 +962,7 @@ function App() {
       });
       setResultVersion((prev) => prev + 1);
     } catch (err) {
-      if (err instanceof AmbiguousLocalTimeError) {
+      if (hasErrorName(err, "AmbiguousLocalTimeError")) {
         setShowDaylightSavingOverrideA(true);
       }
       setError(formatRuntimeError(err, isCarioca));
@@ -792,6 +997,19 @@ function App() {
 
   const t = {
     modeLabel: isCarioca ? "Carioca raiz, porra" : "English",
+    areaChart: isCarioca ? "Mapa" : "Chart",
+    areaTransits: isCarioca ? "Transitos" : "Transits",
+    areaTiming: isCarioca ? "Timing" : "Timing",
+    areaRelationships: isCarioca ? "Relacoes" : "Relationships",
+    areaAtlas: isCarioca ? "Atlas" : "Atlas",
+    areaLibrary: isCarioca ? "Biblioteca" : "Library",
+    settingsTitle: isCarioca ? "Configuracoes do mapa" : "Chart settings",
+    settingsHouseSystem: isCarioca ? "Sistema de casas" : "House system",
+    settingsOrbMode: isCarioca ? "Modo de orb" : "Orb mode",
+    settingsMinorAspects: isCarioca ? "Incluir aspectos menores" : "Include minor aspects",
+    orbStandard: isCarioca ? "Padrao" : "Standard",
+    orbTight: isCarioca ? "Apertado" : "Tight",
+    orbWide: isCarioca ? "Amplo" : "Wide",
     singleMode: isCarioca ? "Mapa solo bolado" : "Single chart",
     compatibilityMode: isCarioca ? "Sinastria braba" : "Compatibility",
     personA: isCarioca ? "Pessoa A (tu)" : "Person A",
@@ -938,6 +1156,20 @@ function App() {
     historyLoad: isCarioca ? "Carregar" : "Load",
     historySingle: isCarioca ? "Solo" : "Single",
     historyCompatibility: isCarioca ? "Sinastria" : "Compatibility",
+    transitsTitle: isCarioca ? "Feed de transitos" : "Transit feed",
+    transitsExactHits: isCarioca ? "Aspectos exatos" : "Exact hits",
+    transitsStrongest: isCarioca ? "Mais fortes do dia" : "Strongest today",
+    timingTitle: isCarioca ? "Timing astrologico" : "Astrology timing",
+    timingProgressed: isCarioca ? "Progressoes secundarias" : "Secondary progression",
+    timingSolarReturn: isCarioca ? "Retorno solar" : "Solar return",
+    timingLunarReturn: isCarioca ? "Retorno lunar" : "Lunar return",
+    timingProfection: isCarioca ? "Profeccao anual" : "Annual profection",
+    timingSaturnReturn: isCarioca ? "Saturn return tracker" : "Saturn return tracker",
+    relationshipsComposite: isCarioca ? "Mapa composto" : "Composite chart",
+    relationshipsDavison: isCarioca ? "Mapa Davison" : "Davison chart",
+    atlasTitle: isCarioca ? "Astrocartografia" : "Astrocartography",
+    libraryTitle: isCarioca ? "Biblioteca astrologica" : "Astrology library",
+    libraryGlossary: isCarioca ? "Glossario em andamento (fase 6)." : "Glossary in progress (phase 6).",
     privacyTitle: isCarioca ? "Privacidade local" : "Local privacy",
     privacyPersist: isCarioca
       ? "Salvar dados neste dispositivo"
@@ -959,6 +1191,7 @@ function App() {
     contentMode: isCarioca ? "Modo de conteudo" : "Content mode",
     duoMode: isCarioca ? "Modo de dupla" : "Duo mode",
     privacyControls: isCarioca ? "Controles de privacidade local" : "Local privacy controls",
+    primaryArea: isCarioca ? "Area principal" : "Primary area",
   };
   const cardExpandLabels = isCarioca
     ? { more: "Abrir mais", less: "Fechar" }
@@ -971,6 +1204,14 @@ function App() {
   const hasResults =
     (analysisMode === "single" && chart != null) ||
     (analysisMode === "compatibility" && chart != null && chartB != null);
+  const primaryAreas: Array<{ key: PrimaryArea; label: string }> = [
+    { key: "chart", label: t.areaChart },
+    { key: "transits", label: t.areaTransits },
+    { key: "timing", label: t.areaTiming },
+    { key: "relationships", label: t.areaRelationships },
+    { key: "atlas", label: t.areaAtlas },
+    { key: "library", label: t.areaLibrary },
+  ];
 
   return (
     <>
@@ -1009,6 +1250,19 @@ function App() {
         <main role="main" aria-label={ariaLabels.chartGenerator}>
           <section className={`action-section ${hasResults ? "action-section--compact" : ""}`}>
             <form className="form" onSubmit={handleGenerateChart} aria-label={ariaLabels.birthDataForm}>
+              <div className="analysis-mode" role="group" aria-label={ariaLabels.primaryArea}>
+                {primaryAreas.map((area) => (
+                  <button
+                    key={area.key}
+                    type="button"
+                    className={`analysis-mode__btn ${primaryArea === area.key ? "analysis-mode__btn--active" : ""}`}
+                    onClick={() => setPrimaryArea(area.key)}
+                  >
+                    {area.label}
+                  </button>
+                ))}
+              </div>
+
               <div className="analysis-mode" role="group" aria-label={ariaLabels.analysisMode}>
                 <button
                   type="button"
@@ -1030,6 +1284,57 @@ function App() {
                 >
                   {t.compatibilityMode}
                 </button>
+              </div>
+
+              <div className="privacy-controls" role="group" aria-label={t.settingsTitle}>
+                <p className="privacy-controls__title">{t.settingsTitle}</p>
+                <label className="privacy-controls__toggle">
+                  <span>{t.settingsHouseSystem}</span>
+                  <select
+                    value={chartSettings.houseSystem}
+                    onChange={(event) =>
+                      setChartSettings((current) => ({
+                        ...current,
+                        houseSystem: event.target.value as ChartSettings["houseSystem"],
+                      }))
+                    }
+                  >
+                    {HOUSE_SYSTEMS.map((system) => (
+                      <option key={system} value={system}>
+                        {system}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="privacy-controls__toggle">
+                  <span>{t.settingsOrbMode}</span>
+                  <select
+                    value={chartSettings.orbMode}
+                    onChange={(event) =>
+                      setChartSettings((current) => ({
+                        ...current,
+                        orbMode: event.target.value as ChartSettings["orbMode"],
+                      }))
+                    }
+                  >
+                    <option value="standard">{t.orbStandard}</option>
+                    <option value="tight">{t.orbTight}</option>
+                    <option value="wide">{t.orbWide}</option>
+                  </select>
+                </label>
+                <label className="privacy-controls__toggle">
+                  <input
+                    type="checkbox"
+                    checked={chartSettings.includeMinorAspects}
+                    onChange={(event) =>
+                      setChartSettings((current) => ({
+                        ...current,
+                        includeMinorAspects: event.target.checked,
+                      }))
+                    }
+                  />
+                  <span>{t.settingsMinorAspects}</span>
+                </label>
               </div>
 
               {analysisMode === "compatibility" && (
@@ -1219,6 +1524,7 @@ function App() {
                 <p>
                   {t.dstLabel}: {chart.normalized.daylightSaving ? formLabels.yes : formLabels.no}
                 </p>
+                <p>{t.settingsHouseSystem}: {chart.settings?.houseSystem ?? chartSettings.houseSystem}</p>
                 <p>{t.housesStatus}</p>
               </div>
             </Section>
@@ -1244,6 +1550,7 @@ function App() {
                   <p>{t.timezoneLabel}: {chart.normalized.timezone}</p>
                   <p>{t.utcLabel}: {chart.normalized.utcDateTime}</p>
                   <p>{t.dstLabel}: {chart.normalized.daylightSaving ? formLabels.yes : formLabels.no}</p>
+                  <p>{t.settingsHouseSystem}: {chart.settings?.houseSystem ?? chartSettings.houseSystem}</p>
                   <p>{t.housesStatus}</p>
                 </div>
                 <div className="normalized__card">
@@ -1253,6 +1560,7 @@ function App() {
                   <p>{t.timezoneLabel}: {chartB.normalized.timezone}</p>
                   <p>{t.utcLabel}: {chartB.normalized.utcDateTime}</p>
                   <p>{t.dstLabel}: {chartB.normalized.daylightSaving ? formLabels.yes : formLabels.no}</p>
+                  <p>{t.settingsHouseSystem}: {chartB.settings?.houseSystem ?? chartSettings.houseSystem}</p>
                   <p>{t.housesStatus}</p>
                 </div>
               </div>
@@ -1508,6 +1816,132 @@ function App() {
                     <p className="timeline-day__summary">{day.summary}</p>
                   </div>
                 ))}
+              </div>
+            </Section>
+          )}
+
+          {!loading && primaryArea === "transits" && chart && transitFeed && (
+            <Section icon="🌗" title={t.transitsTitle} badge={`${transitRange}d`}>
+              <div className="timeline-controls" role="group" aria-label={t.transitsTitle}>
+                <button
+                  type="button"
+                  className={`timeline-controls__btn ${transitRange === 7 ? "timeline-controls__btn--active" : ""}`}
+                  onClick={() => setTransitRange(7)}
+                >
+                  7d
+                </button>
+                <button
+                  type="button"
+                  className={`timeline-controls__btn ${transitRange === 30 ? "timeline-controls__btn--active" : ""}`}
+                  onClick={() => setTransitRange(30)}
+                >
+                  30d
+                </button>
+              </div>
+              <div className="timeline-meta">
+                <p><strong>{t.transitsExactHits}:</strong> {transitFeed.exactHits.length}</p>
+              </div>
+              <div className="timeline-grid">
+                {transitFeed.days.slice(0, 10).map((day) => (
+                  <div key={day.date} className="timeline-day">
+                    <p className="timeline-day__date">{day.date}</p>
+                    <p className="timeline-day__summary">{t.transitsStrongest}</p>
+                    {day.strongestHits.slice(0, 3).map((hit) => (
+                      <p key={`${day.date}-${hit.transitPlanet}-${hit.natalPlanet}-${hit.aspect}`} className="timeline-day__summary">
+                        {hit.transitPlanet} {hit.aspect} {hit.natalPlanet} (orb {hit.orb.toFixed(1)}deg)
+                      </p>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </Section>
+          )}
+
+          {!loading && primaryArea === "timing" && chart && (
+            <Section icon="⏳" title={t.timingTitle} badge={chartSettings.houseSystem}>
+              <div className="timeline-grid">
+                {progressed && (
+                  <div className="timeline-day">
+                    <p className="timeline-day__date">{t.timingProgressed}</p>
+                    <p className="timeline-day__summary">{progressed.progressedDate}</p>
+                    <p className="timeline-day__summary">Age: {progressed.ageYears}</p>
+                  </div>
+                )}
+                {solarReturn && (
+                  <div className="timeline-day">
+                    <p className="timeline-day__date">{t.timingSolarReturn}</p>
+                    <p className="timeline-day__summary">{solarReturn.exactDateTimeUtc}</p>
+                  </div>
+                )}
+                {lunarReturn && (
+                  <div className="timeline-day">
+                    <p className="timeline-day__date">{t.timingLunarReturn}</p>
+                    <p className="timeline-day__summary">{lunarReturn.exactDateTimeUtc}</p>
+                  </div>
+                )}
+                {profections && (
+                  <div className="timeline-day">
+                    <p className="timeline-day__date">{t.timingProfection}</p>
+                    <p className="timeline-day__summary">Age {profections.age}</p>
+                    <p className="timeline-day__summary">House {profections.profectedHouse} · {profections.profectedSign}</p>
+                  </div>
+                )}
+                {saturnReturnHits && (
+                  <div className="timeline-day">
+                    <p className="timeline-day__date">{t.timingSaturnReturn}</p>
+                    <p className="timeline-day__summary">{saturnReturnHits.length} hits</p>
+                    {saturnReturnHits.slice(0, 3).map((hit) => (
+                      <p key={`${hit.date}-${hit.orb}`} className="timeline-day__summary">
+                        {hit.date} (orb {hit.orb.toFixed(1)}deg)
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </Section>
+          )}
+
+          {!loading && primaryArea === "relationships" && analysisMode === "compatibility" && (compositeChart || davisonChart) && (
+            <Section icon="🧩" title={t.relationshipsComposite} badge="midpoint + davison">
+              <div className="timeline-grid">
+                {compositeChart && (
+                  <div className="timeline-day">
+                    <p className="timeline-day__date">{t.relationshipsComposite}</p>
+                    <p className="timeline-day__summary">{compositeChart.normalized.utcDateTime}</p>
+                    <p className="timeline-day__summary">{compositeChart.meta.engine}</p>
+                  </div>
+                )}
+                {davisonChart && (
+                  <div className="timeline-day">
+                    <p className="timeline-day__date">{t.relationshipsDavison}</p>
+                    <p className="timeline-day__summary">{davisonChart.normalized.utcDateTime}</p>
+                    <p className="timeline-day__summary">{davisonChart.meta.engine}</p>
+                  </div>
+                )}
+              </div>
+            </Section>
+          )}
+
+          {!loading && primaryArea === "atlas" && chart && astrocartography && (
+            <Section icon="🧭" title={t.atlasTitle} badge={`${astrocartography.lines.length} lines`}>
+              <div className="timeline-grid">
+                {astrocartography.lines.slice(0, 24).map((line, index) => (
+                  <div key={`${line.point}-${line.angle}-${index}`} className="timeline-day">
+                    <p className="timeline-day__date">{line.point} {line.angle}</p>
+                    <p className="timeline-day__summary">Lon {line.longitude.toFixed(1)}deg</p>
+                  </div>
+                ))}
+              </div>
+            </Section>
+          )}
+
+          {!loading && primaryArea === "library" && (
+            <Section icon="📚" title={t.libraryTitle}>
+              <div className="timeline-grid">
+                <div className="timeline-day">
+                  <p className="timeline-day__summary">{t.libraryGlossary}</p>
+                  <p className="timeline-day__summary">Chart settings, timing models, and atlas notes are now first-class modules in this build.</p>
+                </div>
               </div>
             </Section>
           )}

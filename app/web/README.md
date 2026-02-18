@@ -11,9 +11,15 @@ A cosmic birth chart generator with personalized astrological interpretations. C
 ## Features
 
 - Single and compatibility (synastry) chart generation
+- Chart settings panel (house system, orb profile, minor-aspect toggle)
+- Adapter-based astro engine (`SwissEphemerisAdapter` default, astronomy fallback)
 - Bilingual: English and Carioca Portuguese
 - RPG-style relationship quests with XP progression
-- Daily transit outlook and compatibility timeline
+- Multi-area navigation: Chart, Transits, Timing, Relationships, Atlas, Library
+- Daily transit outlook, exact-hit transit feed, and compatibility timeline
+- Timing modules: secondary progression, solar/lunar return, annual profection, Saturn return tracker
+- Relationship modules: synastry + composite + Davison charts
+- Astrocartography line generation
 - Full accessibility and responsive design
 - All calculations run locally — no data leaves your device
 

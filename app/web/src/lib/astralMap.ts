@@ -88,6 +88,29 @@ function buildEqualHouses(ascendantLongitude: number): MapHouse[] {
   });
 }
 
+function toLongitudeFromPlacement(sign: (typeof SIGNS)[number], degree: number | undefined): number {
+  const signIndex = SIGN_INDEX[sign] ?? 0;
+  return normalizeAngle(signIndex * 30 + (degree ?? 0));
+}
+
+function buildHousesFromChart(chart: ChartResult, fallbackAscendantLongitude: number): MapHouse[] {
+  const housePlacements = chart.houses;
+  if (!housePlacements || housePlacements.length !== 12) {
+    return buildEqualHouses(fallbackAscendantLongitude);
+  }
+  const sorted = [...housePlacements].sort((left, right) => left.house - right.house);
+  return sorted.map((house) => ({
+    house: house.house,
+    cuspLongitude:
+      typeof house.longitude === "number"
+        ? normalizeAngle(house.longitude)
+        : toLongitudeFromPlacement(house.sign, house.degree),
+    sign: house.sign,
+    degree: Math.round((house.degree ?? 0) * 10) / 10,
+    beta: false,
+  }));
+}
+
 function buildPlanetPoints(chart: ChartResult, chartRef: "A" | "B", radius: number): MapPlanetPoint[] {
   return PLANETS.map((planet) => {
     const longitude = getPlanetLongitude(chart, planet);
@@ -172,7 +195,7 @@ export function getHouseRingRadius(): number {
 
 export function buildAstralMapModelSingle(chart: ChartResult): AstralMapModel {
   const asc = getAscendantLongitude(chart);
-  const houses = buildEqualHouses(asc.longitude);
+  const houses = buildHousesFromChart(chart, asc.longitude);
   const planets = buildPlanetPoints(chart, "A", SINGLE_PLANET_RING_RADIUS);
   const lines = buildSingleAspectLines(chart, planets);
 
@@ -191,7 +214,7 @@ export function buildAstralMapModelCompatibility(
   comparison: ChartComparison
 ): AstralMapModel {
   const asc = getAscendantLongitude(chartA);
-  const houses = buildEqualHouses(asc.longitude);
+  const houses = buildHousesFromChart(chartA, asc.longitude);
   const planetsA = buildPlanetPoints(chartA, "A", COMPAT_PLANET_RING_A);
   const planetsB = buildPlanetPoints(chartB, "B", COMPAT_PLANET_RING_B);
   const planets = [...planetsA, ...planetsB];

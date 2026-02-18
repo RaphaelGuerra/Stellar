@@ -10,6 +10,21 @@ export type PlanetName =
   | "Neptune"
   | "Pluto";
 
+export type AstroPointName =
+  | PlanetName
+  | "TrueNode"
+  | "MeanNode"
+  | "Chiron"
+  | "Lilith"
+  | "Fortune"
+  | "Ascendant"
+  | "Descendant"
+  | "MC"
+  | "IC"
+  | "Vertex";
+
+export type AngleName = "Ascendant" | "Descendant" | "MC" | "IC" | "Vertex";
+
 export type AspectName =
   | "Conjunction"
   | "Opposition"
@@ -45,6 +60,19 @@ export type HouseNumber =
   | 11
   | 12;
 
+export type HouseSystem = "Placidus" | "WholeSign" | "Equal" | "Koch";
+export type AspectProfile = "major" | "expanded";
+export type OrbMode = "standard" | "tight" | "wide";
+export type PrimaryArea = "chart" | "transits" | "timing" | "relationships" | "atlas" | "library";
+
+export interface ChartSettings {
+  zodiac: "tropical";
+  houseSystem: HouseSystem;
+  aspectProfile: AspectProfile;
+  orbMode: OrbMode;
+  includeMinorAspects: boolean;
+}
+
 export interface ChartInput {
   // Raw strings keep user intent intact and avoid timezone parsing on the UI side.
   date: string; // "YYYY-MM-DD"
@@ -72,19 +100,30 @@ export interface PlanetPlacement {
   sign: ZodiacSign;
   degree?: number; // 0-29.999 within the sign
   longitude?: number; // 0-359.999 ecliptic longitude
+  unavailableReason?: string;
 }
 
 export interface HousePlacement {
   house: HouseNumber;
   sign: ZodiacSign;
   degree?: number; // 0-29.999 within the sign (cusp)
+  longitude?: number;
+  system?: HouseSystem;
 }
 
+// Legacy planet-only aspect (kept for compatibility with the existing app surfaces).
 export interface Aspect {
   a: PlanetName;
   b: PlanetName;
   type: AspectName;
   orb?: number; // distance from exact aspect, in degrees
+}
+
+export interface AstroAspect {
+  a: AstroPointName;
+  b: AstroPointName;
+  type: AspectName;
+  orb?: number;
 }
 
 export interface CityQuery {
@@ -98,17 +137,36 @@ export interface CityResolution {
   timezone: string;
 }
 
-export interface ChartResult {
+export interface ChartMeta {
+  engine: "astronomy-engine" | "swiss-ephemeris";
+  adapter: "AstronomyEngineAdapter" | "SwissEphemerisAdapter";
+  settingsHash: string;
+  warnings: string[];
+}
+
+export interface ChartResultV2 {
   // Keep raw inputs for reproducibility, and normalized data for the engine.
   input: ChartInput;
+  settings: ChartSettings;
   normalized: ChartInputNormalized;
+  points: Partial<Record<AstroPointName, PlanetPlacement>>;
+  // Legacy alias surface consumed by existing app modules.
   planets: Record<PlanetName, PlanetPlacement>;
   angles?: {
     ascendant: PlanetPlacement;
+    descendant?: PlanetPlacement;
+    mc?: PlanetPlacement;
+    ic?: PlanetPlacement;
+    vertex?: PlanetPlacement;
   };
-  houses?: HousePlacement[]; // optional until house calculation is in place
-  aspects: Aspect[]; // can be empty when aspects are not computed
+  houses?: HousePlacement[];
+  aspects: Aspect[];
+  // Optional expanded aspect list for newer modules.
+  pointAspects?: AstroAspect[];
+  meta: ChartMeta;
 }
+
+export type ChartResult = ChartResultV2;
 
 export type ComparisonHighlightKind =
   | "synastry-aspect"
