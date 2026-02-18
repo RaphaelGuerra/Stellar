@@ -194,19 +194,6 @@ function App() {
           <main role="main" aria-label={ariaLabels.chartGenerator} ref={reportExportRef}>
             <section className={`action-section ${hasResults ? "action-section--compact" : ""}`}>
               <form className="form" onSubmit={handleGenerateChart} aria-label={ariaLabels.birthDataForm}>
-                <div className="analysis-mode" role="group" aria-label={ariaLabels.primaryArea}>
-                  {primaryAreas.map((area) => (
-                    <button
-                      key={area.key}
-                      type="button"
-                      className={`analysis-mode__btn ${primaryArea === area.key ? "analysis-mode__btn--active" : ""}`}
-                      onClick={() => navigate("/" + area.key)}
-                    >
-                      {area.label}
-                    </button>
-                  ))}
-                </div>
-
                 <div className="analysis-mode" role="group" aria-label={ariaLabels.analysisMode}>
                   <button
                     type="button"
@@ -392,23 +379,17 @@ function App() {
                   />
                 </div>
                 {exportMessage && <p className="privacy-controls__hint">{exportMessage}</p>}
-
-                <div className="privacy-controls" role="group" aria-label={ariaLabels.privacyControls}>
-                  <p className="privacy-controls__title">{t.privacyTitle}</p>
-                  <label className="privacy-controls__toggle">
-                    <input
-                      type="checkbox"
-                      checked={persistLocalData}
-                      onChange={(event) => setPersistLocalData(event.target.checked)}
-                    />
-                    <span>{t.privacyPersist}</span>
-                  </label>
-                  <p className="privacy-controls__hint">
-                    {persistLocalData ? t.privacyHint(appStateRetentionDays) : t.privacyDisabledHint}
-                  </p>
-                  <button type="button" className="privacy-controls__clear" onClick={handleClearLocalData}>
-                    {t.privacyClear}
-                  </button>
+                <div className="analysis-mode" role="group" aria-label={ariaLabels.primaryArea}>
+                  {primaryAreas.map((area) => (
+                    <button
+                      key={area.key}
+                      type="button"
+                      className={`analysis-mode__btn ${primaryArea === area.key ? "analysis-mode__btn--active" : ""}`}
+                      onClick={() => navigate("/" + area.key)}
+                    >
+                      {area.label}
+                    </button>
+                  ))}
                 </div>
 
                 {error && (
@@ -417,6 +398,36 @@ function App() {
                   </p>
                 )}
               </form>
+            </section>
+
+            <Switch>
+              <Route path="/chart" component={ChartView} />
+              <Route path="/transits" component={TransitsView} />
+              <Route path="/timing" component={TimingView} />
+              <Route path="/relationships" component={RelationshipsView} />
+              <Route path="/atlas" component={AtlasView} />
+              <Route path="/library" component={LibraryView} />
+              <Route component={ChartView} />
+            </Switch>
+
+            <section className="action-section action-section--compact">
+              <div className="privacy-controls" role="group" aria-label={ariaLabels.privacyControls}>
+                <p className="privacy-controls__title">{t.privacyTitle}</p>
+                <label className="privacy-controls__toggle">
+                  <input
+                    type="checkbox"
+                    checked={persistLocalData}
+                    onChange={(event) => setPersistLocalData(event.target.checked)}
+                  />
+                  <span>{t.privacyPersist}</span>
+                </label>
+                <p className="privacy-controls__hint">
+                  {persistLocalData ? t.privacyHint(appStateRetentionDays) : t.privacyDisabledHint}
+                </p>
+                <button type="button" className="privacy-controls__clear" onClick={handleClearLocalData}>
+                  {t.privacyClear}
+                </button>
+              </div>
             </section>
 
             {!loading && history.length > 0 && (
@@ -453,16 +464,6 @@ function App() {
                 </div>
               </Section>
             )}
-
-            <Switch>
-              <Route path="/chart" component={ChartView} />
-              <Route path="/transits" component={TransitsView} />
-              <Route path="/timing" component={TimingView} />
-              <Route path="/relationships" component={RelationshipsView} />
-              <Route path="/atlas" component={AtlasView} />
-              <Route path="/library" component={LibraryView} />
-              <Route component={ChartView} />
-            </Switch>
           </main>
         </div>
         <AstralMapModal
