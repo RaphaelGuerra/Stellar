@@ -77,6 +77,22 @@
   --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Carioca mode: warm, saturated palette and a bolder type voice */
+.app[data-content-mode="carioca"] {
+  --color-primary: #ff7a18;
+  --color-primary-hover: #ff9545;
+  --color-primary-light: rgba(255, 122, 24, 0.2);
+  --color-accent: #ff4d8f;
+  --color-accent-hover: #ff6aa3;
+  --color-accent-light: rgba(255, 77, 143, 0.2);
+  --color-cyan: #34d5c3;
+  --color-cyan-light: rgba(52, 213, 195, 0.16);
+  --color-gold: #ffd166;
+  --color-gold-light: rgba(255, 209, 102, 0.16);
+  --font-sans: "Avenir Next", "Montserrat", "Trebuchet MS", sans-serif;
+  font-family: var(--font-sans);
+}
+
 /* ===== Reset & Base ===== */
 *,
 *::before,
@@ -167,6 +183,16 @@ body {
   opacity: 0.5;
 }
 
+.starfield__layer--carioca {
+  background-image:
+    radial-gradient(2px 2px at 14% 18%, rgba(255, 122, 24, 0.65) 50%, transparent 100%),
+    radial-gradient(2px 2px at 74% 28%, rgba(255, 77, 143, 0.55) 50%, transparent 100%),
+    radial-gradient(2px 2px at 45% 72%, rgba(52, 213, 195, 0.45) 50%, transparent 100%),
+    radial-gradient(2px 2px at 82% 84%, rgba(255, 209, 102, 0.5) 50%, transparent 100%);
+  animation: starPulse 4.5s ease-in-out infinite, starDrift 150s linear infinite reverse;
+  opacity: 0.65;
+}
+
 /* Nebula glow overlay */
 .starfield::after {
   content: "";
@@ -186,6 +212,58 @@ body {
 @keyframes starPulse {
   0%, 100% { opacity: 0.3; }
   50% { opacity: 0.7; }
+}
+
+.carioca-orb {
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  filter: blur(6px);
+  opacity: 0.25;
+  mix-blend-mode: screen;
+  animation: cariocaFloat 10s ease-in-out infinite;
+}
+
+.carioca-orb--sunset {
+  top: -120px;
+  left: -90px;
+  background: radial-gradient(circle, rgba(255, 122, 24, 0.85) 0%, rgba(255, 77, 143, 0.2) 55%, transparent 70%);
+}
+
+.carioca-orb--ocean {
+  bottom: -160px;
+  right: -100px;
+  background: radial-gradient(circle, rgba(52, 213, 195, 0.8) 0%, rgba(52, 213, 195, 0.18) 55%, transparent 72%);
+  animation-delay: 2.2s;
+}
+
+.carioca-ribbon {
+  position: absolute;
+  inset: 14% -25% auto;
+  height: 170px;
+  background: linear-gradient(
+    100deg,
+    rgba(255, 122, 24, 0) 0%,
+    rgba(255, 122, 24, 0.16) 20%,
+    rgba(255, 77, 143, 0.2) 50%,
+    rgba(52, 213, 195, 0.16) 80%,
+    rgba(52, 213, 195, 0) 100%
+  );
+  transform: rotate(-8deg);
+  filter: blur(18px);
+  opacity: 0.45;
+  animation: cariocaWave 14s ease-in-out infinite;
+}
+
+@keyframes cariocaFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(22px); }
+}
+
+@keyframes cariocaWave {
+  0%, 100% { transform: rotate(-8deg) translateX(0); }
+  50% { transform: rotate(-8deg) translateX(4%); }
 }
 
 /* ===== Shooting Star ===== */
@@ -269,6 +347,17 @@ body {
   color: var(--color-gold);
   transform: rotate(45deg);
   animation: sparkle-pulse 3s ease-in-out infinite;
+}
+
+.app[data-content-mode="carioca"] .header__title {
+  background: linear-gradient(120deg, #ffb347, #ff7a18, #ff4d8f, #34d5c3);
+  background-size: 280% 280%;
+  filter: drop-shadow(0 0 22px rgba(255, 122, 24, 0.35));
+}
+
+.app[data-content-mode="carioca"] .header__tagline {
+  color: rgba(255, 224, 196, 0.9);
+  letter-spacing: 0.08em;
 }
 
 @keyframes gradientShift {
@@ -460,6 +549,16 @@ body {
   outline: none;
   min-width: 160px;
   overflow: hidden;
+}
+
+.app[data-content-mode="carioca"] .btn-primary {
+  background: linear-gradient(125deg, #ff7a18, #ff4d8f, #34d5c3);
+  box-shadow: var(--shadow-md), 0 0 24px rgba(255, 122, 24, 0.3);
+}
+
+.app[data-content-mode="carioca"] .card:hover {
+  transform: translateY(-5px) scale(1.01);
+  box-shadow: var(--shadow-md), 0 0 36px rgba(255, 122, 24, 0.15);
 }
 
 .btn-primary::before {

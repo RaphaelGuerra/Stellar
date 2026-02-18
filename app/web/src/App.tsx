@@ -47,6 +47,9 @@ function App() {
 
   const t = {
     modeLabel: isCarioca ? "Carioca raiz, porra" : "English",
+    headerTagline: isCarioca
+      ? "\"Rio no peito, estrelas no olhar, brilhando pra Stella.\""
+      : "\"City of stars, are you shining just for me?\"",
     areaChart: isCarioca ? "Mapa" : "Chart",
     areaTransits: isCarioca ? "Transitos" : "Transits",
     areaTiming: isCarioca ? "Timing" : "Timing",
@@ -159,14 +162,18 @@ function App() {
         <div className="starfield__layer starfield__layer--1" />
         <div className="starfield__layer starfield__layer--2" />
         <div className="starfield__layer starfield__layer--3" />
+        {isCarioca && <div className="starfield__layer starfield__layer--carioca" />}
+        {isCarioca && <div className="carioca-orb carioca-orb--sunset" />}
+        {isCarioca && <div className="carioca-orb carioca-orb--ocean" />}
+        {isCarioca && <div className="carioca-ribbon" />}
         {showShootingStar && <div className="shooting-star" />}
       </div>
-      <div className="app">
+      <div className="app" data-content-mode={mode}>
         <div className="container">
           <header className="header" role="banner">
             <div className="header__brand">
               <h1 className="header__title">Stellar</h1>
-              <p className="header__tagline">"City of stars, are you shining just for me?"</p>
+              <p className="header__tagline">{t.headerTagline}</p>
               <div className="header__meta" aria-label={ariaLabels.chartInfo} aria-live="polite" aria-atomic="true">
                 <span>{t.modeLabel}</span>
                 {chartMeta && (
