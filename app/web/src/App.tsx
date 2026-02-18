@@ -57,7 +57,7 @@ import {
 } from "./lib/appState";
 import { validateChartInput, type ValidationErrorCode } from "./lib/validation";
 import { useGeoSearch, resolveLocationCandidates, type GeoSuggestion } from "./lib/useGeoSearch";
-import { SUPPORTED_CITIES } from "./lib/resolveCity";
+import { SUPPORTED_CITIES, resolveCity } from "./lib/resolveCity";
 import type {
   ChartInput,
   ChartResult,
@@ -69,6 +69,12 @@ import type {
 } from "./lib/types";
 
 type AnalysisMode = "single" | "compatibility";
+
+interface AtlasShortlistEntry {
+  label: string;
+  score: number;
+  nearestLines: string[];
+}
 
 function toLocationLabel(city: string, country: string): string {
   const trimmedCity = city.trim();
@@ -108,6 +114,55 @@ function makeHistorySignature(
     chartB?.normalized.utcDateTime ?? "",
     chartB?.normalized.timezone ?? "",
   ].join("|");
+}
+
+function toSignedLongitude(value: number): number {
+  const normalized = ((value % 360) + 360) % 360;
+  return normalized > 180 ? normalized - 360 : normalized;
+}
+
+function longitudeDistanceDegrees(a: number, b: number): number {
+  const delta = Math.abs(a - b);
+  return delta > 180 ? 360 - delta : delta;
+}
+
+function parseSupportedCityLabel(label: string): { city: string; country: string } | null {
+  const parts = label.split(",");
+  if (parts.length < 2) return null;
+  const country = parts[parts.length - 1]?.trim();
+  const city = parts.slice(0, -1).join(",").trim();
+  if (!city || !country) return null;
+  return { city, country };
+}
+
+function buildAtlasShortlist(astrocartography: AstrocartographyResult | null): AtlasShortlistEntry[] {
+  if (!astrocartography || astrocartography.lines.length === 0) return [];
+  const candidates: AtlasShortlistEntry[] = [];
+  for (const label of SUPPORTED_CITIES) {
+    const parsed = parseSupportedCityLabel(label);
+    if (!parsed) continue;
+    try {
+      const resolved = resolveCity(parsed);
+      const cityLongitude = toSignedLongitude(resolved.lon);
+      const nearest = astrocartography.lines
+        .map((line) => ({
+          line,
+          distance: longitudeDistanceDegrees(cityLongitude, line.longitude),
+        }))
+        .sort((left, right) => left.distance - right.distance)
+        .slice(0, 4);
+      if (nearest.length === 0 || nearest[0].distance > 6) continue;
+      const score = nearest.reduce((sum, hit) => sum + Math.max(0, 6 - hit.distance), 0);
+      candidates.push({
+        label,
+        score: Math.round(score * 10) / 10,
+        nearestLines: nearest.slice(0, 3).map((hit) => `${hit.line.point} ${hit.line.angle} (${hit.distance.toFixed(1)}deg)`),
+      });
+    } catch {
+      // Skip any malformed fallback labels.
+    }
+  }
+  return candidates.sort((left, right) => right.score - left.score).slice(0, 6);
 }
 
 const EN_VALIDATION_MESSAGES: Record<ValidationErrorCode, string> = {
@@ -297,6 +352,7 @@ function App() {
   const [saturnReturnHits, setSaturnReturnHits] = useState<Array<{ date: string; orb: number }> | null>(null);
   const [compositeChart, setCompositeChart] = useState<ChartResult | null>(null);
   const [davisonChart, setDavisonChart] = useState<ChartResult | null>(null);
+  const [relationshipTransitFeed, setRelationshipTransitFeed] = useState<TransitRangeResult | null>(null);
   const [astrocartography, setAstrocartography] = useState<AstrocartographyResult | null>(null);
 
   // Clear stale state when switching analysis mode
@@ -506,6 +562,11 @@ function App() {
     return buildAdvancedOverlaySummary(chart, chartB, isCarioca ? "pt" : "en");
   }, [analysisMode, chart, chartB, isCarioca]);
 
+  const atlasShortlist = useMemo(
+    () => buildAtlasShortlist(astrocartography),
+    [astrocartography]
+  );
+
   useEffect(() => {
     if (astralMapModel) return;
     setIsMapModalOpen(false);
@@ -660,6 +721,35 @@ function App() {
     };
   }, [analysisMode, chart, chartB, chartSettings]);
 
+  useEffect(() => {
+    if (analysisMode !== "compatibility" || !compositeChart || primaryArea !== "relationships") {
+      setRelationshipTransitFeed(null);
+      return;
+    }
+    let canceled = false;
+    const now = new Date();
+    const start = now.toISOString().slice(0, 10);
+    const endDate = new Date(now.getTime() + 29 * 86400000);
+    const end = endDate.toISOString().slice(0, 10);
+    runAstroWorkerTask<TransitRangeResult>({
+      type: "generateTransits",
+      baseChart: compositeChart,
+      range: { from: start, to: end },
+      settings: chartSettings,
+    })
+      .then((nextFeed) => {
+        if (canceled) return;
+        setRelationshipTransitFeed(nextFeed);
+      })
+      .catch(() => {
+        if (canceled) return;
+        setRelationshipTransitFeed(null);
+      });
+    return () => {
+      canceled = true;
+    };
+  }, [analysisMode, chartSettings, compositeChart, primaryArea]);
+
   const advancedUnlocked = isAdvancedOverlaysUnlocked(progression.xp);
   const advancedUnlockTarget = getAdvancedOverlaysUnlockXp(progression.xp);
 
@@ -717,6 +807,7 @@ function App() {
     setSaturnReturnHits(null);
     setCompositeChart(null);
     setDavisonChart(null);
+    setRelationshipTransitFeed(null);
     setAstrocartography(null);
     setError(null);
     setResultVersion((prev) => prev + 1);
@@ -1034,6 +1125,32 @@ function App() {
     no: isCarioca ? "Nao, porra" : "No",
   };
 
+  const libraryGlossaryEntries = isCarioca
+    ? [
+        { term: "Ascendente", text: "Como tu chega no mundo e no primeiro impacto." },
+        { term: "MC", text: "Direcao publica, carreira e reputacao." },
+        { term: "Casa 7", text: "Parcerias, namoro, casamento e contratos." },
+        { term: "Retorno Solar", text: "Mapa do ano pessoal entre aniversarios." },
+      ]
+    : [
+        { term: "Ascendant", text: "Your outward style and first-impression interface." },
+        { term: "MC", text: "Public direction, vocation, and reputation axis." },
+        { term: "7th House", text: "Partnerships, commitment, and relational contracts." },
+        { term: "Solar Return", text: "Yearly chart from birthday to birthday." },
+      ];
+
+  const libraryTemplateEntries = isCarioca
+    ? [
+        "Template de transito: o que ativou, como senti no corpo, acao concreta hoje.",
+        "Template de sinastria: ponto forte, ponto sensivel, acordo pratico da semana.",
+        "Template de atlas: cidade, linhas proximas, objetivo de vida ligado ao lugar.",
+      ]
+    : [
+        "Transit template: what was activated, body signal, one concrete action today.",
+        "Synastry template: strongest bond, friction point, practical agreement for the week.",
+        "Atlas template: city, nearest lines, life-goal hypothesis tied to place.",
+      ];
+
   const t = {
     modeLabel: isCarioca ? "Carioca raiz, porra" : "English",
     areaChart: isCarioca ? "Mapa" : "Chart",
@@ -1211,9 +1328,17 @@ function App() {
     timingSaturnReturn: isCarioca ? "Saturn return tracker" : "Saturn return tracker",
     relationshipsComposite: isCarioca ? "Mapa composto" : "Composite chart",
     relationshipsDavison: isCarioca ? "Mapa Davison" : "Davison chart",
+    relationshipsTransitTimeline: isCarioca ? "Timeline de transitos da relacao" : "Relationship transit timeline",
+    relationshipsTransitExact: isCarioca ? "Aspectos exatos da relacao" : "Relationship exact hits",
     atlasTitle: isCarioca ? "Astrocartografia" : "Astrocartography",
+    atlasShortlistTitle: isCarioca ? "Melhores cidades por linhas" : "Best-fit location shortlist",
+    atlasShortlistBadge: isCarioca ? "proximidade de linhas" : "line proximity",
+    atlasShortlistEmpty: isCarioca
+      ? "Sem matches fortes por enquanto. Tenta mudar data ou sistema de casas."
+      : "No strong matches yet. Try another date or house system.",
     libraryTitle: isCarioca ? "Biblioteca astrologica" : "Astrology library",
-    libraryGlossary: isCarioca ? "Glossario em andamento (fase 6)." : "Glossary in progress (phase 6).",
+    libraryGlossary: isCarioca ? "Glossario base para consulta rapida." : "Core glossary for quick reference.",
+    libraryTemplates: isCarioca ? "Templates de interpretacao e journal." : "Interpretation and journaling templates.",
     privacyTitle: isCarioca ? "Privacidade local" : "Local privacy",
     privacyPersist: isCarioca
       ? "Salvar dados neste dispositivo"
@@ -1980,6 +2105,26 @@ function App() {
             </Section>
           )}
 
+          {!loading && isRelationshipsArea && analysisMode === "compatibility" && relationshipTransitFeed && (
+            <Section icon="🌠" title={t.relationshipsTransitTimeline} badge="30d">
+              <div className="timeline-meta">
+                <p><strong>{t.relationshipsTransitExact}:</strong> {relationshipTransitFeed.exactHits.length}</p>
+              </div>
+              <div className="timeline-grid">
+                {relationshipTransitFeed.days.slice(0, 10).map((day) => (
+                  <div key={`relationship-${day.date}`} className="timeline-day">
+                    <p className="timeline-day__date">{day.date}</p>
+                    {day.strongestHits.slice(0, 3).map((hit) => (
+                      <p key={`${day.date}-${hit.transitPlanet}-${hit.natalPlanet}-${hit.aspect}`} className="timeline-day__summary">
+                        {hit.transitPlanet} {hit.aspect} {hit.natalPlanet} (orb {hit.orb.toFixed(1)}deg)
+                      </p>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </Section>
+          )}
+
           {!loading && isAtlasArea && chart && astrocartography && (
             <Section icon="🧭" title={t.atlasTitle} badge={`${astrocartography.lines.length} lines`}>
               <div className="timeline-grid">
@@ -1993,12 +2138,40 @@ function App() {
             </Section>
           )}
 
+          {!loading && isAtlasArea && chart && (
+            <Section icon="📍" title={t.atlasShortlistTitle} badge={t.atlasShortlistBadge}>
+              {atlasShortlist.length === 0 ? (
+                <p className="timeline-day__summary">{t.atlasShortlistEmpty}</p>
+              ) : (
+                <div className="timeline-grid">
+                  {atlasShortlist.map((entry) => (
+                    <div key={entry.label} className="timeline-day">
+                      <p className="timeline-day__date">{entry.label}</p>
+                      <p className="timeline-day__summary">Score {entry.score.toFixed(1)}</p>
+                      {entry.nearestLines.map((line) => (
+                        <p key={`${entry.label}-${line}`} className="timeline-day__summary">{line}</p>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Section>
+          )}
+
           {!loading && isLibraryArea && (
             <Section icon="📚" title={t.libraryTitle}>
               <div className="timeline-grid">
                 <div className="timeline-day">
                   <p className="timeline-day__summary">{t.libraryGlossary}</p>
-                  <p className="timeline-day__summary">Chart settings, timing models, and atlas notes are now first-class modules in this build.</p>
+                  {libraryGlossaryEntries.map((entry) => (
+                    <p key={entry.term} className="timeline-day__summary"><strong>{entry.term}:</strong> {entry.text}</p>
+                  ))}
+                </div>
+                <div className="timeline-day">
+                  <p className="timeline-day__summary">{t.libraryTemplates}</p>
+                  {libraryTemplateEntries.map((template) => (
+                    <p key={template} className="timeline-day__summary">{template}</p>
+                  ))}
                 </div>
               </div>
             </Section>
