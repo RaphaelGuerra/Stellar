@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, type FormEvent } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, type ChangeEvent, type FormEvent } from "react";
 import { useContentMode } from "./content/useContentMode";
 import { ModeToggle } from "./components/ModeToggle";
 import { Card } from "./components/Card";
@@ -484,6 +484,20 @@ function formatRuntimeError(error: unknown, isCarioca: boolean): string {
   return fallback ? `Deu ruim: ${fallback}` : "Deu merda aqui. Tenta de novo.";
 }
 
+function looksLikeChartResult(value: unknown): value is ChartResult {
+  if (typeof value !== "object" || value === null) return false;
+  const candidate = value as Partial<ChartResult>;
+  return (
+    typeof candidate.input === "object" &&
+    candidate.input !== null &&
+    typeof candidate.normalized === "object" &&
+    candidate.normalized !== null &&
+    typeof candidate.planets === "object" &&
+    candidate.planets !== null &&
+    Array.isArray(candidate.aspects)
+  );
+}
+
 function useSuggestionKeyboard(geo: { suggestions: GeoSuggestion[]; selectSuggestion: (s: GeoSuggestion) => void; showSuggestions: boolean }) {
   const [activeIndex, setActiveIndex] = useState(-1);
   const currentIndex =
@@ -609,6 +623,7 @@ function App() {
   const isCarioca = mode === "carioca";
   const persisted = useMemo(() => readPersistedAppState(), []);
   const todayIso = useMemo(() => formatIsoDate(new Date()), []);
+  const sharedImportInputRef = useRef<HTMLInputElement | null>(null);
   const [persistLocalData, setPersistLocalData] = useState(
     () => readPrivacySettings().persistLocalData
   );
@@ -1578,6 +1593,68 @@ function App() {
     URL.revokeObjectURL(url);
   }
 
+  function handleOpenSharedImport() {
+    sharedImportInputRef.current?.click();
+  }
+
+  async function handleSharedImportFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    try {
+      const raw = await file.text();
+      const parsed = JSON.parse(raw) as unknown;
+      let imported: ChartResult | null = null;
+      if (looksLikeChartResult(parsed)) {
+        imported = parsed;
+      } else if (typeof parsed === "object" && parsed !== null) {
+        const payload = parsed as { chartA?: unknown; chartB?: unknown };
+        if (looksLikeChartResult(payload.chartB)) {
+          imported = payload.chartB;
+        } else if (looksLikeChartResult(payload.chartA)) {
+          imported = payload.chartA;
+        }
+      }
+
+      if (!imported) {
+        setError(
+          isCarioca
+            ? "Arquivo invalido. Importa um JSON de chart/export do Stellar."
+            : "Invalid file. Import a Stellar chart/export JSON."
+        );
+        return;
+      }
+
+      setError(null);
+      setShowDaylightSavingOverrideA(false);
+      setShowDaylightSavingOverrideB(false);
+
+      if (!chart) {
+        setAnalysisMode("single");
+        setChart(imported);
+        setChartB(null);
+        applyChartToForm(imported, "A");
+        setCards(buildCards(content, imported, mode));
+        setPlacements(buildPlacementsSummary(imported));
+        appendHistoryEntry(imported, null);
+      } else {
+        setAnalysisMode("compatibility");
+        setChartB(imported);
+        applyChartToForm(imported, "B");
+        appendHistoryEntry(chart, imported);
+      }
+      setPrimaryArea("relationships");
+      setResultVersion((prev) => prev + 1);
+    } catch {
+      setError(
+        isCarioca
+          ? "Nao deu pra ler esse arquivo. Confere o JSON."
+          : "Could not read this file. Check the JSON content."
+      );
+    }
+  }
+
   function handleTimeTravelShift(days: number) {
     setTimeTravelDate((current) => shiftIsoDate(current, days));
   }
@@ -1895,6 +1972,7 @@ function App() {
     historyTitle: isCarioca ? "Historico salvo" : "Saved history",
     historyLoad: isCarioca ? "Carregar" : "Load",
     exportJson: isCarioca ? "Exportar JSON" : "Export JSON",
+    importSharedJson: isCarioca ? "Importar perfil compartilhado" : "Import shared profile",
     historySingle: isCarioca ? "Solo" : "Single",
     historyCompatibility: isCarioca ? "Sinastria" : "Compatibility",
     transitsTitle: isCarioca ? "Feed de transitos" : "Transit feed",
@@ -2243,13 +2321,23 @@ function App() {
                 </>
               )}
 
-              {hasResults && (
-                <div className="form__row form__row--actions">
+              <div className="form__row form__row--actions">
+                <button type="button" className="btn-ghost" onClick={handleOpenSharedImport}>
+                  {t.importSharedJson}
+                </button>
+                {hasResults && (
                   <button type="button" className="btn-ghost" onClick={handleExportJson}>
                     {t.exportJson}
                   </button>
-                </div>
-              )}
+                )}
+                <input
+                  ref={sharedImportInputRef}
+                  type="file"
+                  accept="application/json"
+                  onChange={handleSharedImportFile}
+                  style={{ display: "none" }}
+                />
+              </div>
 
               <div className="privacy-controls" role="group" aria-label={ariaLabels.privacyControls}>
                 <p className="privacy-controls__title">{t.privacyTitle}</p>
