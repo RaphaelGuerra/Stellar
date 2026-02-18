@@ -91,6 +91,10 @@
   --color-gold-light: rgba(255, 209, 102, 0.16);
   --font-sans: "Avenir Next", "Montserrat", "Trebuchet MS", sans-serif;
   font-family: var(--font-sans);
+  background:
+    radial-gradient(120% 80% at 0% 0%, rgba(255, 122, 24, 0.12), transparent 60%),
+    radial-gradient(100% 80% at 100% 10%, rgba(255, 77, 143, 0.12), transparent 65%),
+    radial-gradient(100% 70% at 50% 100%, rgba(52, 213, 195, 0.1), transparent 62%);
 }
 
 /* ===== Reset & Base ===== */
@@ -304,6 +308,10 @@ body {
   margin: 0 auto;
 }
 
+.app[data-content-mode="carioca"] .container {
+  max-width: 1100px;
+}
+
 /* ===== Header ===== */
 .header {
   display: flex;
@@ -313,6 +321,18 @@ body {
   margin-bottom: var(--space-lg);
   border-bottom: 1px solid var(--color-border);
   gap: var(--space-md);
+}
+
+.app[data-content-mode="carioca"] .header {
+  align-items: center;
+  padding: var(--space-lg) var(--space-xl);
+  border: 1px solid rgba(255, 157, 72, 0.28);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(145deg, rgba(255, 122, 24, 0.16), rgba(255, 77, 143, 0.08) 45%, rgba(52, 213, 195, 0.08));
+  box-shadow:
+    0 14px 45px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .header__brand {
@@ -350,14 +370,32 @@ body {
 }
 
 .app[data-content-mode="carioca"] .header__title {
-  background: linear-gradient(120deg, #ffb347, #ff7a18, #ff4d8f, #34d5c3);
-  background-size: 280% 280%;
-  filter: drop-shadow(0 0 22px rgba(255, 122, 24, 0.35));
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  color: #ffe6c8;
+  filter: drop-shadow(0 0 16px rgba(255, 122, 24, 0.35));
+  text-shadow:
+    0 0 22px rgba(255, 122, 24, 0.35),
+    0 0 36px rgba(255, 77, 143, 0.18);
 }
 
 .app[data-content-mode="carioca"] .header__tagline {
   color: rgba(255, 224, 196, 0.9);
   letter-spacing: 0.08em;
+}
+
+.header__dedication {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-cyan);
+}
+
+.app[data-content-mode="carioca"] .header__dedication {
+  color: #ffd166;
+  text-shadow: 0 0 12px rgba(255, 209, 102, 0.28);
 }
 
 @keyframes gradientShift {
@@ -452,6 +490,21 @@ body {
   box-shadow: var(--shadow-sm), 0 0 12px rgba(244, 114, 182, 0.15);
 }
 
+.app[data-content-mode="carioca"] .analysis-mode,
+.app[data-content-mode="carioca"] .duo-mode,
+.app[data-content-mode="carioca"] .mode-toggle {
+  border-color: rgba(255, 157, 72, 0.32);
+  background: rgba(20, 8, 24, 0.56);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.app[data-content-mode="carioca"] .analysis-mode__btn--active,
+.app[data-content-mode="carioca"] .duo-mode__btn--active,
+.app[data-content-mode="carioca"] .mode-toggle__btn--active {
+  background: linear-gradient(130deg, rgba(255, 122, 24, 0.26), rgba(255, 77, 143, 0.22));
+  box-shadow: 0 6px 18px rgba(255, 77, 143, 0.18);
+}
+
 /* ===== Analysis Mode Toggle ===== */
 .analysis-mode {
   display: flex;
@@ -527,6 +580,10 @@ body {
   padding: var(--space-lg) 0;
 }
 
+.app[data-content-mode="carioca"] .action-section {
+  padding-top: var(--space-xl);
+}
+
 /* ===== Primary Button ===== */
 .btn-primary {
   position: relative;
@@ -559,6 +616,16 @@ body {
 .app[data-content-mode="carioca"] .card:hover {
   transform: translateY(-5px) scale(1.01);
   box-shadow: var(--shadow-md), 0 0 36px rgba(255, 122, 24, 0.15);
+}
+
+.app[data-content-mode="carioca"] .btn-ghost {
+  border-color: rgba(255, 157, 72, 0.34);
+  background: rgba(20, 8, 24, 0.44);
+}
+
+.app[data-content-mode="carioca"] .btn-ghost:hover {
+  border-color: rgba(255, 122, 24, 0.55);
+  box-shadow: 0 0 16px rgba(255, 122, 24, 0.24);
 }
 
 .btn-primary::before {
@@ -703,6 +770,10 @@ body {
   color: var(--color-text);
 }
 
+.app[data-content-mode="carioca"] .section__title {
+  color: #ffe6c8;
+}
+
 .section__badge {
   margin-left: auto;
   padding: var(--space-xs) var(--space-sm);
@@ -712,6 +783,12 @@ body {
   background: var(--color-cyan-light);
   border-radius: var(--radius-full);
   border: 1px solid rgba(34, 211, 238, 0.15);
+}
+
+.app[data-content-mode="carioca"] .section__badge {
+  color: #ffd166;
+  border-color: rgba(255, 209, 102, 0.4);
+  background: rgba(255, 209, 102, 0.15);
 }
 
 .section__badge--accent {
@@ -747,6 +824,11 @@ body {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   overflow: hidden;
+}
+
+.app[data-content-mode="carioca"] .card {
+  border-color: rgba(255, 157, 72, 0.25);
+  background: linear-gradient(155deg, rgba(255, 122, 24, 0.08), rgba(255, 77, 143, 0.06) 54%, rgba(52, 213, 195, 0.06));
 }
 
 /* Subtle gradient shine on top edge */
@@ -917,6 +999,17 @@ body {
   gap: var(--space-md);
 }
 
+.app[data-content-mode="carioca"] .form {
+  padding: var(--space-lg);
+  border-radius: calc(var(--radius-lg) + 4px);
+  border: 1px solid rgba(255, 157, 72, 0.25);
+  background:
+    linear-gradient(160deg, rgba(255, 122, 24, 0.08), rgba(255, 77, 143, 0.06) 48%, rgba(52, 213, 195, 0.06));
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
 .form__row {
   display: flex;
   gap: var(--space-md);
@@ -971,6 +1064,13 @@ body {
   backdrop-filter: blur(8px);
 }
 
+.app[data-content-mode="carioca"] .form__label input,
+.app[data-content-mode="carioca"] .form__label select,
+.app[data-content-mode="carioca"] .datepicker__trigger {
+  border-color: rgba(255, 157, 72, 0.28);
+  background: rgba(28, 8, 26, 0.5);
+}
+
 .form__label select {
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239b97b0' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
@@ -990,6 +1090,13 @@ body {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(124, 106, 239, 0.2), var(--glow-primary);
   background: rgba(255, 255, 255, 0.06);
+}
+
+.app[data-content-mode="carioca"] .form__label input:focus,
+.app[data-content-mode="carioca"] .form__label select:focus,
+.app[data-content-mode="carioca"] .datepicker__trigger:focus-visible {
+  border-color: rgba(255, 122, 24, 0.8);
+  box-shadow: 0 0 0 3px rgba(255, 122, 24, 0.22);
 }
 
 .form__label input:invalid:not(:placeholder-shown) {
@@ -1176,6 +1283,11 @@ body {
   border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.02);
   text-align: left;
+}
+
+.app[data-content-mode="carioca"] .privacy-controls {
+  border-color: rgba(255, 157, 72, 0.26);
+  background: rgba(20, 8, 24, 0.4);
 }
 
 .privacy-controls__title {
@@ -1366,6 +1478,33 @@ body {
 .history-item__load:hover {
   border-color: rgba(124, 106, 239, 0.35);
   background: rgba(124, 106, 239, 0.12);
+}
+
+.app[data-content-mode="carioca"] .history-item,
+.app[data-content-mode="carioca"] .timeline-day,
+.app[data-content-mode="carioca"] .advanced-card,
+.app[data-content-mode="carioca"] .synastry-stats__item,
+.app[data-content-mode="carioca"] .quest-panel,
+.app[data-content-mode="carioca"] .normalized__card,
+.app[data-content-mode="carioca"] .core-triad__card {
+  border-color: rgba(255, 157, 72, 0.24);
+  background: rgba(20, 8, 24, 0.42);
+}
+
+.app[data-content-mode="carioca"] .history-item__load,
+.app[data-content-mode="carioca"] .privacy-controls__clear,
+.app[data-content-mode="carioca"] .timeline-controls__btn,
+.app[data-content-mode="carioca"] .quest-action {
+  border-color: rgba(255, 157, 72, 0.36);
+  background: rgba(255, 122, 24, 0.12);
+}
+
+.app[data-content-mode="carioca"] .history-item__load:hover,
+.app[data-content-mode="carioca"] .privacy-controls__clear:hover,
+.app[data-content-mode="carioca"] .timeline-controls__btn:hover,
+.app[data-content-mode="carioca"] .quest-action:hover:not(:disabled) {
+  border-color: rgba(255, 122, 24, 0.62);
+  background: rgba(255, 122, 24, 0.2);
 }
 
 /* ===== Synastry Stats ===== */
@@ -2057,6 +2196,17 @@ body {
   .cards-grid--planets,
   .cards-grid--aspects {
     grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .app[data-content-mode="carioca"] .header {
+    padding: var(--space-md);
+    align-items: flex-start;
+  }
+
+  .app[data-content-mode="carioca"] .form {
+    padding: var(--space-md);
   }
 }
 
