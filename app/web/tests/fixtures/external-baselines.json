@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "fixtures": [
+    {
+      "id": "seed-london-1988-astronomy",
+      "enabled": true,
+      "adapter": "AstronomyEngineAdapter",
+      "source": {
+        "provider": "seed-internal",
+        "capturedAt": "2026-02-18T00:00:00Z",
+        "notes": "Seed fixture to keep harness executable. Replace with Astro.com / Astro-Seek values."
+      },
+      "input": {
+        "date": "1988-01-09",
+        "time": "06:05",
+        "city": "London",
+        "country": "GB",
+        "daylight_saving": "auto",
+        "location": {
+          "lat": 51.5074,
+          "lon": -0.1278,
+          "timezone": "Europe/London"
+        }
+      },
+      "settings": {
+        "zodiac": "tropical",
+        "houseSystem": "Equal",
+        "aspectProfile": "major",
+        "orbMode": "wide",
+        "includeMinorAspects": false
+      },
+      "tolerance": {
+        "planetsDegrees": 0.1,
+        "anglesDegrees": 0.1,
+        "housesDegrees": 0.1,
+        "aspectsOrbDegrees": 0.1
+      },
+      "expected": {
+        "planets": {
+          "Sun": 288.185,
+          "Moon": 164.509,
+          "Venus": 322.151
+        },
+        "angles": {
+          "Ascendant": 258.072,
+          "MC": 200.714
+        },
+        "houses": {
+          "1": 258.072,
+          "4": 348.072,
+          "7": 78.072,
+          "10": 168.072
+        },
+        "aspects": [
+          {
+            "a": "Venus",
+            "b": "Jupiter",
+            "type": "Sextile",
+            "orb": 1.3
+          },
+          {
+            "a": "Saturn",
+            "b": "Uranus",
+            "type": "Conjunction",
+            "orb": 1.7
+          },
+          {
+            "a": "Mercury",
+            "b": "Mars",
+            "type": "Sextile",
+            "orb": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "template-astroseek-reference",
+      "enabled": false,
+      "adapter": "SwissEphemerisAdapter",
+      "source": {
+        "provider": "astro-seek",
+        "referenceUrl": "https://horoscopes.astro-seek.com/custom-chart-generator",
+        "capturedAt": "YYYY-MM-DDTHH:mm:ssZ",
+        "notes": "Populate expected values from external source and set enabled=true."
+      },
+      "input": {
+        "date": "1990-12-16",
+        "time": "12:00",
+        "city": "Rio de Janeiro",
+        "country": "BR",
+        "daylight_saving": "auto",
+        "location": {
+          "lat": -22.9068,
+          "lon": -43.1729,
+          "timezone": "America/Sao_Paulo"
+        }
+      },
+      "settings": {
+        "zodiac": "tropical",
+        "houseSystem": "Placidus",
+        "aspectProfile": "major",
+        "orbMode": "standard",
+        "includeMinorAspects": false
+      },
+      "tolerance": {
+        "planetsDegrees": 0.2,
+        "anglesDegrees": 0.6,
+        "housesDegrees": 1.0,
+        "aspectsOrbDegrees": 0.2
+      },
+      "expected": {
+        "planets": {},
+        "angles": {},
+        "houses": {},
+        "aspects": []
+      }
+    }
+  ]
+}
