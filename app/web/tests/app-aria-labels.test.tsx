@@ -184,6 +184,12 @@ describe("App aria labels localization", () => {
 
     render(<App />);
 
+    const mapHeading = screen.getByRole("heading", { name: "Astral map" });
+    const normalizedHeading = screen.getByRole("heading", { name: "Normalized data" });
+    expect(mapHeading).toBeTruthy();
+    expect(
+      (mapHeading.compareDocumentPosition(normalizedHeading) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0
+    ).toBe(true);
     expect(screen.getByRole("heading", { name: "Today for Us" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Sun, Moon, Ascendant" })).toBeTruthy();
     expect(screen.getAllByText("Houses: coming soon (not calculated yet)").length).toBeGreaterThan(0);
@@ -191,6 +197,41 @@ describe("App aria labels localization", () => {
     expect(screen.getByRole("heading", { name: "Advanced overlays" })).toBeTruthy();
     expect(screen.getByText(/Boost Window/)).toBeTruthy();
     expect(screen.getByText(/Pressure Point/)).toBeTruthy();
+  });
+
+  it("opens and closes the full-resolution astral map modal", () => {
+    const chartA = buildChart({ Sun: 0, Moon: 90, Venus: 120 });
+    const chartB = buildChart({ Sun: 180, Moon: 270, Venus: 300 });
+    window.localStorage.setItem(
+      APP_STATE_STORAGE_KEY,
+      JSON.stringify({
+        analysisMode: "compatibility",
+        duoMode: "romantic",
+        personA: {
+          date: "1990-01-01",
+          time: "12:00",
+          daylightSaving: "auto",
+          locationInput: "Rio de Janeiro, BR",
+        },
+        personB: {
+          date: "1992-02-02",
+          time: "18:00",
+          daylightSaving: "auto",
+          locationInput: "New York, US",
+        },
+        lastChartA: chartA,
+        lastChartB: chartB,
+        history: [],
+      })
+    );
+
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Open full-resolution map" }));
+    expect(screen.getByRole("dialog", { name: "Full-resolution astral map" })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("dialog", { name: "Full-resolution astral map" })).toBeNull();
   });
 
   it("localizes Today for Us section in Carioca mode", () => {

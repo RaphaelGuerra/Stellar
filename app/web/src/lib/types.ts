@@ -133,6 +133,7 @@ export interface ComparisonAspect {
 export type AspectTone = "harmonious" | "challenging" | "intense";
 export type DuoMode = "romantic" | "friend";
 export type SynastryStatKey = "attraction" | "communication" | "stability" | "growth";
+export type LifeArea = "love" | "friends" | "family";
 
 export interface DetailBlock {
   title: string;
@@ -170,4 +171,45 @@ export interface ChartComparison {
   highlights: ComparisonHighlight[];
   aspects?: ComparisonAspect[]; // optional detailed synastry list
   stats: SynastryStat[];
+}
+
+export interface MapHouse {
+  house: number;
+  cuspLongitude: number;
+  sign: ZodiacSign;
+  degree: number;
+  beta: boolean;
+}
+
+export interface MapPlanetPoint {
+  chart: "A" | "B";
+  planet: PlanetName;
+  longitude: number;
+  x: number;
+  y: number;
+}
+
+export interface MapAspectLine {
+  type: AspectName;
+  tone: AspectTone;
+  orb?: number;
+  from: MapPlanetPoint;
+  to: MapPlanetPoint;
+}
+
+export interface AstralMapModel {
+  houses: MapHouse[];
+  planets: MapPlanetPoint[];
+  lines: MapAspectLine[];
+  mode: "single" | "compatibility";
+  usedAscendantFallback?: boolean;
+}
+
+export interface MatchScorecard {
+  area: LifeArea;
+  score: number;
+  status: "good" | "mixed" | "bad";
+  summary: string;
+  topSupportAspect?: string;
+  topTensionAspect?: string;
 }

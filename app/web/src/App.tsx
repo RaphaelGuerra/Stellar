@@ -6,10 +6,15 @@ import { Section } from "./components/Section";
 import { PlacementsSummary } from "./components/PlacementsSummary";
 import { LoadingState } from "./components/LoadingState";
 import { PersonForm } from "./components/PersonForm";
+import { AstralMapThumbnail } from "./components/AstralMapThumbnail";
+import { AstralMapModal } from "./components/AstralMapModal";
+import { MatchScorecards } from "./components/MatchScorecards";
 import { buildCards, buildPlacementsSummary, type CardModel, type PlacementSummary } from "./lib/cards";
 import { AmbiguousLocalTimeError, NonexistentLocalTimeError, generateChart } from "./lib/engine";
 import { buildChartComparison } from "./lib/synastry";
 import { buildDailyTransitOutlook } from "./lib/transits";
+import { buildAstralMapModelCompatibility, buildAstralMapModelSingle } from "./lib/astralMap";
+import { buildMatchScorecards } from "./lib/matchScorecards";
 import {
   ADVANCED_OVERLAYS_UNLOCK_XP,
   DEFAULT_PROGRESSION_STATE,
@@ -43,7 +48,7 @@ import {
 import { validateChartInput, type ValidationErrorCode } from "./lib/validation";
 import { useGeoSearch, resolveLocationCandidates, type GeoSuggestion } from "./lib/useGeoSearch";
 import { SUPPORTED_CITIES } from "./lib/resolveCity";
-import type { ChartInput, ChartResult, DuoMode, PlanetPlacement } from "./lib/types";
+import type { ChartInput, ChartResult, DuoMode, LifeArea, PlanetPlacement } from "./lib/types";
 
 type AnalysisMode = "single" | "compatibility";
 
@@ -252,6 +257,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [geoRestored, setGeoRestored] = useState(false);
   const [showShootingStar, setShowShootingStar] = useState(false);
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
 
   // Clear stale state when switching analysis mode
   useEffect(() => {
@@ -387,6 +393,20 @@ function App() {
     return buildChartComparison(chart, chartB, isCarioca ? "pt" : "en", duoMode);
   }, [analysisMode, chart, chartB, duoMode, isCarioca]);
 
+  const astralMapModel = useMemo(() => {
+    if (analysisMode === "single") {
+      if (!chart) return null;
+      return buildAstralMapModelSingle(chart);
+    }
+    if (!chart || !chartB || !comparison) return null;
+    return buildAstralMapModelCompatibility(chart, chartB, comparison);
+  }, [analysisMode, chart, chartB, comparison]);
+
+  const matchScorecards = useMemo(() => {
+    if (analysisMode !== "compatibility" || !comparison) return [];
+    return buildMatchScorecards(comparison, isCarioca ? "pt" : "en", duoMode);
+  }, [analysisMode, comparison, duoMode, isCarioca]);
+
   const dailyOutlook = useMemo(() => {
     if (analysisMode !== "compatibility" || !chart || !chartB) return null;
     return buildDailyTransitOutlook(chart, chartB, {
@@ -441,6 +461,11 @@ function App() {
     if (analysisMode !== "compatibility" || !chart || !chartB) return null;
     return buildAdvancedOverlaySummary(chart, chartB, isCarioca ? "pt" : "en");
   }, [analysisMode, chart, chartB, isCarioca]);
+
+  useEffect(() => {
+    if (astralMapModel) return;
+    setIsMapModalOpen(false);
+  }, [astralMapModel]);
 
   const advancedUnlocked = isAdvancedOverlaysUnlocked(progression.xp);
   const advancedUnlockTarget = getAdvancedOverlaysUnlockXp(progression.xp);
@@ -791,6 +816,56 @@ function App() {
     aspectsBadge: (n: number) => isCarioca ? `${n} conexoes brabas` : `${n} connections`,
     sunMoonInsightsTitle: isCarioca ? "Insights de Sol e Lua" : "Sun and Moon insights",
     housesStatus: isCarioca ? "Casas: em breve (ainda nao calculado)" : "Houses: coming soon (not calculated yet)",
+    astralMapTitle: isCarioca ? "Mapa astral visual" : "Astral map",
+    astralMapBadge:
+      analysisMode === "compatibility"
+        ? isCarioca
+          ? "duplo + conexoes"
+          : "combined + connections"
+        : isCarioca
+          ? "solo + conexoes"
+          : "single + connections",
+    astralMapThumbTitle:
+      analysisMode === "compatibility"
+        ? isCarioca
+          ? "Visao combinada das energias"
+          : "Combined energy map"
+        : isCarioca
+          ? "Visao completa do mapa"
+          : "Full chart map",
+    astralMapThumbSubtitle:
+      analysisMode === "compatibility"
+        ? `${isCarioca ? "Pessoa A" : "Person A"} + ${isCarioca ? "Pessoa B" : "Person B"}`
+        : isCarioca
+          ? "Planetas, casas e aspectos"
+          : "Planets, houses, and aspects",
+    astralMapOpen: isCarioca ? "Abrir mapa em resolucao total" : "Open full-resolution map",
+    astralMapModalTitle: isCarioca ? "Mapa astral em alta resolucao" : "Full-resolution astral map",
+    astralMapClose: isCarioca ? "Fechar" : "Close",
+    astralMapDownload: isCarioca ? "Baixar PNG" : "Download PNG",
+    astralMapDownloadDone: isCarioca ? "PNG baixado com sucesso." : "PNG downloaded successfully.",
+    astralMapDownloadError: isCarioca ? "Nao foi possivel gerar o PNG." : "Could not generate PNG.",
+    astralMapFilters: isCarioca ? "Filtro de aspectos" : "Aspect filters",
+    astralMapAllAspects: isCarioca ? "Todos" : "All",
+    astralMapLegendOuterA: isCarioca ? "anel externo" : "outer ring",
+    astralMapLegendInnerB: isCarioca ? "anel interno" : "inner ring",
+    astralMapLegendFlow: isCarioca ? "fluxo" : "flow",
+    astralMapLegendTension: isCarioca ? "tensao" : "tension",
+    astralMapLegendIntense: isCarioca ? "intenso" : "intense",
+    astralMapHouseBeta: isCarioca
+      ? "Casas em modo beta: sistema equal-house a partir do Ascendente."
+      : "Houses are beta: equal-house system derived from Ascendant.",
+    astralMapAscFallback: isCarioca
+      ? "Ascendente ausente no dado salvo. Usando fallback em 0 deg Aries."
+      : "Ascendant missing in saved data. Using fallback at 0deg Aries.",
+    matchScorecardsTitle: isCarioca ? "Resumo rapido dos matches" : "Best and worst match summary",
+    matchScorecardsBadge: isCarioca ? "amor, amizade, familia" : "love, friendship, family",
+    matchAreaLove: duoMode === "friend" ? (isCarioca ? "Vibe" : "Bond") : isCarioca ? "Amor" : "Love",
+    matchAreaFriends: isCarioca ? "Amizade" : "Friendship",
+    matchAreaFamily: isCarioca ? "Familia" : "Family",
+    matchSupportLabel: isCarioca ? "Melhor apoio" : "Best support",
+    matchTensionLabel: isCarioca ? "Maior tensao" : "Biggest tension",
+    matchAspectEmpty: isCarioca ? "Sem aspecto dominante" : "No dominant aspect",
     compatibilityTitle: isCarioca ? "Sinastria de cria" : "Synastry",
     compatibilityBadge: (n: number) => isCarioca ? `${n} aspectos brabos` : `${n} aspects`,
     compatibilityEmpty: isCarioca
@@ -888,6 +963,14 @@ function App() {
   const cardExpandLabels = isCarioca
     ? { more: "Abrir mais", less: "Fechar" }
     : { more: "Show more", less: "Show less" };
+  const matchAreaLabels: Record<LifeArea, string> = {
+    love: t.matchAreaLove,
+    friends: t.matchAreaFriends,
+    family: t.matchAreaFamily,
+  };
+  const hasResults =
+    (analysisMode === "single" && chart != null) ||
+    (analysisMode === "compatibility" && chart != null && chartB != null);
 
   return (
     <>
@@ -924,7 +1007,7 @@ function App() {
         </header>
 
         <main role="main" aria-label={ariaLabels.chartGenerator}>
-          <section className={`action-section ${cards.length > 0 ? "action-section--compact" : ""}`}>
+          <section className={`action-section ${hasResults ? "action-section--compact" : ""}`}>
             <form className="form" onSubmit={handleGenerateChart} aria-label={ariaLabels.birthDataForm}>
               <div className="analysis-mode" role="group" aria-label={ariaLabels.analysisMode}>
                 <button
@@ -1091,6 +1174,34 @@ function App() {
                   );
                 })}
               </div>
+            </Section>
+          )}
+
+          {!loading && astralMapModel && (
+            <Section icon="🗺️" title={t.astralMapTitle} badge={t.astralMapBadge}>
+              <AstralMapThumbnail
+                model={astralMapModel}
+                title={t.astralMapThumbTitle}
+                subtitle={t.astralMapThumbSubtitle}
+                openLabel={t.astralMapOpen}
+                onOpen={() => setIsMapModalOpen(true)}
+              />
+              <p className="astral-map-note">{t.astralMapHouseBeta}</p>
+              {astralMapModel.usedAscendantFallback && (
+                <p className="astral-map-note astral-map-note--warning">{t.astralMapAscFallback}</p>
+              )}
+            </Section>
+          )}
+
+          {!loading && analysisMode === "compatibility" && matchScorecards.length > 0 && (
+            <Section icon="⚖️" title={t.matchScorecardsTitle} badge={t.matchScorecardsBadge}>
+              <MatchScorecards
+                cards={matchScorecards}
+                areaLabels={matchAreaLabels}
+                supportLabel={t.matchSupportLabel}
+                tensionLabel={t.matchTensionLabel}
+                emptyAspectLabel={t.matchAspectEmpty}
+              />
             </Section>
           )}
 
@@ -1457,6 +1568,26 @@ function App() {
           )}
         </main>
       </div>
+      <AstralMapModal
+        key={`${analysisMode}-${resultVersion}-${isMapModalOpen ? "open" : "closed"}`}
+        isOpen={isMapModalOpen}
+        model={astralMapModel}
+        title={t.astralMapModalTitle}
+        onClose={() => setIsMapModalOpen(false)}
+        labels={{
+          close: t.astralMapClose,
+          download: t.astralMapDownload,
+          downloadDone: t.astralMapDownloadDone,
+          downloadError: t.astralMapDownloadError,
+          filters: t.astralMapFilters,
+          allAspects: t.astralMapAllAspects,
+          legendOuterA: t.astralMapLegendOuterA,
+          legendInnerB: t.astralMapLegendInnerB,
+          legendFlow: t.astralMapLegendFlow,
+          legendTension: t.astralMapLegendTension,
+          legendIntense: t.astralMapLegendIntense,
+        }}
+      />
     </div>
     </>
   );

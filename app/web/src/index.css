@@ -1,30 +1,30 @@
 /* ===== CSS Variables ===== */
 :root {
-  /* Cosmic Dark Palette */
-  --color-bg: #07070f;
-  --color-bg-deep: #04040a;
-  --color-bg-card: rgba(255, 255, 255, 0.04);
-  --color-bg-card-hover: rgba(255, 255, 255, 0.07);
-  --color-bg-muted: rgba(255, 255, 255, 0.06);
-  --color-primary: #7c6aef;
-  --color-primary-hover: #9b8aff;
-  --color-primary-light: rgba(124, 106, 239, 0.15);
-  --color-accent: #f472b6;
-  --color-accent-hover: #f9a8d4;
-  --color-accent-light: rgba(244, 114, 182, 0.15);
-  --color-cyan: #22d3ee;
-  --color-cyan-light: rgba(34, 211, 238, 0.12);
-  --color-gold: #fbbf24;
-  --color-gold-light: rgba(251, 191, 36, 0.12);
-  --color-text: #e8e6f0;
-  --color-text-secondary: #9b97b0;
-  --color-text-muted: #5f5b78;
-  --color-border: rgba(255, 255, 255, 0.08);
-  --color-border-light: rgba(255, 255, 255, 0.04);
-  --color-error: #f87171;
-  --color-error-light: rgba(248, 113, 113, 0.1);
-  --color-rose-gold: #e8a0bf;
-  --color-rose-gold-light: rgba(232, 160, 191, 0.15);
+  /* Editorial Cosmic Palette */
+  --color-bg: #101a2d;
+  --color-bg-deep: #070d1a;
+  --color-bg-card: rgba(8, 18, 34, 0.72);
+  --color-bg-card-hover: rgba(12, 24, 46, 0.8);
+  --color-bg-muted: rgba(255, 255, 255, 0.08);
+  --color-primary: #7bb6ff;
+  --color-primary-hover: #9ac7ff;
+  --color-primary-light: rgba(123, 182, 255, 0.2);
+  --color-accent: #f2b861;
+  --color-accent-hover: #ffd08b;
+  --color-accent-light: rgba(242, 184, 97, 0.18);
+  --color-cyan: #7ed4d7;
+  --color-cyan-light: rgba(126, 212, 215, 0.2);
+  --color-gold: #f0d088;
+  --color-gold-light: rgba(240, 208, 136, 0.18);
+  --color-text: #f2f5fa;
+  --color-text-secondary: #c7d2e6;
+  --color-text-muted: #8ea1c4;
+  --color-border: rgba(157, 180, 215, 0.2);
+  --color-border-light: rgba(157, 180, 215, 0.11);
+  --color-error: #f38383;
+  --color-error-light: rgba(243, 131, 131, 0.16);
+  --color-rose-gold: #f1c79e;
+  --color-rose-gold-light: rgba(241, 199, 158, 0.18);
 
   /* Element Colors */
   --color-fire: #f59e0b;
@@ -51,15 +51,16 @@
   --radius-full: 9999px;
 
   /* Shadows & Glows */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.5);
-  --glow-primary: 0 0 20px rgba(124, 106, 239, 0.3);
-  --glow-accent: 0 0 20px rgba(244, 114, 182, 0.3);
-  --glow-cyan: 0 0 20px rgba(34, 211, 238, 0.3);
+  --shadow-sm: 0 6px 16px rgba(4, 9, 18, 0.25);
+  --shadow-md: 0 12px 32px rgba(4, 9, 18, 0.3);
+  --shadow-lg: 0 20px 50px rgba(4, 9, 18, 0.42);
+  --glow-primary: 0 0 20px rgba(123, 182, 255, 0.25);
+  --glow-accent: 0 0 20px rgba(242, 184, 97, 0.2);
+  --glow-cyan: 0 0 20px rgba(126, 212, 215, 0.2);
 
   /* Typography */
-  --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: "Manrope", "Avenir Next", "Segoe UI", sans-serif;
+  --font-display: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
   --font-size-base: 1rem;
@@ -97,7 +98,10 @@ body {
   font-size: var(--font-size-base);
   line-height: var(--line-height-normal);
   color: var(--color-text);
-  background: var(--color-bg-deep);
+  background:
+    radial-gradient(circle at 12% 18%, rgba(123, 182, 255, 0.16) 0%, transparent 34%),
+    radial-gradient(circle at 84% 10%, rgba(242, 184, 97, 0.1) 0%, transparent 30%),
+    linear-gradient(140deg, #070d1a 0%, #0d1730 52%, #101a2d 100%);
   min-height: 100vh;
   overflow-x: hidden;
 }
@@ -246,6 +250,7 @@ body {
 .header__title {
   position: relative;
   margin: 0;
+  font-family: var(--font-display);
   font-size: var(--font-size-3xl);
   font-weight: 800;
   letter-spacing: -0.04em;
@@ -576,6 +581,7 @@ body {
 
 .section__title {
   margin: 0;
+  font-family: var(--font-display);
   font-size: var(--font-size-lg);
   font-weight: 600;
   color: var(--color-text);
@@ -682,6 +688,7 @@ body {
 
 .card__title {
   margin: 0 0 var(--space-xs);
+  font-family: var(--font-display);
   font-size: var(--font-size-lg);
   font-weight: 600;
   color: var(--color-text);
@@ -1825,6 +1832,332 @@ body {
   .cards-grid--planets,
   .cards-grid--aspects {
     grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ===== Astral Map ===== */
+.astral-map-thumbnail {
+  width: 100%;
+  padding: var(--space-lg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(165deg, rgba(12, 24, 46, 0.86), rgba(9, 17, 33, 0.9));
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+  transition: transform var(--transition-normal), border-color var(--transition-fast);
+}
+
+.astral-map-thumbnail:hover {
+  border-color: rgba(126, 212, 215, 0.35);
+  transform: translateY(-1px);
+}
+
+.astral-map-thumbnail:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+.astral-map-thumbnail__header h3 {
+  margin: 0 0 var(--space-xs);
+  font-family: var(--font-display);
+  font-size: var(--font-size-xl);
+}
+
+.astral-map-thumbnail__header p {
+  margin: 0 0 var(--space-md);
+  color: var(--color-text-secondary);
+}
+
+.astral-map-thumbnail__cta {
+  display: inline-flex;
+  margin-top: var(--space-sm);
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.astral-map {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+}
+
+.astral-map__svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  filter: drop-shadow(0 8px 22px rgba(8, 15, 29, 0.52));
+  animation: mapReveal 420ms ease-out backwards;
+}
+
+@keyframes mapReveal {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.astral-map__ring {
+  fill: none;
+  stroke-width: 0.35;
+}
+
+.astral-map__ring--outer {
+  stroke: rgba(157, 180, 215, 0.35);
+}
+
+.astral-map__ring--house {
+  stroke: rgba(157, 180, 215, 0.2);
+}
+
+.astral-map__ring--inner {
+  stroke: rgba(126, 212, 215, 0.35);
+}
+
+.astral-map__house-line {
+  stroke: rgba(157, 180, 215, 0.22);
+  stroke-width: 0.24;
+}
+
+.astral-map__house-label {
+  fill: var(--color-text-muted);
+  text-anchor: middle;
+  dominant-baseline: middle;
+  font-size: 2.2px;
+  font-weight: 700;
+}
+
+.astral-map__sign-label {
+  fill: var(--color-text-secondary);
+  text-anchor: middle;
+  dominant-baseline: middle;
+  font-size: 3px;
+}
+
+.astral-map__aspect {
+  stroke-width: 0.32;
+  opacity: 0.74;
+}
+
+.astral-map__aspect--harmonious {
+  stroke: rgba(126, 212, 215, 0.86);
+}
+
+.astral-map__aspect--challenging {
+  stroke: rgba(243, 131, 131, 0.76);
+}
+
+.astral-map__aspect--intense {
+  stroke: rgba(242, 184, 97, 0.86);
+}
+
+.astral-map__planet-dot {
+  stroke-width: 0.25;
+}
+
+.astral-map__planet-dot--a {
+  fill: rgba(123, 182, 255, 0.95);
+  stroke: rgba(205, 222, 248, 0.9);
+}
+
+.astral-map__planet-dot--b {
+  fill: rgba(242, 184, 97, 0.95);
+  stroke: rgba(255, 224, 171, 0.9);
+}
+
+.astral-map__planet-label {
+  fill: var(--color-text);
+  text-anchor: middle;
+  dominant-baseline: middle;
+  font-size: 3px;
+}
+
+.astral-map__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.astral-map-note {
+  margin: var(--space-sm) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.astral-map-note--warning {
+  color: var(--color-accent);
+}
+
+/* ===== Map Modal ===== */
+.astral-map-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-lg);
+  background: rgba(5, 10, 20, 0.76);
+  backdrop-filter: blur(7px);
+}
+
+.astral-map-modal {
+  width: min(980px, 100%);
+  max-height: 92vh;
+  overflow: auto;
+  padding: var(--space-lg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(12, 24, 46, 0.95), rgba(8, 16, 31, 0.95));
+  box-shadow: var(--shadow-lg);
+}
+
+.astral-map-modal__header {
+  display: flex;
+  gap: var(--space-md);
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-md);
+}
+
+.astral-map-modal__header h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--font-size-xl);
+}
+
+.astral-map-modal__actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.astral-map-modal__actions button,
+.astral-map-filter {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-text-secondary);
+  padding: 7px 12px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.astral-map-modal__actions button:hover,
+.astral-map-filter:hover {
+  color: var(--color-text);
+  border-color: rgba(157, 180, 215, 0.34);
+}
+
+.astral-map-filter--active {
+  color: var(--color-primary);
+  border-color: rgba(123, 182, 255, 0.45);
+  background: rgba(123, 182, 255, 0.14);
+}
+
+.astral-map-modal__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.astral-map-modal__body {
+  padding: var(--space-sm);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.astral-map-modal__status {
+  margin: var(--space-sm) 0 0;
+  min-height: 1.3em;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* ===== Match Scorecards ===== */
+.match-scorecards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-md);
+}
+
+.match-scorecard {
+  padding: var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-card);
+}
+
+.match-scorecard__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.match-scorecard__head h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--font-size-xl);
+}
+
+.match-scorecard__head p {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: 800;
+}
+
+.match-scorecard__track {
+  margin: var(--space-sm) 0;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: rgba(157, 180, 215, 0.15);
+}
+
+.match-scorecard__bar {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-cyan));
+}
+
+.match-scorecard__summary {
+  margin: var(--space-sm) 0;
+  color: var(--color-text-secondary);
+}
+
+.match-scorecard__line {
+  margin: 0 0 var(--space-xs);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.match-scorecard--good .match-scorecard__bar {
+  background: linear-gradient(90deg, #45c59a, #7ed4d7);
+}
+
+.match-scorecard--bad .match-scorecard__bar {
+  background: linear-gradient(90deg, #e07d7d, #d65f8f);
+}
+
+.match-scorecard--mixed .match-scorecard__bar {
+  background: linear-gradient(90deg, #f2b861, #7bb6ff);
+}
+
+@media (min-width: 760px) {
+  .match-scorecards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
