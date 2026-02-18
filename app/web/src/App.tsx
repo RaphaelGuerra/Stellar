@@ -1204,6 +1204,12 @@ function App() {
   const hasResults =
     (analysisMode === "single" && chart != null) ||
     (analysisMode === "compatibility" && chart != null && chartB != null);
+  const isChartArea = primaryArea === "chart";
+  const isTransitsArea = primaryArea === "transits";
+  const isTimingArea = primaryArea === "timing";
+  const isRelationshipsArea = primaryArea === "relationships";
+  const isAtlasArea = primaryArea === "atlas";
+  const isLibraryArea = primaryArea === "library";
   const primaryAreas: Array<{ key: PrimaryArea; label: string }> = [
     { key: "chart", label: t.areaChart },
     { key: "transits", label: t.areaTransits },
@@ -1482,7 +1488,7 @@ function App() {
             </Section>
           )}
 
-          {!loading && astralMapModel && (
+          {!loading && isChartArea && astralMapModel && (
             <Section icon="🗺️" title={t.astralMapTitle} badge={t.astralMapBadge}>
               <AstralMapThumbnail
                 model={astralMapModel}
@@ -1498,7 +1504,7 @@ function App() {
             </Section>
           )}
 
-          {!loading && analysisMode === "compatibility" && matchScorecards.length > 0 && (
+          {!loading && isRelationshipsArea && analysisMode === "compatibility" && matchScorecards.length > 0 && (
             <Section icon="⚖️" title={t.matchScorecardsTitle} badge={t.matchScorecardsBadge}>
               <MatchScorecards
                 cards={matchScorecards}
@@ -1510,7 +1516,7 @@ function App() {
             </Section>
           )}
 
-          {!loading && analysisMode === "single" && chart && (
+          {!loading && isChartArea && analysisMode === "single" && chart && (
             <Section icon="🧭" title={t.normalizedTitle}>
               <div className="normalized">
                 <p>{t.timezoneLabel}: {chart.normalized.timezone}</p>
@@ -1530,7 +1536,7 @@ function App() {
             </Section>
           )}
 
-          {!loading && analysisMode === "single" && chart && (
+          {!loading && isChartArea && analysisMode === "single" && chart && (
             <Section icon="🧬" title={t.coreTriadTitle} badge={t.coreTriadBadge}>
               <div className="core-triad">
                 <p><strong>{t.coreSun}:</strong> {formatPlacementLabel(chart.planets.Sun, t.coreAscMissing)}</p>
@@ -1540,7 +1546,7 @@ function App() {
             </Section>
           )}
 
-          {!loading && analysisMode === "compatibility" && chart && chartB && (
+          {!loading && isChartArea && analysisMode === "compatibility" && chart && chartB && (
             <Section icon="🧭" title={t.normalizedTitle}>
               <div className="normalized normalized--comparison">
                 <div className="normalized__card">
@@ -1577,7 +1583,7 @@ function App() {
             </Section>
           )}
 
-          {!loading && analysisMode === "compatibility" && chart && chartB && (
+          {!loading && isChartArea && analysisMode === "compatibility" && chart && chartB && (
             <Section icon="🧬" title={t.coreTriadTitle} badge={t.coreTriadBadge}>
               <div className="core-triad core-triad--comparison">
                 <div className="core-triad__card">
@@ -1598,23 +1604,23 @@ function App() {
 
           {loading && <LoadingState label={t.loading} />}
 
-          {!loading && analysisMode === "single" && cards.length === 0 && (
+          {!loading && isChartArea && analysisMode === "single" && cards.length === 0 && (
             <p className="empty-state">
               {t.emptyState}
             </p>
           )}
 
-          {!loading && analysisMode === "compatibility" && !comparison && (
+          {!loading && isRelationshipsArea && analysisMode === "compatibility" && !comparison && (
             <p className="empty-state">
               {t.compatibilityEmpty}
             </p>
           )}
 
-          {!loading && analysisMode === "single" && placements.length > 0 && (
+          {!loading && isChartArea && analysisMode === "single" && placements.length > 0 && (
             <PlacementsSummary placements={placements} />
           )}
 
-          {!loading && analysisMode === "single" && heroCards.length > 0 && (
+          {!loading && isChartArea && analysisMode === "single" && heroCards.length > 0 && (
             <Section icon="☀️" title={t.sunMoonInsightsTitle} badge={`${heroCards.length} cards`}>
               <div className="cards-grid--hero">
                 {heroCards.map((card) => (
@@ -1635,7 +1641,7 @@ function App() {
             </Section>
           )}
 
-          {!loading && analysisMode === "single" && planetCards.length > 0 && (
+          {!loading && isChartArea && analysisMode === "single" && planetCards.length > 0 && (
             <Section
               icon="🪐"
               title={t.planetsTitle}
@@ -1660,7 +1666,7 @@ function App() {
             </Section>
           )}
 
-          {!loading && analysisMode === "single" && aspectCards.length > 0 && (
+          {!loading && isChartArea && analysisMode === "single" && aspectCards.length > 0 && (
             <Section
               icon="🔗"
               title={t.aspectsTitle}
@@ -1685,7 +1691,7 @@ function App() {
             </Section>
           )}
 
-          {!loading && analysisMode === "compatibility" && comparison && comparison.stats.length > 0 && (
+          {!loading && isRelationshipsArea && analysisMode === "compatibility" && comparison && comparison.stats.length > 0 && (
             <Section icon="🎮" title={t.compatibilityStatsTitle} badge={t.compatibilityStatsBadge}>
               <div className={`synastry-stats${duoMode === "romantic" ? " synastry-stats--romantic" : ""}`}>
                 {comparison.stats.map((stat) => (
@@ -1707,7 +1713,7 @@ function App() {
             </Section>
           )}
 
-          {!loading && analysisMode === "compatibility" && relationshipQuest && (
+          {!loading && isRelationshipsArea && analysisMode === "compatibility" && relationshipQuest && (
             <Section icon="🎯" title={t.questTitle} badge={t.questBadge(relationshipQuest.focusStatLabel)}>
               <div className="quest-panel">
                 <div className="quest-panel__stats">
@@ -1754,7 +1760,7 @@ function App() {
             </Section>
           )}
 
-          {!loading && analysisMode === "compatibility" && dailyOutlook && (
+          {!loading && isTransitsArea && analysisMode === "compatibility" && dailyOutlook && (
             <Section icon="📆" title={t.todayForUsTitle} badge={`${t.todayForUsBadge} · ${dailyOutlook.dateLabel}`}>
               <div className="cards-grid--today">
                 <Card
@@ -1785,7 +1791,7 @@ function App() {
             </Section>
           )}
 
-          {!loading && analysisMode === "compatibility" && compatibilityForecast && (
+          {!loading && isTransitsArea && analysisMode === "compatibility" && compatibilityForecast && (
             <Section icon="🗓️" title={t.forecastTitle} badge={t.forecastBadge(forecastRange)}>
               <div className="timeline-controls" role="group" aria-label={t.forecastTitle}>
                 <button
@@ -1820,7 +1826,7 @@ function App() {
             </Section>
           )}
 
-          {!loading && primaryArea === "transits" && chart && transitFeed && (
+          {!loading && isTransitsArea && chart && transitFeed && (
             <Section icon="🌗" title={t.transitsTitle} badge={`${transitRange}d`}>
               <div className="timeline-controls" role="group" aria-label={t.transitsTitle}>
                 <button
@@ -1857,7 +1863,7 @@ function App() {
             </Section>
           )}
 
-          {!loading && primaryArea === "timing" && chart && (
+          {!loading && isTimingArea && chart && (
             <Section icon="⏳" title={t.timingTitle} badge={chartSettings.houseSystem}>
               <div className="timeline-grid">
                 {progressed && (
@@ -1901,7 +1907,7 @@ function App() {
             </Section>
           )}
 
-          {!loading && primaryArea === "relationships" && analysisMode === "compatibility" && (compositeChart || davisonChart) && (
+          {!loading && isRelationshipsArea && analysisMode === "compatibility" && (compositeChart || davisonChart) && (
             <Section icon="🧩" title={t.relationshipsComposite} badge="midpoint + davison">
               <div className="timeline-grid">
                 {compositeChart && (
@@ -1922,7 +1928,7 @@ function App() {
             </Section>
           )}
 
-          {!loading && primaryArea === "atlas" && chart && astrocartography && (
+          {!loading && isAtlasArea && chart && astrocartography && (
             <Section icon="🧭" title={t.atlasTitle} badge={`${astrocartography.lines.length} lines`}>
               <div className="timeline-grid">
                 {astrocartography.lines.slice(0, 24).map((line, index) => (
@@ -1935,7 +1941,7 @@ function App() {
             </Section>
           )}
 
-          {!loading && primaryArea === "library" && (
+          {!loading && isLibraryArea && (
             <Section icon="📚" title={t.libraryTitle}>
               <div className="timeline-grid">
                 <div className="timeline-day">
@@ -1946,7 +1952,7 @@ function App() {
             </Section>
           )}
 
-          {!loading && analysisMode === "compatibility" && advancedOverlays && (
+          {!loading && isRelationshipsArea && analysisMode === "compatibility" && advancedOverlays && (
             <Section icon="🧠" title={t.advancedTitle} badge={t.advancedBadge}>
               {!advancedUnlocked && (
                 <div className="advanced-lock">
@@ -1975,7 +1981,7 @@ function App() {
             </Section>
           )}
 
-          {!loading && analysisMode === "compatibility" && comparison && comparisonCards.length > 0 && (
+          {!loading && isRelationshipsArea && analysisMode === "compatibility" && comparison && comparisonCards.length > 0 && (
             <Section
               icon="🤝"
               title={t.compatibilityTitle}
@@ -1999,6 +2005,23 @@ function App() {
                 ))}
               </div>
             </Section>
+          )}
+
+          {!loading && isTransitsArea && !chart && (
+            <p className="empty-state">{t.emptyState}</p>
+          )}
+          {!loading && isTimingArea && !chart && (
+            <p className="empty-state">{t.emptyState}</p>
+          )}
+          {!loading && isAtlasArea && !chart && (
+            <p className="empty-state">{t.emptyState}</p>
+          )}
+          {!loading && isRelationshipsArea && analysisMode !== "compatibility" && (
+            <p className="empty-state">
+              {isCarioca
+                ? "Muda pra Sinastria braba pra liberar a area de relacoes."
+                : "Switch to Compatibility mode to use Relationships."}
+            </p>
           )}
         </main>
       </div>

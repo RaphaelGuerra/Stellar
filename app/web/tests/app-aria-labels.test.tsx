@@ -156,7 +156,7 @@ describe("App aria labels localization", () => {
     expect(screen.getByRole("button", { name: "Friend" })).toBeTruthy();
   });
 
-  it("renders the Today for Us section for saved compatibility charts", () => {
+  it("renders the Today for Us section for saved compatibility charts", async () => {
     const chartA = buildChart({ Sun: 0, Moon: 90, Venus: 120 });
     const chartB = buildChart({ Sun: 180, Moon: 270, Venus: 300 });
     window.localStorage.setItem(
@@ -190,13 +190,16 @@ describe("App aria labels localization", () => {
     expect(
       (mapHeading.compareDocumentPosition(normalizedHeading) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0
     ).toBe(true);
-    expect(screen.getByRole("heading", { name: "Today for Us" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Sun, Moon, Ascendant" })).toBeTruthy();
     expect(screen.getAllByText("Houses: coming soon (not calculated yet)").length).toBeGreaterThan(0);
-    expect(screen.getByRole("heading", { name: "Compatibility timeline" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Advanced overlays" })).toBeTruthy();
-    expect(screen.getByText(/Boost Window/)).toBeTruthy();
-    expect(screen.getByText(/Pressure Point/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Transits" }));
+    expect(await screen.findByRole("heading", { name: "Today for Us" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Compatibility timeline" })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Relationships" }));
+    expect(await screen.findByRole("heading", { name: "Advanced overlays" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Synastry" })).toBeTruthy();
   });
 
   it("opens and closes the full-resolution astral map modal", () => {
@@ -234,7 +237,7 @@ describe("App aria labels localization", () => {
     expect(screen.queryByRole("dialog", { name: "Full-resolution astral map" })).toBeNull();
   });
 
-  it("localizes Today for Us section in Carioca mode", () => {
+  it("localizes Today for Us section in Carioca mode", async () => {
     const chartA = buildChart({ Sun: 0, Moon: 90, Venus: 120 });
     const chartB = buildChart({ Sun: 180, Moon: 270, Venus: 300 });
     window.localStorage.setItem(
@@ -262,12 +265,13 @@ describe("App aria labels localization", () => {
 
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "Carioca, porra" }));
+    fireEvent.click(screen.getByRole("button", { name: "Transitos" }));
 
-    expect(screen.getByRole("heading", { name: "Hoje pra amizade" })).toBeTruthy();
-    expect(screen.getByText(/Janela de|Janela estavel/)).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Hoje pra amizade" })).toBeTruthy();
+    expect(await screen.findByText(/Janela de|Janela estavel/)).toBeTruthy();
   });
 
-  it("tracks quest actions and updates labels after completion", () => {
+  it("tracks quest actions and updates labels after completion", async () => {
     const chartA = buildChart({ Sun: 0, Moon: 90, Venus: 120 });
     const chartB = buildChart({ Sun: 180, Moon: 270, Venus: 300 });
     window.localStorage.setItem(
@@ -300,18 +304,19 @@ describe("App aria labels localization", () => {
     );
 
     render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Relationships" }));
 
-    expect(screen.getByRole("heading", { name: "Relationship quest" })).toBeTruthy();
-    const reflectBefore = screen.getByRole("button", { name: "Log reflection (+20 XP)" });
+    expect(await screen.findByRole("heading", { name: "Relationship quest" })).toBeTruthy();
+    const reflectBefore = await screen.findByRole("button", { name: "Log reflection (+20 XP)" });
     expect((reflectBefore as HTMLButtonElement).disabled).toBe(true);
 
-    const complete = screen.getByRole("button", { name: "Complete quest (+40 XP)" });
+    const complete = await screen.findByRole("button", { name: "Complete quest (+40 XP)" });
     fireEvent.click(complete);
-    expect(screen.getByRole("button", { name: "Quest completed" })).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "Quest completed" })).toBeTruthy();
 
-    const reflect = screen.getByRole("button", { name: "Log reflection (+20 XP)" });
+    const reflect = await screen.findByRole("button", { name: "Log reflection (+20 XP)" });
     fireEvent.click(reflect);
-    expect(screen.getByRole("button", { name: "Reflection logged" })).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "Reflection logged" })).toBeTruthy();
   });
 
   it("allows disabling persistence and clearing local data", () => {
