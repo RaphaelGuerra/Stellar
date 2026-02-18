@@ -652,8 +652,76 @@ function formatDateIso(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
-function formatTimeUtc(date: Date): string {
-  return `${String(date.getUTCHours()).padStart(2, "0")}:${String(date.getUTCMinutes()).padStart(2, "0")}`;
+function pad2(value: number): string {
+  return String(value).padStart(2, "0");
+}
+
+function toLocalDateTimeStrings(parts: LocalDateTimeParts): { date: string; time: string; localDateTime: string } {
+  const date = `${String(parts.year).padStart(4, "0")}-${pad2(parts.month)}-${pad2(parts.day)}`;
+  const time = `${pad2(parts.hour)}:${pad2(parts.minute)}`;
+  return { date, time, localDateTime: `${date}T${time}` };
+}
+
+function toLocalDateTimeInZone(utcDate: Date, timeZone: string): {
+  date: string;
+  time: string;
+  localDateTime: string;
+  offsetMinutes: number;
+  daylightSaving: boolean;
+} {
+  const localParts = getZonedParts(utcDate, timeZone);
+  const { date, time, localDateTime } = toLocalDateTimeStrings(localParts);
+  const zonedAsUtc = baseUtcMillis(localParts);
+  const offsetMinutes = Math.round((utcDate.getTime() - zonedAsUtc) / 60000);
+  const offsetStats = getOffsetStats(timeZone, localParts.year);
+  const daylightSaving = offsetStats.hasSeasonalDst && offsetMinutes === offsetStats.dstOffset;
+  return {
+    date,
+    time,
+    localDateTime,
+    offsetMinutes,
+    daylightSaving,
+  };
+}
+
+function buildLocalizedInputFromUtc(
+  baseInput: ChartInput,
+  location: { lat: number; lon: number; timezone: string },
+  utcDate: Date
+): ChartInput {
+  const localized = toLocalDateTimeInZone(utcDate, location.timezone);
+  return {
+    ...baseInput,
+    date: localized.date,
+    time: localized.time,
+    location,
+  };
+}
+
+function buildNormalizedFromUtc(
+  utcDate: Date,
+  timeZone: string,
+  location: { lat: number; lon: number }
+): ChartResult["normalized"] {
+  const localized = toLocalDateTimeInZone(utcDate, timeZone);
+  return {
+    localDateTime: localized.localDateTime,
+    utcDateTime: formatUtcIso(utcDate.getTime()),
+    timezone: timeZone,
+    offsetMinutes: localized.offsetMinutes,
+    daylightSaving: localized.daylightSaving,
+    location,
+  };
+}
+
+function placementFromLongitude(longitude: number): PlanetPlacement {
+  const normalizedLongitude = normalizeAngle(longitude);
+  const signPlacement = longitudeToSign(normalizedLongitude);
+  return {
+    sign: signPlacement.sign,
+    degree: signPlacement.degree,
+    longitude: normalizedLongitude,
+  };
 }
 
 export async function generateTransits(
@@ -731,17 +799,13 @@ export async function generateSecondaryProgressions(
   const target = new Date(`${date}T12:00:00Z`);
   const ageYears = Math.max(0, (target.getTime() - birth.getTime()) / (365.2425 * 86400000));
   const progressedUtc = new Date(birth.getTime() + ageYears * 86400000);
-
-  const progressedInput: ChartInput = {
-    ...baseChart.input,
-    date: formatDateIso(progressedUtc),
-    time: formatTimeUtc(progressedUtc),
-    location: {
-      lat: baseChart.normalized.location.lat,
-      lon: baseChart.normalized.location.lon,
-      timezone: baseChart.normalized.timezone,
-    },
+  const location = {
+    lat: baseChart.normalized.location.lat,
+    lon: baseChart.normalized.location.lon,
+    timezone: baseChart.normalized.timezone,
   };
+
+  const progressedInput = buildLocalizedInputFromUtc(baseChart.input, location, progressedUtc);
 
   const progressedChart = await generateChart(progressedInput, settings);
   return {
@@ -763,21 +827,17 @@ async function findClosestReturn(
   point: PlanetName,
   settings: Partial<ChartSettings>
 ): Promise<ReturnChartResult> {
+  const location = {
+    lat: baseChart.normalized.location.lat,
+    lon: baseChart.normalized.location.lon,
+    timezone: baseChart.normalized.timezone,
+  };
   let bestChart: ChartResult | null = null;
   let bestDistance = Number.POSITIVE_INFINITY;
 
   for (let minutesOffset = -2880; minutesOffset <= 2880; minutesOffset += 60) {
     const date = new Date(approximateDate.getTime() + minutesOffset * 60000);
-    const input: ChartInput = {
-      ...baseChart.input,
-      date: formatDateIso(date),
-      time: formatTimeUtc(date),
-      location: {
-        lat: baseChart.normalized.location.lat,
-        lon: baseChart.normalized.location.lon,
-        timezone: baseChart.normalized.timezone,
-      },
-    };
+    const input = buildLocalizedInputFromUtc(baseChart.input, location, date);
     const chart = await generateChart(input, settings);
     const candidateLongitude = chart.planets[point].longitude ?? 0;
     const dist = angleDistance(candidateLongitude, targetLongitude);
@@ -811,8 +871,52 @@ export async function generateLunarReturn(
   const [yearRaw, monthRaw] = month.split("-").map(Number);
   const year = Number.isFinite(yearRaw) ? yearRaw : new Date().getUTCFullYear();
   const monthIndex = Number.isFinite(monthRaw) ? Math.max(1, Math.min(12, monthRaw)) - 1 : 0;
-  const approx = new Date(Date.UTC(year, monthIndex, 15, 12, 0, 0));
-  return findClosestReturn(baseChart, approx, baseChart.planets.Moon.longitude ?? 0, "Moon", settings);
+  const targetLongitude = baseChart.planets.Moon.longitude ?? 0;
+  const location = {
+    lat: baseChart.normalized.location.lat,
+    lon: baseChart.normalized.location.lon,
+    timezone: baseChart.normalized.timezone,
+  };
+
+  const coarseStart = new Date(Date.UTC(year, monthIndex, 1, 0, 0, 0) - 12 * 60 * 60000);
+  const coarseEnd = new Date(Date.UTC(year, monthIndex + 1, 1, 0, 0, 0) + 12 * 60 * 60000);
+
+  let coarseBest: ChartResult | null = null;
+  let coarseBestDistance = Number.POSITIVE_INFINITY;
+  for (let at = coarseStart.getTime(); at <= coarseEnd.getTime(); at += 360 * 60000) {
+    const utcDate = new Date(at);
+    const input = buildLocalizedInputFromUtc(baseChart.input, location, utcDate);
+    const chart = await generateChart(input, settings);
+    const dist = angleDistance(chart.planets.Moon.longitude ?? 0, targetLongitude);
+    if (dist < coarseBestDistance) {
+      coarseBestDistance = dist;
+      coarseBest = chart;
+    }
+  }
+
+  const centerUtc = coarseBest
+    ? Date.parse(coarseBest.normalized.utcDateTime)
+    : Date.UTC(year, monthIndex, 15, 12, 0, 0);
+  const fineStart = Math.max(coarseStart.getTime(), centerUtc - 12 * 60 * 60000);
+  const fineEnd = Math.min(coarseEnd.getTime(), centerUtc + 12 * 60 * 60000);
+
+  let bestChart = coarseBest;
+  let bestDistance = coarseBestDistance;
+  for (let at = fineStart; at <= fineEnd; at += 10 * 60000) {
+    const utcDate = new Date(at);
+    const input = buildLocalizedInputFromUtc(baseChart.input, location, utcDate);
+    const chart = await generateChart(input, settings);
+    const dist = angleDistance(chart.planets.Moon.longitude ?? 0, targetLongitude);
+    if (dist < bestDistance) {
+      bestDistance = dist;
+      bestChart = chart;
+    }
+  }
+
+  return {
+    exactDateTimeUtc: bestChart?.normalized.utcDateTime ?? new Date(centerUtc).toISOString(),
+    chart: bestChart ?? baseChart,
+  };
 }
 
 export interface AnnualProfectionResult {
@@ -823,7 +927,12 @@ export interface AnnualProfectionResult {
 
 export function generateAnnualProfections(baseChart: ChartResult, date = new Date()): AnnualProfectionResult {
   const birth = new Date(baseChart.normalized.utcDateTime);
-  const age = Math.max(0, date.getUTCFullYear() - birth.getUTCFullYear());
+  let age = date.getUTCFullYear() - birth.getUTCFullYear();
+  const beforeBirthday =
+    date.getUTCMonth() < birth.getUTCMonth() ||
+    (date.getUTCMonth() === birth.getUTCMonth() && date.getUTCDate() < birth.getUTCDate());
+  if (beforeBirthday) age -= 1;
+  age = Math.max(0, age);
   const profectedHouse = ((age % 12) + 1);
   const house = baseChart.houses?.find((item) => item.house === profectedHouse);
   return {
@@ -900,29 +1009,33 @@ export async function generateComposite(
   method: CompositeMethod,
   settings: Partial<ChartSettings> = chartA.settings
 ): Promise<ChartResult> {
+  const normalizedSettings = normalizeChartSettings(settings);
   if (method === "davison") {
     const timeA = Date.parse(chartA.normalized.utcDateTime);
     const timeB = Date.parse(chartB.normalized.utcDateTime);
     const midTime = new Date((timeA + timeB) / 2);
     const lat = (chartA.normalized.location.lat + chartB.normalized.location.lat) / 2;
     const lon = (chartA.normalized.location.lon + chartB.normalized.location.lon) / 2;
-    const input: ChartInput = {
-      date: formatDateIso(midTime),
-      time: formatTimeUtc(midTime),
+    const davisonLocation = {
+      lat,
+      lon,
+      timezone: chartA.normalized.timezone,
+    };
+    const baseInput: ChartInput = {
+      ...chartA.input,
       city: `${chartA.input.city}/${chartB.input.city}`,
       country: chartA.input.country || chartB.input.country,
       daylight_saving: "auto",
-      location: {
-        lat,
-        lon,
-        timezone: chartA.normalized.timezone,
-      },
+      location: davisonLocation,
     };
-    const chart = await generateChart(input, settings);
+    const input = buildLocalizedInputFromUtc(baseInput, davisonLocation, midTime);
+    const chart = await generateChart(input, normalizedSettings);
     return {
       ...chart,
+      settings: normalizedSettings,
       meta: {
         ...chart.meta,
+        settingsHash: serializeSettings(normalizedSettings),
         warnings: ["Davison chart derived from midpoint time/location.", ...chart.meta.warnings],
       },
     };
@@ -933,12 +1046,7 @@ export async function generateComposite(
     const lonA = chartA.planets[planet].longitude ?? 0;
     const lonB = chartB.planets[planet].longitude ?? 0;
     const lon = midpointLongitude(lonA, lonB);
-    const signPlacement = longitudeToSign(lon);
-    planets[planet] = {
-      sign: signPlacement.sign,
-      degree: signPlacement.degree,
-      longitude: lon,
-    };
+    planets[planet] = placementFromLongitude(lon);
   }
 
   const aspects = buildPlanetAspectsFromPlacements(planets);
@@ -946,21 +1054,80 @@ export async function generateComposite(
     chartA.angles?.ascendant.longitude ?? 0,
     chartB.angles?.ascendant.longitude ?? 0
   );
-  const houses = buildHouses(normalizeChartSettings(settings), midpointAsc, []);
+  const midpointMc = midpointLongitude(
+    chartA.angles?.mc?.longitude ?? 0,
+    chartB.angles?.mc?.longitude ?? 0
+  );
+  const midpointDesc = normalizeAngle(midpointAsc + 180);
+  const midpointIc = normalizeAngle(midpointMc + 180);
+  const midpointVertex = midpointLongitude(
+    chartA.angles?.vertex?.longitude ?? normalizeAngle((chartA.angles?.ascendant.longitude ?? 0) + 90),
+    chartB.angles?.vertex?.longitude ?? normalizeAngle((chartB.angles?.ascendant.longitude ?? 0) + 90)
+  );
+
+  const houses = buildHouses(normalizedSettings, midpointAsc, []);
+  const timeA = Date.parse(chartA.normalized.utcDateTime);
+  const timeB = Date.parse(chartB.normalized.utcDateTime);
+  const midpointUtc = new Date((timeA + timeB) / 2);
+  const location = {
+    lat: (chartA.normalized.location.lat + chartB.normalized.location.lat) / 2,
+    lon: (chartA.normalized.location.lon + chartB.normalized.location.lon) / 2,
+  };
+  const normalized = buildNormalizedFromUtc(midpointUtc, chartA.normalized.timezone, location);
+  const input: ChartInput = {
+    ...chartA.input,
+    city: `${chartA.input.city}/${chartB.input.city}`,
+    country: chartA.input.country || chartB.input.country,
+    date: normalized.localDateTime.slice(0, 10),
+    time: normalized.localDateTime.slice(11, 16),
+    daylight_saving: "auto",
+    location: {
+      ...location,
+      timezone: normalized.timezone,
+    },
+  };
+
+  const angles = {
+    ascendant: placementFromLongitude(midpointAsc),
+    descendant: placementFromLongitude(midpointDesc),
+    mc: placementFromLongitude(midpointMc),
+    ic: placementFromLongitude(midpointIc),
+    vertex: placementFromLongitude(midpointVertex),
+  };
+  const midpointPoints: AstroPointName[] = ["TrueNode", "MeanNode", "Chiron", "Lilith", "Fortune"];
+  const points: Partial<Record<AstroPointName, PlanetPlacement>> = {
+    ...chartA.points,
+    ...Object.fromEntries(PLANETS.map((planet) => [planet, planets[planet]])),
+    Ascendant: angles.ascendant,
+    Descendant: angles.descendant,
+    MC: angles.mc,
+    IC: angles.ic,
+    Vertex: angles.vertex,
+    Fortune: placementFromLongitude(
+      midpointAsc + (planets.Moon.longitude ?? 0) - (planets.Sun.longitude ?? 0)
+    ),
+  };
+  for (const point of midpointPoints) {
+    const lonA = chartA.points[point]?.longitude;
+    const lonB = chartB.points[point]?.longitude;
+    if (typeof lonA === "number" && typeof lonB === "number") {
+      points[point] = placementFromLongitude(midpointLongitude(lonA, lonB));
+    }
+  }
 
   return {
     ...chartA,
-    settings: normalizeChartSettings(settings),
+    input,
+    settings: normalizedSettings,
+    normalized,
     planets,
-    points: {
-      ...chartA.points,
-      ...Object.fromEntries(PLANETS.map((planet) => [planet, planets[planet]])),
-    },
+    points,
+    angles,
     aspects,
     houses,
     meta: {
       ...chartA.meta,
-      settingsHash: serializeSettings(normalizeChartSettings(settings)),
+      settingsHash: serializeSettings(normalizedSettings),
       warnings: ["Composite midpoint chart derived from both charts."],
     },
   };
