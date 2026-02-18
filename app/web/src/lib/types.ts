@@ -25,12 +25,22 @@ export type AstroPointName =
 
 export type AngleName = "Ascendant" | "Descendant" | "MC" | "IC" | "Vertex";
 
-export type AspectName =
+export type MajorAspectName =
   | "Conjunction"
   | "Opposition"
   | "Square"
   | "Trine"
   | "Sextile";
+
+export type MinorAspectName =
+  | "Quincunx"
+  | "Semisextile"
+  | "Semisquare"
+  | "Sesquiquadrate"
+  | "Quintile"
+  | "Biquintile";
+
+export type AspectName = MajorAspectName | MinorAspectName;
 
 export type ZodiacSign =
   | "Aries"

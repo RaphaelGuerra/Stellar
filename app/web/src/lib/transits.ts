@@ -1,16 +1,19 @@
 import { Body, Ecliptic, GeoVector, MakeTime } from "astronomy-engine";
 import {
-  ASPECT_DEFS,
   ASPECT_SYMBOL,
   PLANETS,
   PLANET_SYMBOL,
   SIGN_INDEX,
+  getOrbMultiplier,
+  normalizeChartSettings,
   normalizeAngle,
+  resolveAspectDefinitions,
 } from "./constants";
 import type {
   AspectName,
   AspectTone,
   ChartResult,
+  ChartSettings,
   DetailBlock,
   DuoMode,
   PlanetName,
@@ -95,13 +98,19 @@ const STAT_LABELS: Record<TransitLocale, Record<SynastryStatKey, string>> = {
   },
 };
 
-const ASPECT_LABELS: Record<TransitLocale, Record<AspectName, string>> = {
+const ASPECT_LABELS: Record<TransitLocale, Partial<Record<AspectName, string>>> = {
   en: {
     Conjunction: "Conjunction",
     Opposition: "Opposition",
     Square: "Square",
     Trine: "Trine",
     Sextile: "Sextile",
+    Quincunx: "Quincunx",
+    Semisextile: "Semisextile",
+    Semisquare: "Semisquare",
+    Sesquiquadrate: "Sesquiquadrate",
+    Quintile: "Quintile",
+    Biquintile: "Biquintile",
   },
   pt: {
     Conjunction: "Conjuncao",
@@ -109,6 +118,12 @@ const ASPECT_LABELS: Record<TransitLocale, Record<AspectName, string>> = {
     Square: "Quadratura",
     Trine: "Trigono",
     Sextile: "Sextil",
+    Quincunx: "Quincuncio",
+    Semisextile: "Semisextil",
+    Semisquare: "Semiquadratura",
+    Sesquiquadrate: "Sesquiquadratura",
+    Quintile: "Quintil",
+    Biquintile: "Biquintil",
   },
 };
 
@@ -130,28 +145,46 @@ const STAT_WEIGHTS: Record<PlanetName, Record<SynastryStatKey, number>> = {
   Pluto: { attraction: 3, communication: 1, stability: 1, growth: 2 },
 };
 
-const BASE_IMPACT: Record<AspectName, number> = {
+const BASE_IMPACT: Partial<Record<AspectName, number>> = {
   Trine: 1,
   Sextile: 0.9,
   Conjunction: 0.8,
   Opposition: 0.65,
   Square: 0.55,
+  Quintile: 0.72,
+  Biquintile: 0.7,
+  Semisextile: 0.62,
+  Quincunx: 0.5,
+  Semisquare: 0.44,
+  Sesquiquadrate: 0.4,
 };
 
-const OPPORTUNITY_FACTOR: Record<AspectName, number> = {
+const OPPORTUNITY_FACTOR: Partial<Record<AspectName, number>> = {
   Trine: 1.35,
   Sextile: 1.2,
   Conjunction: 0.85,
   Opposition: 0.35,
   Square: 0.25,
+  Quintile: 1.1,
+  Biquintile: 1.05,
+  Semisextile: 0.95,
+  Quincunx: 0.45,
+  Semisquare: 0.32,
+  Sesquiquadrate: 0.3,
 };
 
-const WATCHOUT_FACTOR: Record<AspectName, number> = {
+const WATCHOUT_FACTOR: Partial<Record<AspectName, number>> = {
   Trine: 0.2,
   Sextile: 0.3,
   Conjunction: 0.85,
   Opposition: 1.35,
   Square: 1.2,
+  Quintile: 0.42,
+  Biquintile: 0.45,
+  Semisextile: 0.5,
+  Quincunx: 1.1,
+  Semisquare: 1.15,
+  Sesquiquadrate: 1.2,
 };
 
 function getPlanetLongitude(chart: ChartResult, planet: PlanetName): number {
@@ -178,16 +211,37 @@ function separationDegrees(a: number, b: number): number {
   return delta > 180 ? 360 - delta : delta;
 }
 
-function detectAspect(separation: number): { type: AspectName; orb: number; maxOrb: number } | null {
+function getAspectLabel(locale: TransitLocale, type: AspectName): string {
+  return ASPECT_LABELS[locale][type] ?? type;
+}
+
+function getBaseImpact(type: AspectName): number {
+  return BASE_IMPACT[type] ?? 0.5;
+}
+
+function getOpportunityFactor(type: AspectName): number {
+  return OPPORTUNITY_FACTOR[type] ?? 0.75;
+}
+
+function getWatchoutFactor(type: AspectName): number {
+  return WATCHOUT_FACTOR[type] ?? 0.85;
+}
+
+function detectAspect(
+  separation: number,
+  aspectDefs: ReadonlyArray<{ type: AspectName; angle: number; orb: number }>,
+  orbMultiplier: number
+): { type: AspectName; orb: number; maxOrb: number } | null {
   let bestMatch: { type: AspectName; orb: number; maxOrb: number } | null = null;
-  for (const aspect of ASPECT_DEFS) {
+  for (const aspect of aspectDefs) {
+    const maxOrb = aspect.orb * orbMultiplier;
     const orb = Math.abs(separation - aspect.angle);
-    if (orb > aspect.orb) continue;
+    if (orb > maxOrb) continue;
     if (bestMatch === null || orb < bestMatch.orb) {
       bestMatch = {
         type: aspect.type,
         orb,
-        maxOrb: aspect.orb,
+        maxOrb,
       };
     }
   }
@@ -211,7 +265,14 @@ function dedupeTags(tags: string[]): string[] {
   return Array.from(new Set(tags.filter(Boolean)));
 }
 
-function buildTransitHits(chartA: ChartResult, chartB: ChartResult, now: Date): TransitHit[] {
+function buildTransitHits(
+  chartA: ChartResult,
+  chartB: ChartResult,
+  now: Date,
+  settings: ChartSettings
+): TransitHit[] {
+  const aspectDefs = resolveAspectDefinitions(settings);
+  const orbMultiplier = getOrbMultiplier(settings.orbMode);
   const transitLongitudes = getTransitLongitudes(now);
   const hits: TransitHit[] = [];
   const charts: Array<{ ref: ChartRef; chart: ChartResult }> = [
@@ -225,12 +286,12 @@ function buildTransitHits(chartA: ChartResult, chartB: ChartResult, now: Date): 
       for (const natalPlanet of PLANETS) {
         const natalLongitude = getPlanetLongitude(target.chart, natalPlanet);
         const separation = separationDegrees(transitLongitude, natalLongitude);
-        const aspect = detectAspect(separation);
+        const aspect = detectAspect(separation, aspectDefs, orbMultiplier);
         if (!aspect) continue;
 
         const stat = pickDominantStat(transitPlanet, natalPlanet);
         const exactness = Math.max(0, 1 - aspect.orb / aspect.maxOrb);
-        const baseStrength = BASE_IMPACT[aspect.type] * (0.15 + exactness);
+        const baseStrength = getBaseImpact(aspect.type) * (0.15 + exactness);
         const statBoost = 1 + (STAT_WEIGHTS[transitPlanet][stat] + STAT_WEIGHTS[natalPlanet][stat]) / 12;
         const weightedStrength = baseStrength * statBoost;
 
@@ -243,8 +304,8 @@ function buildTransitHits(chartA: ChartResult, chartB: ChartResult, now: Date): 
           orb: Math.round(aspect.orb * 10) / 10,
           exactness,
           stat,
-          opportunityScore: weightedStrength * OPPORTUNITY_FACTOR[aspect.type],
-          watchoutScore: weightedStrength * WATCHOUT_FACTOR[aspect.type],
+          opportunityScore: weightedStrength * getOpportunityFactor(aspect.type),
+          watchoutScore: weightedStrength * getWatchoutFactor(aspect.type),
         });
       }
     }
@@ -268,7 +329,7 @@ function buildInsightDetails(
   const duoLabel = getDuoLabel(locale, duoMode);
   const exactnessPercent = Math.round(hit.exactness * 100);
   const personLabel = PERSON_LABELS[locale][hit.chartRef];
-  const aspectLabel = ASPECT_LABELS[locale][hit.aspectType];
+  const aspectLabel = getAspectLabel(locale, hit.aspectType);
 
   if (locale === "en") {
     if (kind === "opportunity") {
@@ -360,7 +421,7 @@ function buildInsight(
   duoMode: DuoMode
 ): TransitInsight {
   const statLabel = STAT_LABELS[locale][hit.stat];
-  const aspectLabel = ASPECT_LABELS[locale][hit.aspectType];
+  const aspectLabel = getAspectLabel(locale, hit.aspectType);
   const personLabel = PERSON_LABELS[locale][hit.chartRef];
   const duoLabel = getDuoLabel(locale, duoMode);
 
@@ -514,7 +575,8 @@ export function buildDailyTransitOutlook(
   const locale = options.locale ?? "pt";
   const duoMode = options.duoMode ?? "romantic";
   const now = options.now ?? new Date();
-  const hits = buildTransitHits(chartA, chartB, now);
+  const settings = normalizeChartSettings(chartA.settings ?? chartB.settings);
+  const hits = buildTransitHits(chartA, chartB, now, settings);
 
   const byOpportunity = [...hits].sort((left, right) => {
     if (right.opportunityScore !== left.opportunityScore) {

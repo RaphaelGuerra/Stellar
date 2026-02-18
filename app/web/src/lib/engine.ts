@@ -11,12 +11,13 @@ import type {
   ZodiacSign,
 } from "./types";
 import {
-  ASPECT_DEFS,
   DEFAULT_CHART_SETTINGS,
   PLANETS,
   SIGNS,
+  getOrbMultiplier,
   normalizeAngle,
   normalizeChartSettings,
+  resolveAspectDefinitions,
   serializeSettings,
 } from "./constants";
 import { resolveCity } from "./resolveCity";
@@ -384,8 +385,8 @@ function buildAspectsFromLongitudes(
   settings: ChartSettings
 ): Aspect[] {
   const aspects: Aspect[] = [];
-  const orbMultiplier =
-    settings.orbMode === "tight" ? 0.8 : settings.orbMode === "wide" ? 1.2 : 1;
+  const aspectDefs = resolveAspectDefinitions(settings);
+  const orbMultiplier = getOrbMultiplier(settings.orbMode);
 
   for (let i = 0; i < PLANETS.length; i++) {
     const a = PLANETS[i];
@@ -397,17 +398,14 @@ function buildAspectsFromLongitudes(
       if (!Number.isFinite(lonB)) continue;
       const delta = Math.abs(lonA - lonB);
       const separation = delta > 180 ? 360 - delta : delta;
-      for (const aspect of ASPECT_DEFS) {
-        const adjustedOrb = aspect.orb * orbMultiplier;
-        const orb = Math.abs(separation - aspect.angle);
-        if (orb <= adjustedOrb) {
-          aspects.push({
-            a,
-            b,
-            type: aspect.type,
-            orb: Math.round(orb * 10) / 10,
-          });
-        }
+      const match = detectAspectByDefinitions(separation, aspectDefs, orbMultiplier);
+      if (match) {
+        aspects.push({
+          a,
+          b,
+          type: match.type,
+          orb: match.orb,
+        });
       }
     }
   }
@@ -851,9 +849,13 @@ function angleDistance(a: number, b: number): number {
   return delta > 180 ? 360 - delta : delta;
 }
 
-function detectMajorAspect(separation: number, orbMultiplier = 1): { type: Aspect["type"]; orb: number } | null {
+function detectAspectByDefinitions(
+  separation: number,
+  aspectDefs: ReadonlyArray<{ type: Aspect["type"]; angle: number; orb: number }>,
+  orbMultiplier = 1
+): { type: Aspect["type"]; orb: number } | null {
   let best: { type: Aspect["type"]; orb: number } | null = null;
-  for (const def of ASPECT_DEFS) {
+  for (const def of aspectDefs) {
     const limit = def.orb * orbMultiplier;
     const orb = Math.abs(separation - def.angle);
     if (orb > limit) continue;
@@ -956,11 +958,12 @@ export async function generateTransits(
   range: { from: string; to: string },
   settings: Partial<ChartSettings> = baseChart.settings
 ): Promise<TransitRangeResult> {
+  const normalizedSettings = normalizeChartSettings(settings);
   const fromDate = new Date(`${range.from}T00:00:00Z`);
   const toDate = new Date(`${range.to}T00:00:00Z`);
   const days = iterDaysInclusive(fromDate, toDate);
-  const orbMultiplier =
-    settings.orbMode === "tight" ? 0.8 : settings.orbMode === "wide" ? 1.2 : 1;
+  const orbMultiplier = getOrbMultiplier(normalizedSettings.orbMode);
+  const aspectDefs = resolveAspectDefinitions(normalizedSettings);
 
   const dayRows: TransitDay[] = [];
   const exactHits: TransitAspectHit[] = [];
@@ -976,14 +979,14 @@ export async function generateTransits(
         timezone: baseChart.normalized.timezone,
       },
     };
-    const transitChart = await generateChart(transitInput, settings);
+    const transitChart = await generateChart(transitInput, normalizedSettings);
     const hits: TransitAspectHit[] = [];
     for (const transitPlanet of PLANETS) {
       const transitLongitude = transitChart.planets[transitPlanet].longitude ?? 0;
       for (const natalPlanet of PLANETS) {
         const natalLongitude = baseChart.planets[natalPlanet].longitude ?? 0;
         const separation = angleDistance(transitLongitude, natalLongitude);
-        const match = detectMajorAspect(separation, orbMultiplier);
+        const match = detectAspectByDefinitions(separation, aspectDefs, orbMultiplier);
         if (!match) continue;
         const hit: TransitAspectHit = {
           date: transitInput.date,
@@ -1214,15 +1217,20 @@ function midpointLongitude(a: number, b: number): number {
   return normalizeAngle((Math.atan2(Math.sin(ar) + Math.sin(br), Math.cos(ar) + Math.cos(br)) * 180) / Math.PI);
 }
 
-function buildPlanetAspectsFromPlacements(planets: Record<PlanetName, PlanetPlacement>): Aspect[] {
+function buildPlanetAspectsFromPlacements(
+  planets: Record<PlanetName, PlanetPlacement>,
+  settings: ChartSettings
+): Aspect[] {
   const aspects: Aspect[] = [];
+  const orbMultiplier = getOrbMultiplier(settings.orbMode);
+  const aspectDefs = resolveAspectDefinitions(settings);
   for (let i = 0; i < PLANETS.length; i++) {
     const a = PLANETS[i];
     for (let j = i + 1; j < PLANETS.length; j++) {
       const b = PLANETS[j];
       const lonA = planets[a].longitude ?? 0;
       const lonB = planets[b].longitude ?? 0;
-      const match = detectMajorAspect(angleDistance(lonA, lonB));
+      const match = detectAspectByDefinitions(angleDistance(lonA, lonB), aspectDefs, orbMultiplier);
       if (!match) continue;
       aspects.push({ a, b, type: match.type, orb: match.orb });
     }
@@ -1276,7 +1284,7 @@ export async function generateComposite(
     planets[planet] = placementFromLongitude(lon);
   }
 
-  const aspects = buildPlanetAspectsFromPlacements(planets);
+  const aspects = buildPlanetAspectsFromPlacements(planets, normalizedSettings);
   const midpointAsc = midpointLongitude(
     chartA.angles?.ascendant.longitude ?? 0,
     chartB.angles?.ascendant.longitude ?? 0

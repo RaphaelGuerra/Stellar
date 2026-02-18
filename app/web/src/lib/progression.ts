@@ -54,13 +54,19 @@ export const DEFAULT_PROGRESSION_STATE: ProgressionState = {
   reflectedQuestIds: [],
 };
 
-const ASPECT_LABELS: Record<ProgressionLocale, Record<AspectName, string>> = {
+const ASPECT_LABELS: Record<ProgressionLocale, Partial<Record<AspectName, string>>> = {
   en: {
     Conjunction: "Conjunction",
     Opposition: "Opposition",
     Square: "Square",
     Trine: "Trine",
     Sextile: "Sextile",
+    Quincunx: "Quincunx",
+    Semisextile: "Semisextile",
+    Semisquare: "Semisquare",
+    Sesquiquadrate: "Sesquiquadrate",
+    Quintile: "Quintile",
+    Biquintile: "Biquintile",
   },
   pt: {
     Conjunction: "Conjuncao",
@@ -68,8 +74,18 @@ const ASPECT_LABELS: Record<ProgressionLocale, Record<AspectName, string>> = {
     Square: "Quadratura",
     Trine: "Trigono",
     Sextile: "Sextil",
+    Quincunx: "Quincuncio",
+    Semisextile: "Semisextil",
+    Semisquare: "Semiquadratura",
+    Sesquiquadrate: "Sesquiquadratura",
+    Quintile: "Quintil",
+    Biquintile: "Biquintil",
   },
 };
+
+function getAspectLabel(locale: ProgressionLocale, type: AspectName): string {
+  return ASPECT_LABELS[locale][type] ?? type;
+}
 
 const STAT_LABELS: Record<ProgressionLocale, Record<SynastryStatKey, string>> = {
   en: {
@@ -121,8 +137,24 @@ function dedupeTags(tags: readonly string[]): string[] {
 }
 
 function getAspectTone(type: AspectName): AspectTone {
-  if (type === "Trine" || type === "Sextile") return "harmonious";
-  if (type === "Square" || type === "Opposition") return "challenging";
+  if (
+    type === "Trine" ||
+    type === "Sextile" ||
+    type === "Semisextile" ||
+    type === "Quintile" ||
+    type === "Biquintile"
+  ) {
+    return "harmonious";
+  }
+  if (
+    type === "Square" ||
+    type === "Opposition" ||
+    type === "Semisquare" ||
+    type === "Sesquiquadrate" ||
+    type === "Quincunx"
+  ) {
+    return "challenging";
+  }
   return "intense";
 }
 
@@ -260,7 +292,7 @@ export function buildRelationshipQuest(
   const dayKey = getLocalDayKey(now, timeZone);
   const focusStat = pickFocusStat(sourceAspect);
   const focusStatLabel = STAT_LABELS[locale][focusStat];
-  const aspectLabel = ASPECT_LABELS[locale][sourceAspect.type];
+  const aspectLabel = getAspectLabel(locale, sourceAspect.type);
   const duoLabel = getDuoLabel(locale, duoMode);
   const tone = getAspectTone(sourceAspect.type);
 

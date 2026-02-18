@@ -102,6 +102,12 @@ export const ASPECT_SYMBOL: Record<AspectName, string> = {
   Square: "\u25A1",
   Trine: "\u25B3",
   Sextile: "\u2736",
+  Quincunx: "\u26BB",
+  Semisextile: "\u26BA",
+  Semisquare: "\u2220",
+  Sesquiquadrate: "\u26BC",
+  Quintile: "Q",
+  Biquintile: "bQ",
 };
 
 export const SIGN_INDEX: Record<ZodiacSign, number> = {
@@ -134,13 +140,55 @@ export const SIGN_ELEMENT: Record<ZodiacSign, ElementName> = {
   Pisces: "water",
 };
 
-export const ASPECT_DEFS: Array<{ type: AspectName; angle: number; orb: number }> = [
+export interface AspectDefinition {
+  type: AspectName;
+  angle: number;
+  orb: number;
+}
+
+export const MAJOR_ASPECT_DEFS: AspectDefinition[] = [
   { type: "Conjunction", angle: 0, orb: 8 },
   { type: "Opposition", angle: 180, orb: 8 },
   { type: "Square", angle: 90, orb: 6 },
   { type: "Trine", angle: 120, orb: 6 },
   { type: "Sextile", angle: 60, orb: 4 },
 ];
+
+export const EXPANDED_ASPECT_DEFS: AspectDefinition[] = [
+  { type: "Quincunx", angle: 150, orb: 3 },
+  { type: "Semisquare", angle: 45, orb: 2 },
+  { type: "Sesquiquadrate", angle: 135, orb: 2 },
+];
+
+export const MINOR_ASPECT_DEFS: AspectDefinition[] = [
+  { type: "Semisextile", angle: 30, orb: 2 },
+  { type: "Quintile", angle: 72, orb: 2 },
+  { type: "Biquintile", angle: 144, orb: 2 },
+];
+
+// Keep legacy export name stable for modules that only need the 5 major definitions.
+export const ASPECT_DEFS: AspectDefinition[] = MAJOR_ASPECT_DEFS;
+
+export function allAspectDefinitions(): AspectDefinition[] {
+  return [...MAJOR_ASPECT_DEFS, ...EXPANDED_ASPECT_DEFS, ...MINOR_ASPECT_DEFS];
+}
+
+export function resolveAspectDefinitions(settings: ChartSettings): AspectDefinition[] {
+  const defs: AspectDefinition[] = [...MAJOR_ASPECT_DEFS];
+  if (settings.aspectProfile === "expanded") {
+    defs.push(...EXPANDED_ASPECT_DEFS);
+  }
+  if (settings.includeMinorAspects) {
+    defs.push(...MINOR_ASPECT_DEFS);
+  }
+  return defs;
+}
+
+export function getOrbMultiplier(mode: ChartSettings["orbMode"]): number {
+  if (mode === "tight") return 0.8;
+  if (mode === "wide") return 1.2;
+  return 1;
+}
 
 export function normalizeAngle(angle: number): number {
   return ((angle % 360) + 360) % 360;
@@ -163,11 +211,19 @@ export function getElement(sign: ZodiacSign): ElementName {
 }
 
 export function normalizeChartSettings(settings?: Partial<ChartSettings>): ChartSettings {
+  const houseSystem = HOUSE_SYSTEMS.includes((settings?.houseSystem ?? "") as HouseSystem)
+    ? (settings?.houseSystem as HouseSystem)
+    : DEFAULT_CHART_SETTINGS.houseSystem;
+  const aspectProfile = settings?.aspectProfile === "expanded" ? "expanded" : "major";
+  const orbMode =
+    settings?.orbMode === "tight" || settings?.orbMode === "wide" || settings?.orbMode === "standard"
+      ? settings.orbMode
+      : DEFAULT_CHART_SETTINGS.orbMode;
   return {
     zodiac: "tropical",
-    houseSystem: settings?.houseSystem ?? DEFAULT_CHART_SETTINGS.houseSystem,
-    aspectProfile: settings?.aspectProfile ?? DEFAULT_CHART_SETTINGS.aspectProfile,
-    orbMode: settings?.orbMode ?? DEFAULT_CHART_SETTINGS.orbMode,
+    houseSystem,
+    aspectProfile,
+    orbMode,
     includeMinorAspects:
       typeof settings?.includeMinorAspects === "boolean"
         ? settings.includeMinorAspects

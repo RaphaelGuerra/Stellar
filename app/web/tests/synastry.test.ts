@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_CHART_SETTINGS } from "../src/lib/constants";
 import { buildChartComparison } from "../src/lib/synastry";
 import type { ChartResult, PlanetName, ZodiacSign } from "../src/lib/types";
 
@@ -239,5 +240,35 @@ describe("buildChartComparison", () => {
     expect(venusConjunction?.title).not.toContain("Love");
     expect(venusConjunction?.tags).toContain("bond");
     expect(venusConjunction?.text).toContain("Main areas");
+  });
+
+  it("enables expanded aspects when aspect profile is expanded", () => {
+    const chartA = buildChart({ Sun: 0 });
+    const chartB = buildChart({ Sun: 150 });
+    chartA.settings = { ...DEFAULT_CHART_SETTINGS, aspectProfile: "expanded" };
+
+    const comparison = buildChartComparison(chartA, chartB, "en");
+    const sunQuincunx = comparison.aspects?.find(
+      (aspect) =>
+        aspect.a.planet === "Sun" &&
+        aspect.b.planet === "Sun" &&
+        aspect.type === "Quincunx"
+    );
+    expect(sunQuincunx?.orb).toBe(0);
+  });
+
+  it("enables minor-only aspects when includeMinorAspects is true", () => {
+    const chartA = buildChart({ Sun: 0 });
+    const chartB = buildChart({ Sun: 72 });
+    chartA.settings = { ...DEFAULT_CHART_SETTINGS, includeMinorAspects: true };
+
+    const comparison = buildChartComparison(chartA, chartB, "en");
+    const sunQuintile = comparison.aspects?.find(
+      (aspect) =>
+        aspect.a.planet === "Sun" &&
+        aspect.b.planet === "Sun" &&
+        aspect.type === "Quintile"
+    );
+    expect(sunQuintile?.orb).toBe(0);
   });
 });

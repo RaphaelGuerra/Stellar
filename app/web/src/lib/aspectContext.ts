@@ -31,7 +31,7 @@ const PLANET_GLOSSARY: Record<PlanetName, { normal: string; carioca: string }> =
   },
 };
 
-const ASPECT_TONE: Record<AspectName, { normal: string; carioca: string }> = {
+const ASPECT_TONE: Partial<Record<AspectName, { normal: string; carioca: string }>> = {
   Conjunction: {
     normal: "merges and blends their themes into a single direction",
     carioca: "gruda tudo num bolo so; se vacilar vira bagunca do caralho",
@@ -52,6 +52,30 @@ const ASPECT_TONE: Record<AspectName, { normal: string; carioca: string }> = {
     normal: "opens opportunity, but requires initiative",
     carioca: "tem chance boa, mas se ficar parado perde a porra toda",
   },
+  Quincunx: {
+    normal: "demands practical adjustments and better coordination",
+    carioca: "pede ajuste fino pra nao virar ruido chato",
+  },
+  Semisextile: {
+    normal: "offers subtle support when both sides act intentionally",
+    carioca: "da apoio sutil, mas so rende com atitude",
+  },
+  Semisquare: {
+    normal: "creates low-grade friction that can build up",
+    carioca: "atrito miudo que acumula se ignorar",
+  },
+  Sesquiquadrate: {
+    normal: "adds background pressure and awkward timing",
+    carioca: "pressao de fundo e timing esquisito",
+  },
+  Quintile: {
+    normal: "highlights creative synergy and skill building",
+    carioca: "ativa criatividade e talento junto",
+  },
+  Biquintile: {
+    normal: "sharpens strategy through creative focus",
+    carioca: "afina estrategia com criatividade focada",
+  },
 };
 
 export function aspectSymbol(type: AspectName): string {
@@ -66,7 +90,11 @@ export function formatPairLine(
 ): string {
   const aDesc = PLANET_GLOSSARY[a][mode];
   const bDesc = PLANET_GLOSSARY[b][mode];
-  const tone = ASPECT_TONE[type][mode];
+  const tone =
+    ASPECT_TONE[type]?.[mode] ??
+    (mode === "carioca"
+      ? "mistura energia dos dois de um jeito que pede consciencia"
+      : "blends both themes in a way that needs conscious handling");
   const connector = mode === "carioca" ? "e" : "and";
   return `${a} (${aDesc}) ${connector} ${b} (${bDesc}): ${tone}.`;
 }

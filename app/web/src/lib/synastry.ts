@@ -1,10 +1,12 @@
 import {
-  ASPECT_DEFS,
   ASPECT_SYMBOL,
   PLANETS,
   PLANET_SYMBOL,
   SIGN_INDEX,
+  getOrbMultiplier,
+  normalizeChartSettings,
   normalizeAngle,
+  resolveAspectDefinitions,
 } from "./constants";
 import type {
   AspectName,
@@ -23,13 +25,19 @@ import type {
 export type SynastryLocale = "pt" | "en";
 type LifeArea = "love" | "family" | "work" | "friends" | "money" | "communication";
 
-const ASPECT_LABELS: Record<SynastryLocale, Record<AspectName, string>> = {
+const ASPECT_LABELS: Record<SynastryLocale, Partial<Record<AspectName, string>>> = {
   en: {
     Conjunction: "Conjunction",
     Opposition: "Opposition",
     Square: "Square",
     Trine: "Trine",
     Sextile: "Sextile",
+    Quincunx: "Quincunx",
+    Semisextile: "Semisextile",
+    Semisquare: "Semisquare",
+    Sesquiquadrate: "Sesquiquadrate",
+    Quintile: "Quintile",
+    Biquintile: "Biquintile",
   },
   pt: {
     Conjunction: "Conjuncao",
@@ -37,6 +45,12 @@ const ASPECT_LABELS: Record<SynastryLocale, Record<AspectName, string>> = {
     Square: "Quadratura",
     Trine: "Trigono",
     Sextile: "Sextil",
+    Quincunx: "Quincuncio",
+    Semisextile: "Semisextil",
+    Semisquare: "Semiquadratura",
+    Sesquiquadrate: "Sesquiquadratura",
+    Quintile: "Quintil",
+    Biquintile: "Biquintil",
   },
 };
 
@@ -93,12 +107,18 @@ const SYNASTRY_STAT_SUMMARY: Record<SynastryLocale, Record<SynastryStatKey, stri
   },
 };
 
-const ASPECT_STAT_IMPACT: Record<AspectName, number> = {
+const ASPECT_STAT_IMPACT: Partial<Record<AspectName, number>> = {
   Trine: 1,
   Sextile: 0.85,
   Conjunction: 0.7,
   Opposition: 0.4,
   Square: 0.25,
+  Quintile: 0.65,
+  Biquintile: 0.6,
+  Semisextile: 0.5,
+  Quincunx: 0.35,
+  Semisquare: 0.3,
+  Sesquiquadrate: 0.28,
 };
 
 const LIFE_AREA_LABELS: Record<SynastryLocale, Record<LifeArea, string>> = {
@@ -146,7 +166,7 @@ const PLANET_AREA_WEIGHTS: Record<PlanetName, Record<LifeArea, number>> = {
 
 const ASPECT_CLARITY: Record<
   SynastryLocale,
-  Record<AspectName, { tone: string; advice: string; tag: string }>
+  Partial<Record<AspectName, { tone: string; advice: string; tag: string }>>
 > = {
   en: {
     Conjunction: {
@@ -174,6 +194,36 @@ const ASPECT_CLARITY: Record<
       advice: "It gets stronger when both people take practical action.",
       tag: "opportunity",
     },
+    Quincunx: {
+      tone: "Adjustment aspect that exposes misalignment.",
+      advice: "Use tiny routine changes to prevent recurring friction.",
+      tag: "adjustment",
+    },
+    Semisextile: {
+      tone: "Subtle support channel with low noise.",
+      advice: "Small intentional actions make this aspect useful.",
+      tag: "subtle-flow",
+    },
+    Semisquare: {
+      tone: "Low-grade friction that builds over time.",
+      advice: "Address small annoyances early before they stack.",
+      tag: "micro-friction",
+    },
+    Sesquiquadrate: {
+      tone: "Background pressure that needs better timing.",
+      advice: "Slow down decisions and verify assumptions.",
+      tag: "pressure",
+    },
+    Quintile: {
+      tone: "Creative chemistry and problem-solving spark.",
+      advice: "Channel this into one shared creative objective.",
+      tag: "creative",
+    },
+    Biquintile: {
+      tone: "Focused strategic creativity between both people.",
+      advice: "Plan one concrete experiment and review results quickly.",
+      tag: "strategy",
+    },
   },
   pt: {
     Conjunction: {
@@ -200,6 +250,36 @@ const ASPECT_CLARITY: Record<
       tone: "Tem chance boa pra caralho.",
       advice: "So ganha forca com atitude no dia a dia.",
       tag: "oportunidade",
+    },
+    Quincunx: {
+      tone: "Aspecto de ajuste que mostra desalinhamento.",
+      advice: "Muda rotina pequena antes que a friccao repita.",
+      tag: "ajuste",
+    },
+    Semisextile: {
+      tone: "Canal sutil de apoio, sem alarde.",
+      advice: "Acao pequena e consistente faz render.",
+      tag: "fluxo-sutil",
+    },
+    Semisquare: {
+      tone: "Atrito baixo que acumula com o tempo.",
+      advice: "Resolve incomodo pequeno antes de virar bola de neve.",
+      tag: "micro-atrito",
+    },
+    Sesquiquadrate: {
+      tone: "Pressao de fundo que pede timing melhor.",
+      advice: "Desacelera decisao e confirma premissas.",
+      tag: "pressao",
+    },
+    Quintile: {
+      tone: "Quimica criativa e boa inventividade juntos.",
+      advice: "Canaliza em um objetivo criativo concreto.",
+      tag: "criatividade",
+    },
+    Biquintile: {
+      tone: "Criatividade estrategica com foco.",
+      advice: "Planeja um experimento pratico e revisa rapido.",
+      tag: "estrategia",
     },
   },
 };
@@ -332,8 +412,8 @@ function buildHighlightDetails(
 ): DetailBlock[] {
   const [primaryArea = "love", secondaryArea = "family", tertiaryArea = "work"] = areas;
   const areaLabels = getAreaLabels(locale, duoMode);
-  const aspectLabel = ASPECT_LABELS[locale][aspect.type];
-  const clarity = ASPECT_CLARITY[locale][aspect.type];
+  const aspectLabel = getAspectLabel(locale, aspect.type);
+  const clarity = getAspectClarity(locale, aspect.type);
   const primaryLabel = areaLabels[primaryArea];
   const secondaryLabel = areaLabels[secondaryArea];
   const primaryPlaybook = getAreaPlaybook(locale, duoMode, primaryArea);
@@ -386,13 +466,18 @@ function getAspectTone(type: AspectName): AspectTone {
   switch (type) {
     case "Trine":
     case "Sextile":
+    case "Semisextile":
+    case "Quintile":
+    case "Biquintile":
       return "harmonious";
     case "Square":
     case "Opposition":
+    case "Semisquare":
+    case "Sesquiquadrate":
+    case "Quincunx":
       return "challenging";
-    case "Conjunction":
-      return "intense";
   }
+  return "intense";
 }
 
 
@@ -523,6 +608,34 @@ function separationDegrees(a: number, b: number): number {
   return delta > 180 ? 360 - delta : delta;
 }
 
+function getAspectLabel(locale: SynastryLocale, type: AspectName): string {
+  return ASPECT_LABELS[locale][type] ?? type;
+}
+
+function getAspectClarity(
+  locale: SynastryLocale,
+  type: AspectName
+): { tone: string; advice: string; tag: string } {
+  return (
+    ASPECT_CLARITY[locale][type] ??
+    (locale === "en"
+      ? {
+          tone: "Mixed signal that asks for conscious handling.",
+          advice: "Use clear agreements and review practical expectations weekly.",
+          tag: "dynamic",
+        }
+      : {
+          tone: "Sinal misto que pede jogo de cintura.",
+          advice: "Fecha combinado claro e revisa expectativa pratica toda semana.",
+          tag: "dinamica",
+        })
+  );
+}
+
+function getAspectImpact(type: AspectName): number {
+  return ASPECT_STAT_IMPACT[type] ?? 0.45;
+}
+
 function rankLifeAreas(aspect: ComparisonAspect): LifeArea[] {
   const weightsA = PLANET_AREA_WEIGHTS[aspect.a.planet];
   const weightsB = PLANET_AREA_WEIGHTS[aspect.b.planet];
@@ -576,7 +689,7 @@ function buildSynastryStats(
 
   for (const aspect of aspects) {
     const baseScore = scoreAspect(aspect);
-    const impact = ASPECT_STAT_IMPACT[aspect.type];
+    const impact = getAspectImpact(aspect.type);
     for (const stat of SYNASTRY_STAT_ORDER) {
       const weight = buildStatWeight(aspect, stat);
       totals[stat].weighted += baseScore * impact * weight;
@@ -604,7 +717,7 @@ function buildHighlightText(
 ): string {
   const [firstArea, secondArea] = areas;
   const areaLabels = getAreaLabels(locale, duoMode);
-  const clarity = ASPECT_CLARITY[locale][aspect.type];
+  const clarity = getAspectClarity(locale, aspect.type);
   const firstLabel = areaLabels[firstArea];
   const secondLabel = areaLabels[secondArea];
 
@@ -625,8 +738,8 @@ function makeHighlight(
   const primaryArea = rankedAreas[0] ?? "love";
   const secondaryArea = rankedAreas[1] ?? "family";
   const tone = getAspectTone(aspect.type);
-  const label = ASPECT_LABELS[locale][aspect.type];
-  const clarity = ASPECT_CLARITY[locale][aspect.type];
+  const label = getAspectLabel(locale, aspect.type);
+  const clarity = getAspectClarity(locale, aspect.type);
   const funTitle = pickSynastryTitle(primaryArea, tone, index, locale, duoMode);
   const pSymA = PLANET_SYMBOL[aspect.a.planet] ?? "";
   const pSymB = PLANET_SYMBOL[aspect.b.planet] ?? "";
@@ -659,6 +772,9 @@ export function buildChartComparison(
   locale: SynastryLocale = "pt",
   duoMode: DuoMode = "romantic"
 ): ChartComparison {
+  const settings = normalizeChartSettings(chartA.settings ?? chartB.settings);
+  const orbMultiplier = getOrbMultiplier(settings.orbMode);
+  const aspectDefs = resolveAspectDefinitions(settings);
   const aspects: ComparisonAspect[] = [];
 
   for (const planetA of PLANETS) {
@@ -666,18 +782,22 @@ export function buildChartComparison(
     for (const planetB of PLANETS) {
       const lonB = getPlanetLongitude(chartB, planetB);
       const separation = separationDegrees(lonA, lonB);
-      for (const aspectDef of ASPECT_DEFS) {
+      let best: ComparisonAspect | null = null;
+      for (const aspectDef of aspectDefs) {
         const orb = Math.abs(separation - aspectDef.angle);
-        if (orb <= aspectDef.orb) {
-          aspects.push({
+        if (orb <= aspectDef.orb * orbMultiplier) {
+          const candidate: ComparisonAspect = {
             a: { chart: "A", planet: planetA },
             b: { chart: "B", planet: planetB },
             type: aspectDef.type,
             orb: Math.round(orb * 10) / 10,
-          });
-          break;
+          };
+          if (!best || (candidate.orb ?? 99) < (best.orb ?? 99)) {
+            best = candidate;
+          }
         }
       }
+      if (best) aspects.push(best);
     }
   }
 

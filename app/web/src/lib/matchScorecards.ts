@@ -63,20 +63,32 @@ const AREA_WEIGHTS: Record<LifeArea, Record<string, number>> = {
   },
 };
 
-const ASPECT_BASE_IMPACT: Record<AspectName, number> = {
+const ASPECT_BASE_IMPACT: Partial<Record<AspectName, number>> = {
   Trine: 1,
   Sextile: 0.8,
   Conjunction: 0.4,
   Opposition: -0.55,
   Square: -0.8,
+  Quintile: 0.55,
+  Biquintile: 0.5,
+  Semisextile: 0.35,
+  Quincunx: -0.25,
+  Semisquare: -0.45,
+  Sesquiquadrate: -0.5,
 };
 
-const ASPECT_ORB_CAP: Record<AspectName, number> = {
+const ASPECT_ORB_CAP: Partial<Record<AspectName, number>> = {
   Conjunction: 8,
   Opposition: 8,
   Square: 6,
   Trine: 6,
   Sextile: 4,
+  Quincunx: 3,
+  Semisextile: 2,
+  Semisquare: 2,
+  Sesquiquadrate: 2,
+  Quintile: 2,
+  Biquintile: 2,
 };
 
 const AREA_LABELS: Record<SynastryLocale, { romantic: AreaLabelSet; friend: AreaLabelSet }> = {
@@ -106,13 +118,19 @@ const AREA_LABELS: Record<SynastryLocale, { romantic: AreaLabelSet; friend: Area
   },
 };
 
-const ASPECT_LABELS: Record<SynastryLocale, Record<AspectName, string>> = {
+const ASPECT_LABELS: Record<SynastryLocale, Partial<Record<AspectName, string>>> = {
   en: {
     Conjunction: "Conjunction",
     Opposition: "Opposition",
     Square: "Square",
     Trine: "Trine",
     Sextile: "Sextile",
+    Quincunx: "Quincunx",
+    Semisextile: "Semisextile",
+    Semisquare: "Semisquare",
+    Sesquiquadrate: "Sesquiquadrate",
+    Quintile: "Quintile",
+    Biquintile: "Biquintile",
   },
   pt: {
     Conjunction: "Conjuncao",
@@ -120,8 +138,26 @@ const ASPECT_LABELS: Record<SynastryLocale, Record<AspectName, string>> = {
     Square: "Quadratura",
     Trine: "Trigono",
     Sextile: "Sextil",
+    Quincunx: "Quincuncio",
+    Semisextile: "Semisextil",
+    Semisquare: "Semiquadratura",
+    Sesquiquadrate: "Sesquiquadratura",
+    Quintile: "Quintil",
+    Biquintile: "Biquintil",
   },
 };
+
+function getAspectBaseImpact(type: AspectName): number {
+  return ASPECT_BASE_IMPACT[type] ?? 0.2;
+}
+
+function getAspectOrbCap(type: AspectName): number {
+  return ASPECT_ORB_CAP[type] ?? 2;
+}
+
+function getAspectLabel(locale: SynastryLocale, type: AspectName): string {
+  return ASPECT_LABELS[locale][type] ?? type;
+}
 
 function clampPercent(value: number): number {
   return Math.max(0, Math.min(100, Math.round(value)));
@@ -171,7 +207,7 @@ function buildAspectLabel(
   locale: SynastryLocale
 ): string {
   const symbol = ASPECT_SYMBOL[input.type] ?? "";
-  const label = ASPECT_LABELS[locale][input.type];
+  const label = getAspectLabel(locale, input.type);
   const orbText =
     typeof input.orb === "number"
       ? locale === "pt"
@@ -208,8 +244,8 @@ export function buildMatchScorecards(
       const pairWeight = weightA + weightB;
       if (pairWeight <= 0) continue;
 
-      const baseImpact = ASPECT_BASE_IMPACT[aspect.type];
-      const orbCap = ASPECT_ORB_CAP[aspect.type];
+      const baseImpact = getAspectBaseImpact(aspect.type);
+      const orbCap = getAspectOrbCap(aspect.type);
       const orb = aspect.orb ?? orbCap;
       const orbFactor = Math.max(0.15, 1 - orb / orbCap);
       const weightedImpact = baseImpact * pairWeight * orbFactor;

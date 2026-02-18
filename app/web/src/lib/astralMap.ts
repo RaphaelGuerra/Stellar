@@ -1,8 +1,8 @@
 import {
-  ASPECT_DEFS,
   PLANETS,
   SIGN_INDEX,
   SIGNS,
+  allAspectDefinitions,
   normalizeAngle,
 } from "./constants";
 import type {
@@ -27,13 +27,18 @@ function getAspectTone(type: AspectName): AspectTone {
   switch (type) {
     case "Trine":
     case "Sextile":
+    case "Semisextile":
+    case "Quintile":
+    case "Biquintile":
       return "harmonious";
     case "Square":
     case "Opposition":
+    case "Semisquare":
+    case "Sesquiquadrate":
+    case "Quincunx":
       return "challenging";
-    case "Conjunction":
-      return "intense";
   }
+  return "intense";
 }
 
 function longitudeToSignDegree(longitude: number): { sign: (typeof SIGNS)[number]; degree: number } {
@@ -182,7 +187,7 @@ function buildCompatibilityAspectLines(
 }
 
 export function getAspectFilterTypes(): AspectName[] {
-  return ASPECT_DEFS.map((def) => def.type);
+  return allAspectDefinitions().map((def) => def.type);
 }
 
 export function getMapCenter(): number {

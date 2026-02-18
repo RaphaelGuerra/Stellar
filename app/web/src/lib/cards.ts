@@ -160,6 +160,42 @@ const ASPECT_PLAYBOOK: Record<
       trap: "Waiting for momentum instead of creating it.",
       move: "Schedule one concrete action in 48 hours and execute it.",
     },
+    Quincunx: {
+      dynamic: "This is an adjustment aspect that reveals mismatched habits.",
+      bestUse: "Use it to tune routines and expectations with precision.",
+      trap: "Ignoring small misalignments until they turn into conflict.",
+      move: "Pick one recurring friction point and redesign the process this week.",
+    },
+    Semisextile: {
+      dynamic: "This is a subtle support lane that needs conscious effort.",
+      bestUse: "Use it for small coordinated improvements.",
+      trap: "Missing the opportunity because it feels too quiet.",
+      move: "Set one micro-commitment and repeat it daily for seven days.",
+    },
+    Semisquare: {
+      dynamic: "This is low-level friction that can quietly accumulate.",
+      bestUse: "Use it as an early-warning signal for stress buildup.",
+      trap: "Treating minor tension as harmless until it explodes.",
+      move: "Name the top irritation and agree on one preventive boundary.",
+    },
+    Sesquiquadrate: {
+      dynamic: "This is background pressure with awkward timing.",
+      bestUse: "Use it to improve pacing and decision checkpoints.",
+      trap: "Forcing outcomes while the timing is off.",
+      move: "Pause major reactions for 24 hours and review with fresh context.",
+    },
+    Quintile: {
+      dynamic: "This is a creative-skill aspect with inventive potential.",
+      bestUse: "Use it to build something original together.",
+      trap: "Keeping ideas abstract without tangible execution.",
+      move: "Prototype one shared concept in the next 72 hours.",
+    },
+    Biquintile: {
+      dynamic: "This is focused creative strategy under pressure.",
+      bestUse: "Use it for high-signal planning and elegant problem solving.",
+      trap: "Overdesigning instead of shipping a usable version.",
+      move: "Ship a minimal version first, then iterate with clear metrics.",
+    },
   },
   carioca: {
     Conjunction: {
@@ -191,6 +227,42 @@ const ASPECT_PLAYBOOK: Record<
       bestUse: "Bom pra cooperar sem desgaste desnecessario.",
       trap: "Esperar milagre em vez de agir.",
       move: "Marca uma acao objetiva nas proximas 48h e cumpre.",
+    },
+    Quincunx: {
+      dynamic: "Aspecto de ajuste que mostra onde a engrenagem ta desalinhada.",
+      bestUse: "Serve pra acertar rotina e expectativa no detalhe.",
+      trap: "Ignorar incomodo pequeno ate virar treta grande.",
+      move: "Escolhe um atrito recorrente e muda o processo nessa semana.",
+    },
+    Semisextile: {
+      dynamic: "Canal sutil de apoio que so rende com intencao.",
+      bestUse: "Bom pra melhoria pequena e constante.",
+      trap: "Deixar passar porque parece fraco.",
+      move: "Fecha uma micro-meta diaria e repete por sete dias.",
+    },
+    Semisquare: {
+      dynamic: "Atrito baixo que vai acumulando sem fazer barulho.",
+      bestUse: "Funciona como alerta cedo de estresse subindo.",
+      trap: "Empurrar com a barriga ate estourar.",
+      move: "Nomeia o incomodo principal e combina um limite preventivo.",
+    },
+    Sesquiquadrate: {
+      dynamic: "Pressao de fundo com timing torto.",
+      bestUse: "Ajuda a acertar ritmo e checkpoint de decisao.",
+      trap: "Forcar resultado na hora errada.",
+      move: "Segura reacao grande por 24h e revisa com cabeca fria.",
+    },
+    Quintile: {
+      dynamic: "Aspecto criativo que puxa inventividade e tecnica.",
+      bestUse: "Excelente pra criar algo autoral junto.",
+      trap: "Ficar so na ideia sem botar no mundo.",
+      move: "Prototipa uma ideia conjunta nas proximas 72h.",
+    },
+    Biquintile: {
+      dynamic: "Criatividade estrategica com foco total.",
+      bestUse: "Bom pra planejamento elegante e solucao inteligente.",
+      trap: "Polir demais e nao entregar nada.",
+      move: "Entrega versao minima primeiro e melhora com metrica clara.",
     },
   },
 };
@@ -469,8 +541,14 @@ export function buildCards(
   for (const aspect of chart.aspects) {
     if (aspectCount >= 12) break;
 
-    const aspectEntry = content.aspect[aspect.type];
-    if (!aspectEntry) continue;
+    const aspectEntry = content.aspect[aspect.type] ?? {
+      title: aspect.type,
+      text:
+        mode === "carioca"
+          ? "Aspecto complementar detectado. Usa os blocos de detalhe pra interpretar dinamica, risco e ajuste."
+          : "Supplementary aspect detected. Use the detail blocks to interpret dynamics, risks, and adjustments.",
+      tags: [aspect.type.toLowerCase()],
+    };
 
     const key = `aspect-${aspect.a}-${aspect.b}-${aspect.type}`;
     if (usedKeys.has(key)) continue;

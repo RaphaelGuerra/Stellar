@@ -14,6 +14,7 @@ import {
   AmbiguousLocalTimeError,
   NonexistentLocalTimeError,
   type AnnualProfectionResult,
+  type AstrocartographyLine,
   type AstrocartographyResult,
   type ReturnChartResult,
   type SecondaryProgressionResult,
@@ -76,6 +77,13 @@ interface AtlasShortlistEntry {
   nearestLines: string[];
 }
 
+interface AtlasCrossingEntry {
+  key: string;
+  pairLabel: string;
+  distance: number;
+  interpretation: string;
+}
+
 function toLocationLabel(city: string, country: string): string {
   const trimmedCity = city.trim();
   const trimmedCountry = country.trim();
@@ -133,6 +141,72 @@ function parseSupportedCityLabel(label: string): { city: string; country: string
   const city = parts.slice(0, -1).join(",").trim();
   if (!city || !country) return null;
   return { city, country };
+}
+
+function classifyAtlasPoint(point: AstrocartographyLine["point"]): "supportive" | "intense" | "neutral" {
+  if (point === "Venus" || point === "Jupiter" || point === "Sun") return "supportive";
+  if (point === "Mars" || point === "Saturn" || point === "Pluto") return "intense";
+  return "neutral";
+}
+
+function buildCrossingInterpretation(
+  left: AstrocartographyLine,
+  right: AstrocartographyLine,
+  isCarioca: boolean
+): string {
+  const toneLeft = classifyAtlasPoint(left.point);
+  const toneRight = classifyAtlasPoint(right.point);
+  const hasCareerAngle = left.angle === "MC" || right.angle === "MC";
+  const hasRelationshipAngle = left.angle === "DSC" || right.angle === "DSC";
+  const hasIdentityAngle = left.angle === "ASC" || right.angle === "ASC";
+
+  if (toneLeft === "supportive" && toneRight === "supportive") {
+    return isCarioca
+      ? "Zona boa pra crescimento com apoio natural."
+      : "Supportive zone with strong growth potential.";
+  }
+  if (toneLeft === "intense" || toneRight === "intense") {
+    return isCarioca
+      ? "Zona de pressao; pede disciplina e ajuste fino."
+      : "Pressure zone that rewards discipline and clear boundaries.";
+  }
+  if (hasCareerAngle) {
+    return isCarioca ? "Foco forte em carreira e direcao publica." : "Strong emphasis on career and public direction.";
+  }
+  if (hasRelationshipAngle) {
+    return isCarioca
+      ? "Ativa relacoes e pactos com outras pessoas."
+      : "Activates relationship dynamics and partnership commitments.";
+  }
+  if (hasIdentityAngle) {
+    return isCarioca ? "Puxa reinvencao pessoal e autonomia." : "Pulls personal reinvention and autonomy.";
+  }
+  return isCarioca ? "Mistura neutra; observa no dia a dia." : "Mixed neutral crossing; validate through lived experience.";
+}
+
+function buildAtlasCrossings(
+  astrocartography: AstrocartographyResult | null,
+  isCarioca: boolean
+): AtlasCrossingEntry[] {
+  if (!astrocartography || astrocartography.lines.length < 2) return [];
+  const entries: AtlasCrossingEntry[] = [];
+  for (let i = 0; i < astrocartography.lines.length; i++) {
+    for (let j = i + 1; j < astrocartography.lines.length; j++) {
+      const left = astrocartography.lines[i];
+      const right = astrocartography.lines[j];
+      if (left.point === right.point && left.angle === right.angle) continue;
+      const distance = longitudeDistanceDegrees(left.longitude, right.longitude);
+      if (distance > 1.5) continue;
+      const pairLabel = `${left.point} ${left.angle} × ${right.point} ${right.angle}`;
+      entries.push({
+        key: `${left.point}-${left.angle}-${right.point}-${right.angle}`,
+        pairLabel,
+        distance: Math.round(distance * 10) / 10,
+        interpretation: buildCrossingInterpretation(left, right, isCarioca),
+      });
+    }
+  }
+  return entries.sort((a, b) => a.distance - b.distance).slice(0, 8);
 }
 
 function buildAtlasShortlist(astrocartography: AstrocartographyResult | null): AtlasShortlistEntry[] {
@@ -565,6 +639,10 @@ function App() {
   const atlasShortlist = useMemo(
     () => buildAtlasShortlist(astrocartography),
     [astrocartography]
+  );
+  const atlasCrossings = useMemo(
+    () => buildAtlasCrossings(astrocartography, isCarioca),
+    [astrocartography, isCarioca]
   );
 
   useEffect(() => {
@@ -1161,8 +1239,11 @@ function App() {
     areaLibrary: isCarioca ? "Biblioteca" : "Library",
     settingsTitle: isCarioca ? "Configuracoes do mapa" : "Chart settings",
     settingsHouseSystem: isCarioca ? "Sistema de casas" : "House system",
+    settingsAspectProfile: isCarioca ? "Perfil de aspectos" : "Aspect profile",
     settingsOrbMode: isCarioca ? "Modo de orb" : "Orb mode",
     settingsMinorAspects: isCarioca ? "Incluir aspectos menores" : "Include minor aspects",
+    settingsAspectMajor: isCarioca ? "Maiores" : "Major",
+    settingsAspectExpanded: isCarioca ? "Expandido" : "Expanded",
     orbStandard: isCarioca ? "Padrao" : "Standard",
     orbTight: isCarioca ? "Apertado" : "Tight",
     orbWide: isCarioca ? "Amplo" : "Wide",
@@ -1336,6 +1417,11 @@ function App() {
     atlasShortlistEmpty: isCarioca
       ? "Sem matches fortes por enquanto. Tenta mudar data ou sistema de casas."
       : "No strong matches yet. Try another date or house system.",
+    atlasCrossingsTitle: isCarioca ? "Cruzamentos de linhas" : "Line crossings",
+    atlasCrossingsBadge: isCarioca ? "zonas de sobreposicao" : "overlap zones",
+    atlasCrossingsEmpty: isCarioca
+      ? "Sem cruzamentos fortes no momento."
+      : "No strong crossings detected right now.",
     libraryTitle: isCarioca ? "Biblioteca astrologica" : "Astrology library",
     libraryGlossary: isCarioca ? "Glossario base para consulta rapida." : "Core glossary for quick reference.",
     libraryTemplates: isCarioca ? "Templates de interpretacao e journal." : "Interpretation and journaling templates.",
@@ -1479,6 +1565,21 @@ function App() {
                         {system}
                       </option>
                     ))}
+                  </select>
+                </label>
+                <label className="privacy-controls__toggle">
+                  <span>{t.settingsAspectProfile}</span>
+                  <select
+                    value={chartSettings.aspectProfile}
+                    onChange={(event) =>
+                      setChartSettings((current) => ({
+                        ...current,
+                        aspectProfile: event.target.value as ChartSettings["aspectProfile"],
+                      }))
+                    }
+                  >
+                    <option value="major">{t.settingsAspectMajor}</option>
+                    <option value="expanded">{t.settingsAspectExpanded}</option>
                   </select>
                 </label>
                 <label className="privacy-controls__toggle">
@@ -2151,6 +2252,24 @@ function App() {
                       {entry.nearestLines.map((line) => (
                         <p key={`${entry.label}-${line}`} className="timeline-day__summary">{line}</p>
                       ))}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Section>
+          )}
+
+          {!loading && isAtlasArea && chart && (
+            <Section icon="🧷" title={t.atlasCrossingsTitle} badge={t.atlasCrossingsBadge}>
+              {atlasCrossings.length === 0 ? (
+                <p className="timeline-day__summary">{t.atlasCrossingsEmpty}</p>
+              ) : (
+                <div className="timeline-grid">
+                  {atlasCrossings.map((entry) => (
+                    <div key={entry.key} className="timeline-day">
+                      <p className="timeline-day__date">{entry.pairLabel}</p>
+                      <p className="timeline-day__summary">Delta {entry.distance.toFixed(1)}deg</p>
+                      <p className="timeline-day__summary">{entry.interpretation}</p>
                     </div>
                   ))}
                 </div>
