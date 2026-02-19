@@ -316,10 +316,13 @@ body {
 .header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  padding-bottom: var(--space-xl);
+  align-items: center;
+  padding: var(--space-lg) var(--space-xl);
   margin-bottom: var(--space-lg);
-  border-bottom: 1px solid var(--color-border);
+  border: 1px solid rgba(124, 106, 239, 0.2);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(145deg, rgba(124, 106, 239, 0.1), rgba(34, 211, 238, 0.06) 45%, rgba(244, 114, 182, 0.06));
+  box-shadow: 0 14px 45px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.12);
   gap: var(--space-md);
 }
 
@@ -441,9 +444,10 @@ body {
 /* ===== Mode Toggle (Segmented Control) ===== */
 .mode-toggle {
   display: flex;
+  flex-direction: column;
   background: var(--color-bg-muted);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-md);
   padding: var(--space-xs);
   gap: var(--space-xs);
   flex-shrink: 0;
@@ -921,8 +925,8 @@ body {
 /* ===== Card — Glassmorphism ===== */
 .card {
   position: relative;
-  background: var(--color-bg-card);
-  border: 1px solid var(--color-border);
+  background: linear-gradient(155deg, rgba(124, 106, 239, 0.06), rgba(34, 211, 238, 0.04) 54%, rgba(244, 114, 182, 0.04));
+  border: 1px solid rgba(124, 106, 239, 0.12);
   border-radius: var(--radius-lg);
   padding: var(--space-lg);
   box-shadow: var(--shadow-sm);
@@ -953,9 +957,9 @@ body {
 
 .card:hover {
   background: var(--color-bg-card-hover);
-  border-color: rgba(124, 106, 239, 0.2);
-  box-shadow: var(--shadow-md), 0 0 30px rgba(124, 106, 239, 0.08);
-  transform: translateY(-4px);
+  border-color: rgba(124, 106, 239, 0.25);
+  box-shadow: var(--shadow-md), 0 0 30px rgba(124, 106, 239, 0.12);
+  transform: translateY(-5px) scale(1.01);
 }
 
 .card:hover::before {
@@ -1104,6 +1108,11 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
+  padding: var(--space-lg);
+  border-radius: calc(var(--radius-lg) + 4px);
+  border: 1px solid rgba(124, 106, 239, 0.18);
+  background: linear-gradient(160deg, rgba(124, 106, 239, 0.08), rgba(34, 211, 238, 0.05) 48%, rgba(244, 114, 182, 0.05));
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .app[data-content-mode="carioca"] .form {
@@ -1164,8 +1173,8 @@ body {
   font-size: var(--font-size-base);
   font-family: inherit;
   color: var(--color-text);
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--color-border);
+  background: rgba(124, 106, 239, 0.05);
+  border: 1px solid rgba(124, 106, 239, 0.2);
   border-radius: var(--radius-md);
   transition: all var(--transition-fast);
   backdrop-filter: blur(8px);
@@ -2307,12 +2316,12 @@ body {
 }
 
 @media (max-width: 760px) {
-  .app[data-content-mode="carioca"] .header {
+  .header {
     padding: var(--space-md);
     align-items: flex-start;
   }
 
-  .app[data-content-mode="carioca"] .form {
+  .form {
     padding: var(--space-md);
   }
 }

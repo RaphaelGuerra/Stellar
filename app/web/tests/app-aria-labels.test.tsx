@@ -151,7 +151,7 @@ describe("App aria labels localization", () => {
     expect(screen.getByRole("group", { name: "Analysis mode" })).toBeTruthy();
     expect(screen.getByLabelText("Current chart info")).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("button", { name: "Carioca, porra" }));
+    fireEvent.click(screen.getByRole("button", { name: "Carioca" }));
 
     expect(screen.getByRole("main").getAttribute("aria-label")).toBe("Gerador de mapa astral");
     expect(screen.getByRole("group", { name: "Modo de conteudo" })).toBeTruthy();
@@ -277,7 +277,7 @@ describe("App aria labels localization", () => {
     );
 
     renderApp();
-    fireEvent.click(screen.getByRole("button", { name: "Carioca, porra" }));
+    fireEvent.click(screen.getByRole("button", { name: "Carioca" }));
     fireEvent.click(screen.getByRole("button", { name: "Transitos" }));
 
     expect(await screen.findByRole("heading", { name: "Hoje pra amizade" })).toBeTruthy();

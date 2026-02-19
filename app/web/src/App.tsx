@@ -6,7 +6,6 @@ import { Section } from "./components/Section";
 import { PersonForm } from "./components/PersonForm";
 import { AstralMapModal } from "./components/AstralMapModal";
 import { HOUSE_SYSTEMS } from "./lib/constants";
-import { SUPPORTED_CITIES } from "./lib/resolveCity";
 import type { ChartSettings } from "./lib/types";
 import { ChartView } from "./views/ChartView";
 import { TransitsView } from "./views/TransitsView";
@@ -16,7 +15,7 @@ import { AtlasView } from "./views/AtlasView";
 import { LibraryView } from "./views/LibraryView";
 
 function App() {
-  const [settingsOpen, setSettingsOpen] = useState(true);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const {
     mode, setMode, isCarioca,
     analysisMode, setAnalysisMode,
@@ -128,9 +127,7 @@ function App() {
     searchPlaceholder: isCarioca ? "Ex: Rio de Janeiro, BR" : "e.g. New York, US",
     searching: isCarioca ? "Caçando cidade..." : "Searching cities...",
     noResults: isCarioca ? "Nao achei porra nenhuma." : "No cities found.",
-    cityHint: isCarioca
-      ? `Manda a cidade com pais certinho, mermão. Ou usa um exemplo: ${SUPPORTED_CITIES.join(", ")}`
-      : `Type to search cities worldwide or try: ${SUPPORTED_CITIES.join(", ")}`,
+    cityHint: "",
     datePickerDialog: isCarioca ? "Escolher data" : "Choose date",
     datePickerYear: isCarioca ? "Ano" : "Year",
     datePickerPreviousMonth: isCarioca ? "Mes anterior" : "Previous month",

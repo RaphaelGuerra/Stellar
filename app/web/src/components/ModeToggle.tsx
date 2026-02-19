@@ -25,7 +25,7 @@ export function ModeToggle({ mode, setMode, ariaLabel = "Content mode" }: ModeTo
         aria-pressed={mode === "carioca"}
         onClick={() => setMode("carioca")}
       >
-        Carioca, porra
+        Carioca
       </button>
     </div>
   );
