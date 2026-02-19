@@ -50,7 +50,6 @@ function App() {
     headerTagline: isCarioca
       ? "\"Rio no peito, estrelas no olhar, brilhando pra Stella.\""
       : "\"City of stars, are you shining just for me?\"",
-    headerDedication: isCarioca ? "Feito com amor pra Stella" : "Made with love for Stella",
     areaChart: isCarioca ? "Mapa" : "Chart",
     areaTransits: isCarioca ? "Transitos" : "Transits",
     areaTiming: isCarioca ? "Timing" : "Timing",
@@ -175,7 +174,6 @@ function App() {
             <div className="header__brand">
               <h1 className="header__title">Stellar</h1>
               <p className="header__tagline">{t.headerTagline}</p>
-              <p className="header__dedication">{t.headerDedication}</p>
               <div className="header__meta" aria-label={ariaLabels.chartInfo} aria-live="polite" aria-atomic="true">
                 <span>{t.modeLabel}</span>
                 {chartMeta && (
