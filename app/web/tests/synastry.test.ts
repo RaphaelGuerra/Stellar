@@ -69,26 +69,6 @@ function buildChart(longitudes: Partial<Record<PlanetName, number>>): ChartResul
   };
 }
 
-function applySpecialRaphaelSignature(chart: ChartResult) {
-  chart.input.date = "1988-12-16";
-  chart.input.time = "11:20";
-  chart.input.city = "Nova Iguacu";
-  chart.input.country = "BR";
-  chart.normalized.utcDateTime = "1988-12-16T13:20:00Z";
-  chart.normalized.timezone = "America/Sao_Paulo";
-  chart.normalized.location = { lat: -22.7592175, lon: -43.4508728 };
-}
-
-function applySpecialStellaSignature(chart: ChartResult) {
-  chart.input.date = "1998-06-10";
-  chart.input.time = "08:34";
-  chart.input.city = "Sao Paulo";
-  chart.input.country = "BR";
-  chart.normalized.utcDateTime = "1998-06-10T11:34:00Z";
-  chart.normalized.timezone = "America/Sao_Paulo";
-  chart.normalized.location = { lat: -23.5506507, lon: -46.6333824 };
-}
-
 describe("buildChartComparison", () => {
   it("computes cross-chart aspects and sorts by orb", () => {
     const chartA = buildChart({ Sun: 0, Moon: 90, Mercury: 10, Venus: 50, Mars: 130 });
@@ -290,25 +270,5 @@ describe("buildChartComparison", () => {
         aspect.type === "Quintile"
     );
     expect(sunQuintile?.orb).toBe(0);
-  });
-
-  it("adds the special romantic summary only for the exact Raphael/Stella map", () => {
-    const chartA = buildChart({ Sun: 0, Moon: 0, Venus: 10 });
-    const chartB = buildChart({ Sun: 180, Moon: 180, Venus: 190 });
-    applySpecialRaphaelSignature(chartA);
-    applySpecialStellaSignature(chartB);
-
-    const romanticComparison = buildChartComparison(chartA, chartB, "pt", "romantic");
-    expect(romanticComparison.highlights[0]?.kind).toBe("summary");
-    expect(romanticComparison.highlights[0]?.title).toBe("Estrela de Referencia");
-
-    const friendComparison = buildChartComparison(chartA, chartB, "pt", "friend");
-    expect(friendComparison.highlights[0]?.kind).toBe("synastry-aspect");
-
-    const alteredChart = buildChart({ Sun: 180, Moon: 180, Venus: 190 });
-    applySpecialStellaSignature(alteredChart);
-    alteredChart.input.time = "08:35";
-    const noMatchComparison = buildChartComparison(chartA, alteredChart, "pt", "romantic");
-    expect(noMatchComparison.highlights[0]?.kind).toBe("synastry-aspect");
   });
 });

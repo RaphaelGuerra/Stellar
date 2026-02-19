@@ -24,15 +24,6 @@ import type {
 
 export type SynastryLocale = "pt" | "en";
 type LifeArea = "love" | "family" | "work" | "friends" | "money" | "communication";
-type SpecialChartSignature = {
-  date: string;
-  time: string;
-  country: string;
-  utcDateTime: string;
-  timezone: string;
-  lat: number;
-  lon: number;
-};
 
 const ASPECT_LABELS: Record<SynastryLocale, Partial<Record<AspectName, string>>> = {
   en: {
@@ -173,26 +164,6 @@ const PLANET_AREA_WEIGHTS: Record<PlanetName, Record<LifeArea, number>> = {
   Pluto: { love: 2, family: 2, work: 2, friends: 1, money: 2, communication: 1 },
 };
 
-const SPECIAL_RAPHAEL_SIGNATURE: SpecialChartSignature = {
-  date: "1988-12-16",
-  time: "11:20",
-  country: "BR",
-  utcDateTime: "1988-12-16T13:20:00Z",
-  timezone: "America/Sao_Paulo",
-  lat: -22.7592175,
-  lon: -43.4508728,
-};
-
-const SPECIAL_STELLA_SIGNATURE: SpecialChartSignature = {
-  date: "1998-06-10",
-  time: "08:34",
-  country: "BR",
-  utcDateTime: "1998-06-10T11:34:00Z",
-  timezone: "America/Sao_Paulo",
-  lat: -23.5506507,
-  lon: -46.6333824,
-};
-
 const ASPECT_CLARITY: Record<
   SynastryLocale,
   Partial<Record<AspectName, { tone: string; advice: string; tag: string }>>
@@ -256,28 +227,28 @@ const ASPECT_CLARITY: Record<
   },
   pt: {
     Conjunction: {
-      tone: "Encontro de energia muito forte.",
-      advice: "Quando voces alinham expectativas, essa intensidade vira construcao.",
+      tone: "Mistura forte pra caralho.",
+      advice: "Se nao combinar regra do jogo, vira bagunca.",
       tag: "intensidade",
     },
     Opposition: {
-      tone: "Dinamica de polos que se atraem e se provocam.",
-      advice: "Combinados claros evitam desgaste repetido.",
+      tone: "E puxa-puxa dos dois lados.",
+      advice: "Combinado claro evita treta repetida.",
       tag: "puxa-puxa",
     },
     Square: {
-      tone: "Atrito direto que pede maturidade.",
-      advice: "Se o conflito for tratado como parceria, vira crescimento real.",
+      tone: "Da atrito na lata.",
+      advice: "Se encarar o conflito junto, vira crescimento de verdade.",
       tag: "desafio",
     },
     Trine: {
-      tone: "Fluxo natural e acolhedor.",
-      advice: "Vale usar essa facilidade com intencao para aprofundar o vinculo.",
+      tone: "Flui facil pra cacete.",
+      advice: "Usa de proposito pra nao virar moleza.",
       tag: "fluidez",
     },
     Sextile: {
-      tone: "Potencial muito bom para evoluir juntos.",
-      advice: "Esse ponto cresce com atitudes consistentes no dia a dia.",
+      tone: "Tem chance boa pra caralho.",
+      advice: "So ganha forca com atitude no dia a dia.",
       tag: "oportunidade",
     },
     Quincunx: {
@@ -405,7 +376,7 @@ function getOrbDetail(orb: number | undefined, locale: SynastryLocale): string {
   if (orb <= 1) {
     return locale === "en"
       ? "Tight orb: this will show up loudly in day-to-day dynamics."
-      : "Orb bem fechado: isso aparece forte no dia a dia.";
+      : "Orb fechadinho: isso aparece forte no dia a dia, porra.";
   }
   if (orb <= 3) {
     return locale === "en"
@@ -449,12 +420,6 @@ function buildHighlightDetails(
   const secondaryPlaybook = getAreaPlaybook(locale, duoMode, secondaryArea);
   const orbDetail = getOrbDetail(aspect.orb, locale);
   const areaBreakdown = buildAreaBreakdown([primaryArea, secondaryArea, tertiaryArea], locale, duoMode);
-  const watchoutTitle = duoMode === "romantic"
-    ? (locale === "en" ? "Tender watchout" : "Ponto de cuidado")
-    : (locale === "en" ? "Watchout" : "Treta pra evitar");
-  const actionTitle = duoMode === "romantic"
-    ? (locale === "en" ? "Gesture of care" : "Gesto de carinho")
-    : (locale === "en" ? "Action step" : "Passo pratico");
 
   if (locale === "en") {
     return [
@@ -467,11 +432,11 @@ function buildHighlightDetails(
         text: areaBreakdown,
       },
       {
-        title: watchoutTitle,
+        title: "Watchout",
         text: `${primaryLabel}: ${primaryPlaybook.risk} ${secondaryLabel}: ${secondaryPlaybook.risk}`,
       },
       {
-        title: actionTitle,
+        title: "Action step",
         text: `${primaryPlaybook.move} ${clarity.advice}`,
       },
     ];
@@ -487,11 +452,11 @@ function buildHighlightDetails(
       text: areaBreakdown,
     },
     {
-      title: watchoutTitle,
+      title: "Treta pra evitar",
       text: `${primaryLabel}: ${primaryPlaybook.risk} ${secondaryLabel}: ${secondaryPlaybook.risk}`,
     },
     {
-      title: actionTitle,
+      title: "Passo pratico",
       text: `${primaryPlaybook.move} ${clarity.advice}`,
     },
   ];
@@ -554,34 +519,34 @@ const SYNASTRY_TITLES: Record<
   },
   pt: {
     love: {
-      harmonious: ["Raridade em Sintonia", "Carinho que Eleva"],
-      challenging: ["Amor em Ajuste", "Coracao em Aprendizado"],
-      intense: ["Estrela de Referencia", "Conexao que Marca"],
+      harmonious: ["Cidade das Estrelas", "Uma Noite Encantadora"],
+      challenging: ["Amor que Da Trabalho", "Coracao na Porrada"],
+      intense: ["Pros Que Ousam Sonhar", "Eu Sempre Vou Te Amar"],
     },
     family: {
-      harmonious: ["Lar em Harmonia", "Raiz Alinhada"],
-      challenging: ["Rotina em Ajuste", "Familia em Reconstrucao"],
-      intense: ["Laco Profundo", "Base que Transforma"],
+      harmonious: ["Lar Doce Match", "Raiz Alinhada"],
+      challenging: ["Ceia de Natal Astral", "Familia na Treta"],
+      intense: ["Laco de Sangue", "DNA Cosmico"],
     },
     work: {
-      harmonious: ["Dupla que Rende", "Execucao em Sintonia"],
-      challenging: ["Ritmo em Conflito", "Ambicao em Atrito"],
-      intense: ["Parceria de Potencia", "Foco que Impressiona"],
+      harmonious: ["Trampo que Flui", "Dupla de Ouro"],
+      challenging: ["Escritorio em Chamas", "Ambicao vs Ambicao"],
+      intense: ["Fusao de Potencia", "Parceria Atomica"],
     },
     friends: {
-      harmonious: ["Companhia que Faz Bem", "Lealdade em Cena"],
-      challenging: ["Amizade em Teste", "Afinidade em Ajuste"],
-      intense: ["Parceria de Trincheira", "Conexao Fora da Curva"],
+      harmonious: ["As Pessoas Amam Quem Tem Paixao", "Um Pouco de Loucura"],
+      challenging: ["Quase Inimigo, Quase Irmao", "Cria que Cutuca"],
+      intense: ["Parceiro de Trincheira", "Cola Cosmica"],
     },
     money: {
-      harmonious: ["Grana em Sintonia", "Seguranca Compartilhada"],
-      challenging: ["Prioridades em Choque", "Bolso em Negociacao"],
-      intense: ["Aposta com Responsabilidade", "Investimento de Confianca"],
+      harmonious: ["Grana no Flow", "Bolso em Sintonia"],
+      challenging: ["Guerra de Bolso", "Grana na Treta"],
+      intense: ["Aposta Alta", "Grana Tudo ou Nada"],
     },
     communication: {
-      harmonious: ["Mesma Frequencia", "Conversa que Encanta"],
-      challenging: ["Papo em Ajuste", "Escuta em Construcao"],
-      intense: ["Conexao Mental Forte", "Palavra que Marca"],
+      harmonious: ["Mesma Frequencia", "Eu Acho Romantico"],
+      challenging: ["Papo Desencontrado", "Dialogo de Surdo"],
+      intense: ["Telepatia Bruta", "Papo que Arrepia"],
     },
   },
 };
@@ -645,81 +610,6 @@ function separationDegrees(a: number, b: number): number {
 
 function getAspectLabel(locale: SynastryLocale, type: AspectName): string {
   return ASPECT_LABELS[locale][type] ?? type;
-}
-
-function nearlyEqual(left: number, right: number, tolerance = 0.02): boolean {
-  return Math.abs(left - right) <= tolerance;
-}
-
-function matchesSpecialSignature(chart: ChartResult, signature: SpecialChartSignature): boolean {
-  const input = chart.input;
-  const normalized = chart.normalized;
-
-  return (
-    input.date === signature.date &&
-    input.time === signature.time &&
-    input.country.toUpperCase() === signature.country &&
-    normalized.utcDateTime === signature.utcDateTime &&
-    normalized.timezone === signature.timezone &&
-    nearlyEqual(normalized.location.lat, signature.lat) &&
-    nearlyEqual(normalized.location.lon, signature.lon)
-  );
-}
-
-function isRaphaelStellaMap(chartA: ChartResult, chartB: ChartResult): boolean {
-  const directMatch =
-    matchesSpecialSignature(chartA, SPECIAL_RAPHAEL_SIGNATURE) &&
-    matchesSpecialSignature(chartB, SPECIAL_STELLA_SIGNATURE);
-  const swappedMatch =
-    matchesSpecialSignature(chartA, SPECIAL_STELLA_SIGNATURE) &&
-    matchesSpecialSignature(chartB, SPECIAL_RAPHAEL_SIGNATURE);
-  return directMatch || swappedMatch;
-}
-
-function buildSpecialRomanticHighlight(locale: SynastryLocale): ComparisonHighlight {
-  if (locale === "en") {
-    return {
-      key: "special-raphael-stella-core",
-      kind: "summary",
-      title: "Reference Star Connection",
-      subtitle: "A map that combines admiration, affection, and intention",
-      text: "This pairing carries emotional recognition, mental connection, and real care. The strength here is not only intensity, but the way respect and tenderness can protect the bond.",
-      tags: ["rare-bond", "admiration", "care", "mind-connection", "respect"],
-      details: [
-        {
-          title: "Why this feels different",
-          text: "The connection tends to mix affection, desire, friendship, and admiration in the same lane.",
-        },
-        {
-          title: "What preserves it",
-          text: "Clear limits, honest communication, and consistent small gestures keep this energy healthy.",
-        },
-      ],
-      tone: "intense",
-      score: 100,
-    };
-  }
-
-  return {
-    key: "special-raphael-stella-core",
-    kind: "summary",
-    title: "Estrela de Referencia",
-    subtitle: "Um mapa que junta admiracao, carinho e intencao",
-    text: "Esse encontro traz reconhecimento emocional, conexao mental e cuidado real. A forca aqui nao e so intensidade: e a forma como respeito e delicadeza protegem o vinculo.",
-    tags: ["conexao-rara", "admiracao", "carinho", "conexao-mental", "respeito"],
-    details: [
-      {
-        title: "Por que isso marca",
-        text: "A dinamica costuma unir admiracao, amizade, desejo e acolhimento no mesmo fluxo.",
-      },
-      {
-        title: "Como preservar o melhor",
-        text: "Limites claros, conversa honesta e gestos consistentes mantem essa energia em equilibrio.",
-      },
-    ],
-    tone: "intense",
-    score: 100,
-  };
 }
 
 function getAspectClarity(
@@ -830,94 +720,11 @@ function buildHighlightText(
   const clarity = getAspectClarity(locale, aspect.type);
   const firstLabel = areaLabels[firstArea];
   const secondLabel = areaLabels[secondArea];
-  const romanticNuance = duoMode === "romantic" ? buildRomanticNuance(aspect, locale) : "";
 
   if (locale === "en") {
-    return `Main areas: ${firstLabel} and ${secondLabel}. ${clarity.tone} ${clarity.advice}${romanticNuance}`;
+    return `Main areas: ${firstLabel} and ${secondLabel}. ${clarity.tone} ${clarity.advice}`;
   }
-  return `Areas mais mexidas: ${firstLabel} e ${secondLabel}. ${clarity.tone} ${clarity.advice}${romanticNuance}`;
-}
-
-function includesPlanet(aspect: ComparisonAspect, planet: PlanetName): boolean {
-  return aspect.a.planet === planet || aspect.b.planet === planet;
-}
-
-function buildRomanticNuance(aspect: ComparisonAspect, locale: SynastryLocale): string {
-  const hasSun = includesPlanet(aspect, "Sun");
-  const hasMoon = includesPlanet(aspect, "Moon");
-  const hasMercury = includesPlanet(aspect, "Mercury");
-  const hasVenus = includesPlanet(aspect, "Venus");
-  const hasMars = includesPlanet(aspect, "Mars");
-  const hasJupiter = includesPlanet(aspect, "Jupiter");
-  const hasSaturn = includesPlanet(aspect, "Saturn");
-  const hasUranus = includesPlanet(aspect, "Uranus");
-  const hasPluto = includesPlanet(aspect, "Pluto");
-
-  if (hasSun && hasMoon) {
-    return locale === "en"
-      ? " This tends to create emotional recognition and genuine admiration."
-      : " Isso costuma trazer reconhecimento emocional e admiracao real.";
-  }
-  if (hasVenus && hasPluto) {
-    return locale === "en"
-      ? " The magnetic pull is high, so care and boundaries keep it healthy."
-      : " O magnetismo aqui e alto, entao cuidado e limites preservam o melhor.";
-  }
-  if (hasVenus && hasJupiter) {
-    return locale === "en"
-      ? " Warmth, generosity, and affection usually grow quickly here."
-      : " Esse ponto favorece carinho, generosidade e acolhimento.";
-  }
-  if (hasMercury || (hasSun && hasMercury) || (hasMercury && hasMoon) || (hasMercury && hasUranus)) {
-    return locale === "en"
-      ? " Mental connection is part of the attraction, not just a bonus."
-      : " A conexao mental vira parte central do encanto, nao so um extra.";
-  }
-  if (hasSaturn && (hasSun || hasMoon || hasVenus)) {
-    return locale === "en"
-      ? " This favors commitment and respect when both protect the bond."
-      : " Esse encontro favorece compromisso e respeito quando o vinculo e cuidado.";
-  }
-  if (hasMars && hasUranus) {
-    return locale === "en"
-      ? " There is spark and movement, which works best with clear direction."
-      : " Ha faisca e movimento; com direcao clara, isso rende muito.";
-  }
-
-  return locale === "en"
-    ? " This can become a rare bond when admiration and care stay aligned."
-    : " Isso pode virar uma conexao rara quando admiracao e cuidado andam juntos.";
-}
-
-function buildRomanticTags(aspect: ComparisonAspect, locale: SynastryLocale): string[] {
-  const hasSun = includesPlanet(aspect, "Sun");
-  const hasMoon = includesPlanet(aspect, "Moon");
-  const hasMercury = includesPlanet(aspect, "Mercury");
-  const hasVenus = includesPlanet(aspect, "Venus");
-  const hasMars = includesPlanet(aspect, "Mars");
-  const hasJupiter = includesPlanet(aspect, "Jupiter");
-  const hasSaturn = includesPlanet(aspect, "Saturn");
-  const hasPluto = includesPlanet(aspect, "Pluto");
-
-  const tags: string[] = [];
-
-  if ((hasSun && hasMoon) || (hasVenus && hasJupiter)) {
-    tags.push(locale === "en" ? "admiration" : "admiracao");
-  }
-  if (hasMercury || (hasSun && hasMercury)) {
-    tags.push(locale === "en" ? "mind-connection" : "conexao-mental");
-  }
-  if (hasVenus || hasMoon || hasJupiter) {
-    tags.push(locale === "en" ? "care" : "carinho");
-  }
-  if (hasSaturn && (hasSun || hasMoon || hasVenus)) {
-    tags.push(locale === "en" ? "respect" : "respeito");
-  }
-  if ((hasVenus && hasPluto) || (hasMars && hasPluto) || (hasVenus && hasMars)) {
-    tags.push(locale === "en" ? "desire" : "desejo");
-  }
-
-  return tags;
+  return `Areas mais mexidas: ${firstLabel} e ${secondLabel}. ${clarity.tone} ${clarity.advice}`;
 }
 
 function makeHighlight(
@@ -934,7 +741,6 @@ function makeHighlight(
   const label = getAspectLabel(locale, aspect.type);
   const clarity = getAspectClarity(locale, aspect.type);
   const funTitle = pickSynastryTitle(primaryArea, tone, index, locale, duoMode);
-  const romanticTags = duoMode === "romantic" ? buildRomanticTags(aspect, locale) : [];
   const pSymA = PLANET_SYMBOL[aspect.a.planet] ?? "";
   const pSymB = PLANET_SYMBOL[aspect.b.planet] ?? "";
   const aSymbol = ASPECT_SYMBOL[aspect.type] ?? "";
@@ -953,7 +759,6 @@ function makeHighlight(
       label.toLowerCase(),
       aspect.a.planet.toLowerCase(),
       aspect.b.planet.toLowerCase(),
-      ...romanticTags,
     ]),
     tone,
     score: Math.max(0, 100 - (aspect.orb ?? 0) * 10),
@@ -998,17 +803,13 @@ export function buildChartComparison(
 
   aspects.sort((left, right) => (left.orb ?? 0) - (right.orb ?? 0));
   const highlights = aspects.map((aspect, index) => makeHighlight(aspect, index, locale, duoMode));
-  const highlightList =
-    duoMode === "romantic" && isRaphaelStellaMap(chartA, chartB)
-      ? [buildSpecialRomanticHighlight(locale), ...highlights]
-      : highlights;
   const stats = buildSynastryStats(aspects, locale);
 
   return {
     chartA,
     chartB,
     aspects,
-    highlights: highlightList,
+    highlights,
     stats,
   };
 }
