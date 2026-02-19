@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useLocation, Switch, Route } from "wouter";
 import { useAppContext, toDaylightSavingValue, parseDaylightSavingValue } from "./context/AppContext";
 import { ModeToggle } from "./components/ModeToggle";
@@ -15,6 +16,7 @@ import { AtlasView } from "./views/AtlasView";
 import { LibraryView } from "./views/LibraryView";
 
 function App() {
+  const [settingsOpen, setSettingsOpen] = useState(true);
   const {
     mode, setMode, isCarioca,
     analysisMode, setAnalysisMode,
@@ -209,69 +211,75 @@ function App() {
                   </button>
                 </div>
 
-                <div className="privacy-controls" role="group" aria-label={t.settingsTitle}>
-                  <p className="privacy-controls__title">{t.settingsTitle}</p>
-                  <label className="privacy-controls__toggle">
-                    <span>{t.settingsHouseSystem}</span>
-                    <select
-                      value={chartSettings.houseSystem}
-                      onChange={(event) =>
-                        setChartSettings((current) => ({
-                          ...current,
-                          houseSystem: event.target.value as ChartSettings["houseSystem"],
-                        }))
-                      }
-                    >
-                      {HOUSE_SYSTEMS.map((system) => (
-                        <option key={system} value={system}>{system}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="privacy-controls__toggle">
-                    <span>{t.settingsAspectProfile}</span>
-                    <select
-                      value={chartSettings.aspectProfile}
-                      onChange={(event) =>
-                        setChartSettings((current) => ({
-                          ...current,
-                          aspectProfile: event.target.value as ChartSettings["aspectProfile"],
-                        }))
-                      }
-                    >
-                      <option value="major">{t.settingsAspectMajor}</option>
-                      <option value="expanded">{t.settingsAspectExpanded}</option>
-                    </select>
-                  </label>
-                  <label className="privacy-controls__toggle">
-                    <span>{t.settingsOrbMode}</span>
-                    <select
-                      value={chartSettings.orbMode}
-                      onChange={(event) =>
-                        setChartSettings((current) => ({
-                          ...current,
-                          orbMode: event.target.value as ChartSettings["orbMode"],
-                        }))
-                      }
-                    >
-                      <option value="standard">{t.orbStandard}</option>
-                      <option value="tight">{t.orbTight}</option>
-                      <option value="wide">{t.orbWide}</option>
-                    </select>
-                  </label>
-                  <label className="privacy-controls__toggle">
-                    <input
-                      type="checkbox"
-                      checked={chartSettings.includeMinorAspects}
-                      onChange={(event) =>
-                        setChartSettings((current) => ({
-                          ...current,
-                          includeMinorAspects: event.target.checked,
-                        }))
-                      }
-                    />
-                    <span>{t.settingsMinorAspects}</span>
-                  </label>
-                </div>
+                <details
+                  className="settings-panel"
+                  open={settingsOpen}
+                  onToggle={(e) => setSettingsOpen(e.currentTarget.open)}
+                >
+                  <summary className="settings-panel__summary">{t.settingsTitle}</summary>
+                  <div className="privacy-controls" role="group" aria-label={t.settingsTitle}>
+                    <label className="privacy-controls__toggle">
+                      <span>{t.settingsHouseSystem}</span>
+                      <select
+                        value={chartSettings.houseSystem}
+                        onChange={(event) =>
+                          setChartSettings((current) => ({
+                            ...current,
+                            houseSystem: event.target.value as ChartSettings["houseSystem"],
+                          }))
+                        }
+                      >
+                        {HOUSE_SYSTEMS.map((system) => (
+                          <option key={system} value={system}>{system}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="privacy-controls__toggle">
+                      <span>{t.settingsAspectProfile}</span>
+                      <select
+                        value={chartSettings.aspectProfile}
+                        onChange={(event) =>
+                          setChartSettings((current) => ({
+                            ...current,
+                            aspectProfile: event.target.value as ChartSettings["aspectProfile"],
+                          }))
+                        }
+                      >
+                        <option value="major">{t.settingsAspectMajor}</option>
+                        <option value="expanded">{t.settingsAspectExpanded}</option>
+                      </select>
+                    </label>
+                    <label className="privacy-controls__toggle">
+                      <span>{t.settingsOrbMode}</span>
+                      <select
+                        value={chartSettings.orbMode}
+                        onChange={(event) =>
+                          setChartSettings((current) => ({
+                            ...current,
+                            orbMode: event.target.value as ChartSettings["orbMode"],
+                          }))
+                        }
+                      >
+                        <option value="standard">{t.orbStandard}</option>
+                        <option value="tight">{t.orbTight}</option>
+                        <option value="wide">{t.orbWide}</option>
+                      </select>
+                    </label>
+                    <label className="privacy-controls__toggle">
+                      <input
+                        type="checkbox"
+                        checked={chartSettings.includeMinorAspects}
+                        onChange={(event) =>
+                          setChartSettings((current) => ({
+                            ...current,
+                            includeMinorAspects: event.target.checked,
+                          }))
+                        }
+                      />
+                      <span>{t.settingsMinorAspects}</span>
+                    </label>
+                  </div>
+                </details>
 
                 {analysisMode === "compatibility" && (
                   <div className="duo-mode" role="group" aria-label={ariaLabels.duoMode}>
@@ -377,18 +385,6 @@ function App() {
                   />
                 </div>
                 {exportMessage && <p className="privacy-controls__hint">{exportMessage}</p>}
-                <div className="analysis-mode" role="group" aria-label={ariaLabels.primaryArea}>
-                  {primaryAreas.map((area) => (
-                    <button
-                      key={area.key}
-                      type="button"
-                      className={`analysis-mode__btn ${primaryArea === area.key ? "analysis-mode__btn--active" : ""}`}
-                      onClick={() => navigate("/" + area.key)}
-                    >
-                      {area.label}
-                    </button>
-                  ))}
-                </div>
 
                 {error && (
                   <p className="form__error" role="alert">
@@ -397,6 +393,19 @@ function App() {
                 )}
               </form>
             </section>
+
+            <nav className="primary-nav" aria-label={ariaLabels.primaryArea}>
+              {primaryAreas.map((area) => (
+                <button
+                  key={area.key}
+                  type="button"
+                  className={`primary-nav__btn ${primaryArea === area.key ? "primary-nav__btn--active" : ""}`}
+                  onClick={() => navigate("/" + area.key)}
+                >
+                  {area.label}
+                </button>
+              ))}
+            </nav>
 
             <Switch>
               <Route path="/chart" component={ChartView} />

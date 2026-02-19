@@ -584,6 +584,113 @@ body {
   padding-top: var(--space-xl);
 }
 
+/* ===== Primary Navigation ===== */
+.primary-nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  gap: var(--space-xs);
+  background: rgba(7, 7, 15, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-xs);
+  margin-bottom: var(--space-lg);
+}
+
+.primary-nav__btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.primary-nav__btn:hover:not(.primary-nav__btn--active) {
+  color: var(--color-text-secondary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.primary-nav__btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-primary);
+}
+
+.primary-nav__btn--active {
+  color: var(--color-text);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow-sm);
+}
+
+.app[data-content-mode="carioca"] .primary-nav {
+  background: rgba(4, 4, 10, 0.88);
+  border-color: rgba(255, 157, 72, 0.28);
+}
+
+.app[data-content-mode="carioca"] .primary-nav__btn--active {
+  background: linear-gradient(130deg, rgba(255, 122, 24, 0.26), rgba(255, 77, 143, 0.22));
+  box-shadow: 0 4px 14px rgba(255, 77, 143, 0.18);
+  color: var(--color-text);
+}
+
+/* ===== Settings Panel (collapsible) ===== */
+.settings-panel {
+  text-align: left;
+}
+
+.settings-panel__summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  list-style: none;
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  padding: var(--space-xs) 0;
+  user-select: none;
+  transition: color var(--transition-fast);
+}
+
+.settings-panel__summary::-webkit-details-marker {
+  display: none;
+}
+
+.settings-panel__summary::before {
+  content: "▸";
+  display: inline-block;
+  font-size: 0.65em;
+  transition: transform var(--transition-fast);
+  color: var(--color-text-muted);
+}
+
+.settings-panel[open] .settings-panel__summary::before {
+  transform: rotate(90deg);
+}
+
+.settings-panel__summary:hover {
+  color: var(--color-text-secondary);
+}
+
+.settings-panel .privacy-controls {
+  margin-top: var(--space-sm);
+}
+
+.app[data-content-mode="carioca"] .settings-panel__summary {
+  color: rgba(255, 224, 196, 0.55);
+}
+
 /* ===== Primary Button ===== */
 .btn-primary {
   position: relative;
