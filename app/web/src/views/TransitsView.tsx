@@ -269,7 +269,7 @@ export function TransitsView() {
   return (
     <>
       {analysisMode === "compatibility" && dailyOutlook && (
-        <Section icon="📆" title={t.todayForUsTitle} badge={`${t.todayForUsBadge} · ${dailyOutlook.dateLabel}`}>
+        <Section icon="📆" title={t.todayForUsTitle} badge={`${t.todayForUsBadge} · ${dailyOutlook.dateLabel}`} collapsible>
           <div className="cards-grid--today">
             <Card
               key={`${resultVersion}-${dailyOutlook.opportunity.key}`}
@@ -300,7 +300,7 @@ export function TransitsView() {
       )}
 
       {analysisMode === "compatibility" && compatibilityForecast && (
-        <Section icon="🗓️" title={t.forecastTitle} badge={t.forecastBadge(forecastRange)}>
+        <Section icon="🗓️" title={t.forecastTitle} badge={t.forecastBadge(forecastRange)} collapsible>
           <div className="timeline-controls" role="group" aria-label={t.forecastTitle}>
             <button
               type="button"
@@ -335,7 +335,7 @@ export function TransitsView() {
       )}
 
       {transitFeed && (
-        <Section icon="🌗" title={t.transitsTitle} badge={`${transitRange}d · ${timeTravelDate}`}>
+        <Section icon="🌗" title={t.transitsTitle} badge={`${transitRange}d · ${timeTravelDate}`} collapsible>
           <div className="timeline-controls" role="group" aria-label={t.timeTravelTitle}>
             <button type="button" className="timeline-controls__btn" onClick={() => handleTimeTravelShift(-7)}>
               {t.timeTravelBack}

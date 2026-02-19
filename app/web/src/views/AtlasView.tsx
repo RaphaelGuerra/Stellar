@@ -181,7 +181,7 @@ export function AtlasView() {
   return (
     <>
       {astrocartography && (
-        <Section icon="🧭" title={t.atlasTitle} badge={`${astrocartography.lines.length} lines · ${t.atlasMapBadge}`}>
+        <Section icon="🧭" title={t.atlasTitle} badge={`${astrocartography.lines.length} lines · ${t.atlasMapBadge}`} collapsible>
           <p className="timeline-day__summary">{t.atlasMapHint}</p>
           <AstrocartographyMap
             lines={astrocartography.lines}
@@ -209,7 +209,7 @@ export function AtlasView() {
         </Section>
       )}
 
-      <Section icon="📍" title={t.atlasShortlistTitle} badge={t.atlasShortlistBadge}>
+      <Section icon="📍" title={t.atlasShortlistTitle} badge={t.atlasShortlistBadge} collapsible>
         <div className="timeline-controls" role="group" aria-label={t.atlasGoalFocusTitle}>
           <button
             type="button"
@@ -257,7 +257,7 @@ export function AtlasView() {
         )}
       </Section>
 
-      <Section icon="🧷" title={t.atlasCrossingsTitle} badge={t.atlasCrossingsBadge}>
+      <Section icon="🧷" title={t.atlasCrossingsTitle} badge={t.atlasCrossingsBadge} collapsible defaultOpen={false}>
         {atlasCrossings.length === 0 ? (
           <p className="timeline-day__summary">{t.atlasCrossingsEmpty}</p>
         ) : (
@@ -273,7 +273,7 @@ export function AtlasView() {
         )}
       </Section>
 
-      <Section icon="📌" title={t.atlasInspectorTitle}>
+      <Section icon="📌" title={t.atlasInspectorTitle} collapsible>
         <p className="timeline-day__summary">{t.atlasInspectorHint}</p>
         <form className="timeline-controls" onSubmit={handleInspectAtlasLocation}>
           <input

@@ -415,27 +415,29 @@ function App() {
             </Switch>
 
             <section className="action-section action-section--compact">
-              <div className="privacy-controls" role="group" aria-label={ariaLabels.privacyControls}>
-                <p className="privacy-controls__title">{t.privacyTitle}</p>
-                <label className="privacy-controls__toggle">
-                  <input
-                    type="checkbox"
-                    checked={persistLocalData}
-                    onChange={(event) => setPersistLocalData(event.target.checked)}
-                  />
-                  <span>{t.privacyPersist}</span>
-                </label>
-                <p className="privacy-controls__hint">
-                  {persistLocalData ? t.privacyHint(appStateRetentionDays) : t.privacyDisabledHint}
-                </p>
-                <button type="button" className="privacy-controls__clear" onClick={handleClearLocalData}>
-                  {t.privacyClear}
-                </button>
-              </div>
+              <details className="settings-panel">
+                <summary className="settings-panel__summary">{t.privacyTitle}</summary>
+                <div className="privacy-controls" role="group" aria-label={ariaLabels.privacyControls}>
+                  <label className="privacy-controls__toggle">
+                    <input
+                      type="checkbox"
+                      checked={persistLocalData}
+                      onChange={(event) => setPersistLocalData(event.target.checked)}
+                    />
+                    <span>{t.privacyPersist}</span>
+                  </label>
+                  <p className="privacy-controls__hint">
+                    {persistLocalData ? t.privacyHint(appStateRetentionDays) : t.privacyDisabledHint}
+                  </p>
+                  <button type="button" className="privacy-controls__clear" onClick={handleClearLocalData}>
+                    {t.privacyClear}
+                  </button>
+                </div>
+              </details>
             </section>
 
             {!loading && history.length > 0 && (
-              <Section icon="🗂️" title={t.historyTitle} badge={`${history.length}`}>
+              <Section icon="🗂️" title={t.historyTitle} badge={`${history.length}`} collapsible defaultOpen={false}>
                 <div className="history-list">
                   {history.map((entry) => {
                     const when = new Date(entry.createdAt);

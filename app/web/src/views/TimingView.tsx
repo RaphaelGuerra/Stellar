@@ -122,7 +122,7 @@ export function TimingView() {
   }
 
   return (
-    <Section icon="⏳" title={t.timingTitle} badge={`${chartSettings.houseSystem} · ${timeTravelDate}`}>
+    <Section icon="⏳" title={t.timingTitle} badge={`${chartSettings.houseSystem} · ${timeTravelDate}`} collapsible>
       <div className="timeline-controls" role="group" aria-label={t.timeTravelTitle}>
         <button type="button" className="timeline-controls__btn" onClick={() => handleTimeTravelShift(-7)}>
           {t.timeTravelBack}

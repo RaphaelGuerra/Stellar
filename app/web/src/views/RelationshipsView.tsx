@@ -290,7 +290,7 @@ export function RelationshipsView() {
   return (
     <>
       {matchScorecards.length > 0 && (
-        <Section icon="⚖️" title={t.matchScorecardsTitle} badge={t.matchScorecardsBadge}>
+        <Section icon="⚖️" title={t.matchScorecardsTitle} badge={t.matchScorecardsBadge} collapsible>
           <MatchScorecards
             cards={matchScorecards}
             areaLabels={matchAreaLabels}
@@ -302,7 +302,7 @@ export function RelationshipsView() {
       )}
 
       {comparison.stats.length > 0 && (
-        <Section icon="🎮" title={t.compatibilityStatsTitle} badge={t.compatibilityStatsBadge}>
+        <Section icon="🎮" title={t.compatibilityStatsTitle} badge={t.compatibilityStatsBadge} collapsible>
           <div className={`synastry-stats${duoMode === "romantic" ? " synastry-stats--romantic" : ""}`}>
             {comparison.stats.map((stat) => (
               <div key={stat.key} className="synastry-stats__item">
@@ -324,7 +324,7 @@ export function RelationshipsView() {
       )}
 
       {relationshipQuest && (
-        <Section icon="🎯" title={t.questTitle} badge={t.questBadge(relationshipQuest.focusStatLabel)}>
+        <Section icon="🎯" title={t.questTitle} badge={t.questBadge(relationshipQuest.focusStatLabel)} collapsible>
           <div className="quest-panel">
             <div className="quest-panel__stats">
               <p>{t.questXpLabel}: {progression.xp}</p>
@@ -371,7 +371,7 @@ export function RelationshipsView() {
       )}
 
       {(compositeChart || davisonChart) && (
-        <Section icon="🧩" title={t.relationshipsComposite} badge="midpoint + davison">
+        <Section icon="🧩" title={t.relationshipsComposite} badge="midpoint + davison" collapsible defaultOpen={false}>
           <div className="timeline-grid">
             {compositeChart && (
               <div className="timeline-day">
@@ -392,7 +392,7 @@ export function RelationshipsView() {
       )}
 
       {relationshipTransitFeed && (
-        <Section icon="🌠" title={t.relationshipsTransitTimeline} badge={`30d · ${timeTravelDate}`}>
+        <Section icon="🌠" title={t.relationshipsTransitTimeline} badge={`30d · ${timeTravelDate}`} collapsible defaultOpen={false}>
           <div className="timeline-controls" role="group" aria-label={t.relationshipsTransitTimeline}>
             <button
               type="button"
@@ -469,7 +469,7 @@ export function RelationshipsView() {
       )}
 
       {advancedOverlays && (
-        <Section icon="🧠" title={t.advancedTitle} badge={t.advancedBadge}>
+        <Section icon="🧠" title={t.advancedTitle} badge={t.advancedBadge} collapsible defaultOpen={false}>
           {!advancedUnlocked && (
             <div className="advanced-lock">
               <p>{t.advancedLocked}</p>
@@ -503,6 +503,7 @@ export function RelationshipsView() {
           title={t.compatibilityTitle}
           badge={t.compatibilityBadge(comparisonCards.length)}
           badgeAccent
+          collapsible
         >
           <div className={`cards-grid--synastry cards-grid--${duoMode}`}>
             {comparisonCards.map((card) => (

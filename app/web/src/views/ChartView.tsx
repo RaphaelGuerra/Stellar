@@ -158,7 +158,7 @@ export function ChartView() {
   return (
     <>
       {astralMapModel && (
-        <Section icon="🗺️" title={t.astralMapTitle} badge={t.astralMapBadge}>
+        <Section icon="🗺️" title={t.astralMapTitle} badge={t.astralMapBadge} collapsible>
           <AstralMapThumbnail
             model={astralMapModel}
             title={t.astralMapThumbTitle}
@@ -174,7 +174,7 @@ export function ChartView() {
       )}
 
       {analysisMode === "single" && chartA && (
-        <Section icon="🧭" title={t.normalizedTitle}>
+        <Section icon="🧭" title={t.normalizedTitle} collapsible defaultOpen={false}>
           <div className="normalized">
             <p>{t.timezoneLabel}: {chartA.normalized.timezone}</p>
             <p>{t.utcLabel}: {chartA.normalized.utcDateTime}</p>
@@ -189,7 +189,7 @@ export function ChartView() {
       )}
 
       {analysisMode === "single" && chartA && (
-        <Section icon="🧬" title={t.coreTriadTitle} badge={t.coreTriadBadge}>
+        <Section icon="🧬" title={t.coreTriadTitle} badge={t.coreTriadBadge} collapsible>
           <div className="core-triad">
             <p><strong>{t.coreSun}:</strong> {formatPlacementLabel(chartA.planets.Sun, t.coreAscMissing)}</p>
             <p><strong>{t.coreMoon}:</strong> {formatPlacementLabel(chartA.planets.Moon, t.coreAscMissing)}</p>
@@ -199,7 +199,7 @@ export function ChartView() {
       )}
 
       {analysisMode === "compatibility" && chartA && chartB && (
-        <Section icon="🧭" title={t.normalizedTitle}>
+        <Section icon="🧭" title={t.normalizedTitle} collapsible defaultOpen={false}>
           <div className="normalized normalized--comparison">
             <div className="normalized__card">
               <h3 className="normalized__title">{t.personA}</h3>
@@ -236,7 +236,7 @@ export function ChartView() {
       )}
 
       {analysisMode === "compatibility" && chartA && chartB && (
-        <Section icon="🧬" title={t.coreTriadTitle} badge={t.coreTriadBadge}>
+        <Section icon="🧬" title={t.coreTriadTitle} badge={t.coreTriadBadge} collapsible>
           <div className="core-triad core-triad--comparison">
             <div className="core-triad__card">
               <h3 className="core-triad__title">{t.personA}</h3>
@@ -255,7 +255,7 @@ export function ChartView() {
       )}
 
       {analysisMode === "single" && chartA && (
-        <Section icon="📐" title={t.chartPointsTitle} badge={t.chartPointsBadge(pointRowsA.length)}>
+        <Section icon="📐" title={t.chartPointsTitle} badge={t.chartPointsBadge(pointRowsA.length)} collapsible defaultOpen={false}>
           <div className="table-block">
             <table className="chart-table">
               <thead>
@@ -309,7 +309,7 @@ export function ChartView() {
       )}
 
       {analysisMode === "single" && chartA && (
-        <Section icon="📎" title={t.chartAspectsTableTitle} badge={t.chartAspectsTableBadge(aspectRowsA.length)}>
+        <Section icon="📎" title={t.chartAspectsTableTitle} badge={t.chartAspectsTableBadge(aspectRowsA.length)} collapsible defaultOpen={false}>
           {aspectRowsA.length === 0 ? (
             <p className="timeline-day__summary">{t.emptyTable}</p>
           ) : (
@@ -336,7 +336,7 @@ export function ChartView() {
       )}
 
       {analysisMode === "single" && chartA && (
-        <Section icon="🏛️" title={t.chartDignitiesTitle} badge={t.chartDignitiesBadge(dignityRowsA.length)}>
+        <Section icon="🏛️" title={t.chartDignitiesTitle} badge={t.chartDignitiesBadge(dignityRowsA.length)} collapsible defaultOpen={false}>
           <div className="table-block">
             <table className="chart-table">
               <thead>
@@ -361,7 +361,7 @@ export function ChartView() {
       )}
 
       {analysisMode === "compatibility" && chartA && chartB && (
-        <Section icon="📐" title={t.chartPointsTitle} badge={`${t.personA} + ${t.personB}`}>
+        <Section icon="📐" title={t.chartPointsTitle} badge={`${t.personA} + ${t.personB}`} collapsible defaultOpen={false}>
           <div className="timeline-grid">
             <div className="timeline-day">
               <p className="timeline-day__date">{t.personA}</p>
@@ -414,7 +414,7 @@ export function ChartView() {
       )}
 
       {analysisMode === "compatibility" && chartA && chartB && (
-        <Section icon="🏠" title={t.chartHousesTitle} badge={`${t.personA} + ${t.personB}`}>
+        <Section icon="🏠" title={t.chartHousesTitle} badge={`${t.personA} + ${t.personB}`} collapsible defaultOpen={false}>
           <div className="timeline-grid">
             <div className="timeline-day">
               <p className="timeline-day__date">{t.personA}</p>
@@ -475,7 +475,7 @@ export function ChartView() {
       )}
 
       {analysisMode === "compatibility" && chartA && chartB && (
-        <Section icon="📎" title={t.chartAspectsTableTitle} badge={`${t.personA} + ${t.personB}`}>
+        <Section icon="📎" title={t.chartAspectsTableTitle} badge={`${t.personA} + ${t.personB}`} collapsible defaultOpen={false}>
           <div className="timeline-grid">
             <div className="timeline-day">
               <p className="timeline-day__date">{t.personA}</p>
@@ -532,7 +532,7 @@ export function ChartView() {
       )}
 
       {analysisMode === "compatibility" && chartA && chartB && (
-        <Section icon="🏛️" title={t.chartDignitiesTitle} badge={`${t.personA} + ${t.personB}`}>
+        <Section icon="🏛️" title={t.chartDignitiesTitle} badge={`${t.personA} + ${t.personB}`} collapsible defaultOpen={false}>
           <div className="timeline-grid">
             <div className="timeline-day">
               <p className="timeline-day__date">{t.personA}</p>
@@ -593,7 +593,7 @@ export function ChartView() {
       )}
 
       {analysisMode === "single" && heroCards.length > 0 && (
-        <Section icon="☀️" title={t.sunMoonInsightsTitle} badge={`${heroCards.length} cards`}>
+        <Section icon="☀️" title={t.sunMoonInsightsTitle} badge={`${heroCards.length} cards`} collapsible>
           <div className="cards-grid--hero">
             {heroCards.map((card) => (
               <Card
@@ -614,7 +614,7 @@ export function ChartView() {
       )}
 
       {analysisMode === "single" && planetCards.length > 0 && (
-        <Section icon="🪐" title={t.planetsTitle} badge={`${planetCards.length} cards`}>
+        <Section icon="🪐" title={t.planetsTitle} badge={`${planetCards.length} cards`} collapsible>
           <div className="cards-grid--planets">
             {planetCards.map((card) => (
               <Card
@@ -635,7 +635,7 @@ export function ChartView() {
       )}
 
       {analysisMode === "single" && aspectCards.length > 0 && (
-        <Section icon="🔗" title={t.aspectsTitle} badge={t.aspectsBadge(aspectCards.length)} badgeAccent>
+        <Section icon="🔗" title={t.aspectsTitle} badge={t.aspectsBadge(aspectCards.length)} badgeAccent collapsible>
           <div className="cards-grid--aspects">
             {aspectCards.map((card) => (
               <Card
