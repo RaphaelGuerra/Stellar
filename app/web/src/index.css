@@ -308,9 +308,6 @@ body {
   margin: 0 auto;
 }
 
-.app[data-content-mode="carioca"] .container {
-  max-width: 1100px;
-}
 
 /* ===== Header ===== */
 .header {
@@ -674,9 +671,9 @@ body {
 .settings-panel__summary::before {
   content: "▸";
   display: inline-block;
-  font-size: 0.65em;
+  font-size: 0.9em;
   transition: transform var(--transition-fast);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 .settings-panel[open] .settings-panel__summary::before {
@@ -1372,9 +1369,28 @@ body {
   font-weight: 600;
   cursor: pointer;
   text-align: left;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.form__advanced-toggle::before {
+  content: "▸";
+  display: inline-block;
+  font-size: 0.9em;
+  color: var(--color-text-secondary);
+  transition: transform var(--transition-fast);
+}
+
+.form__advanced-toggle[aria-expanded="true"]::before {
+  transform: rotate(90deg);
 }
 
 .form__advanced-toggle:hover {
+  color: var(--color-cyan);
+}
+
+.form__advanced-toggle:hover::before {
   color: var(--color-cyan);
 }
 
