@@ -172,6 +172,7 @@ export function PersonForm({
           onClick={() => setManualDstOpen((prev) => !prev)}
         >
           {labels.daylightSavingManual}
+          <span className="collapsible-chevron" aria-hidden="true" />
         </button>
         {showManualDst && (
           <>

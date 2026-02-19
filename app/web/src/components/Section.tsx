@@ -24,7 +24,7 @@ export function Section({ icon, title, badge, badgeAccent, collapsible, defaultO
               {badge}
             </span>
           )}
-          <span className="section__chevron" aria-hidden="true">▸</span>
+          <span className="section__chevron" aria-hidden="true" />
         </summary>
         {children}
       </details>

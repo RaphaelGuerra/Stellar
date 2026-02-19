@@ -668,17 +668,6 @@ body {
   display: none;
 }
 
-.settings-panel__summary::before {
-  content: "▸";
-  display: inline-block;
-  font-size: 0.9em;
-  transition: transform var(--transition-fast);
-  color: var(--color-text-secondary);
-}
-
-.settings-panel[open] .settings-panel__summary::before {
-  transform: rotate(90deg);
-}
 
 .settings-panel__summary:hover {
   color: var(--color-text-secondary);
@@ -927,16 +916,58 @@ body {
   margin-left: 0;
 }
 
+/* ===== Unified collapsible chevron pill ===== */
+.collapsible-chevron,
 .section__chevron {
-  margin-left: auto;
-  font-size: 0.8em;
-  color: var(--color-text-secondary);
-  transition: transform var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: var(--color-text-secondary);
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
 
-details[open] .section__chevron {
-  transform: rotate(90deg);
+.section__chevron {
+  margin-left: auto;
+}
+
+.collapsible-chevron::after,
+.section__chevron::after {
+  content: "";
+  display: block;
+  width: 5px;
+  height: 5px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform var(--transition-fast);
+}
+
+/* Open states — arrow points down */
+details[open] .section__chevron::after,
+.settings-panel[open] .collapsible-chevron::after,
+.form__advanced-toggle[aria-expanded="true"] .collapsible-chevron::after {
+  transform: rotate(45deg);
+}
+
+/* Section header hover background */
+.section__header--collapsible:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-sm);
+}
+
+/* Hover: brighten chevron pill and arrow */
+.section__header--collapsible:hover .section__chevron,
+.settings-panel__summary:hover .collapsible-chevron,
+.form__advanced-toggle:hover .collapsible-chevron {
+  background: rgba(255, 255, 255, 0.10);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: var(--color-text-primary);
 }
 
 details:not([open]) .section__header--collapsible {
@@ -1412,17 +1443,6 @@ details:not([open]) .section__header--collapsible {
   gap: 4px;
 }
 
-.form__advanced-toggle::before {
-  content: "▸";
-  display: inline-block;
-  font-size: 0.9em;
-  color: var(--color-text-secondary);
-  transition: transform var(--transition-fast);
-}
-
-.form__advanced-toggle[aria-expanded="true"]::before {
-  transform: rotate(90deg);
-}
 
 .form__advanced-toggle:hover {
   color: var(--color-cyan);

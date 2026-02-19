@@ -213,7 +213,7 @@ function App() {
                   open={settingsOpen}
                   onToggle={(e) => setSettingsOpen(e.currentTarget.open)}
                 >
-                  <summary className="settings-panel__summary">{t.settingsTitle}</summary>
+                  <summary className="settings-panel__summary"><span className="collapsible-chevron" aria-hidden="true" />{t.settingsTitle}</summary>
                   <div className="privacy-controls" role="group" aria-label={t.settingsTitle}>
                     <label className="privacy-controls__toggle">
                       <span>{t.settingsHouseSystem}</span>
@@ -416,7 +416,7 @@ function App() {
 
             <section className="action-section action-section--compact">
               <details className="settings-panel">
-                <summary className="settings-panel__summary">{t.privacyTitle}</summary>
+                <summary className="settings-panel__summary"><span className="collapsible-chevron" aria-hidden="true" />{t.privacyTitle}</summary>
                 <div className="privacy-controls" role="group" aria-label={ariaLabels.privacyControls}>
                   <label className="privacy-controls__toggle">
                     <input
