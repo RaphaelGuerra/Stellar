@@ -410,7 +410,7 @@ function App() {
               </form>
             </section>
 
-            <nav className="primary-nav" aria-label={ariaLabels.primaryArea}>
+            <nav key={analysisMode} className="primary-nav" aria-label={ariaLabels.primaryArea}>
               {primaryAreas.map((area) => (
                 <button
                   key={area.key}

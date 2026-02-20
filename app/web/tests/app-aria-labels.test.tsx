@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import React from "react";
 import { Router } from "wouter";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -167,6 +167,20 @@ describe("App aria labels localization", () => {
     expect(screen.getByRole("group", { name: "Duo mode" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Romantic" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Friend" })).toBeTruthy();
+  });
+
+  it("keeps Relationships label correct when switching single -> compatibility", () => {
+    renderApp();
+
+    fireEvent.click(screen.getByRole("button", { name: "Carioca" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sinastria braba" }));
+
+    const nav = screen.getByRole("navigation", { name: "Area principal" });
+    const labels = within(nav).getAllByRole("button").map((button) => button.textContent?.trim() ?? "");
+
+    expect(labels[0]).toBe("Relacoes");
+    expect(labels.filter((label) => label === "Relacoes")).toHaveLength(1);
+    expect(labels.filter((label) => label === "Mapa")).toHaveLength(1);
   });
 
   it("renders the Today for Us section for saved compatibility charts", async () => {
