@@ -103,7 +103,6 @@ export function TransitsView() {
   // Worker effect for transit data
   useEffect(() => {
     if (!chartA) {
-      setTransitFeed(null);
       return;
     }
     let canceled = false;
@@ -125,29 +124,6 @@ export function TransitsView() {
       });
     return () => { canceled = true; };
   }, [chartA, chartSettings, timeTravelDate, transitRange]);
-
-  // Sync transit day page when feed changes
-  useEffect(() => {
-    if (!transitFeed || transitFeed.days.length === 0) {
-      if (selectedTransitDate !== "") setSelectedTransitDate("");
-      if (transitDayPage !== 0) setTransitDayPage(0);
-      return;
-    }
-    const maxPage = Math.max(0, Math.ceil(transitFeed.days.length / TRANSIT_PAGE_SIZE) - 1);
-    if (transitDayPage > maxPage) {
-      setTransitDayPage(maxPage);
-      return;
-    }
-    const selectedIndex = transitFeed.days.findIndex((day) => day.date === selectedTransitDate);
-    if (selectedIndex === -1) {
-      setSelectedTransitDate(transitFeed.days[0].date);
-      return;
-    }
-    const selectedPage = Math.floor(selectedIndex / TRANSIT_PAGE_SIZE);
-    if (selectedPage !== transitDayPage) {
-      setTransitDayPage(selectedPage);
-    }
-  }, [selectedTransitDate, transitDayPage, transitFeed, setSelectedTransitDate, setTransitDayPage]);
 
   // Reminder effects
   useEffect(() => {
@@ -180,12 +156,15 @@ export function TransitsView() {
     return Math.max(1, Math.ceil(transitFeed.days.length / TRANSIT_PAGE_SIZE));
   }, [transitFeed]);
 
+  const safeTransitDayPage = useMemo(() => {
+    return Math.max(0, Math.min(transitDayPage, transitPageCount - 1));
+  }, [transitDayPage, transitPageCount]);
+
   const pagedTransitDays = useMemo(() => {
     if (!transitFeed) return [];
-    const safePage = Math.max(0, Math.min(transitDayPage, transitPageCount - 1));
-    const start = safePage * TRANSIT_PAGE_SIZE;
+    const start = safeTransitDayPage * TRANSIT_PAGE_SIZE;
     return transitFeed.days.slice(start, start + TRANSIT_PAGE_SIZE);
-  }, [transitDayPage, transitFeed, transitPageCount]);
+  }, [safeTransitDayPage, transitFeed]);
 
   const selectedTransitDay = useMemo(() => {
     if (!transitFeed || transitFeed.days.length === 0) return null;
@@ -214,17 +193,18 @@ export function TransitsView() {
   );
 
   const upcomingReminderHits = useMemo(() => {
-    if (!transitFeed) return [];
+    if (!chartA || !transitFeed) return [];
     return transitFeed.exactHits.filter((hit) => {
       if (hit.orb > reminderMaxOrb) return false;
       const deltaDays = dayDistanceFrom(timeTravelDate, hit.date);
       return Number.isFinite(deltaDays) && deltaDays >= 0 && deltaDays <= reminderLeadDays;
     });
-  }, [reminderLeadDays, reminderMaxOrb, timeTravelDate, transitFeed]);
+  }, [chartA, reminderLeadDays, reminderMaxOrb, timeTravelDate, transitFeed]);
 
   // Reminder send effect
   useEffect(() => {
     if (!remindersEnabled || upcomingReminderHits.length === 0) return;
+    if (!chartA) return;
     const next = upcomingReminderHits[0];
     const reminderKey = [
       timeTravelDate,
@@ -248,6 +228,7 @@ export function TransitsView() {
     reminderLeadDays,
     reminderMaxOrb,
     remindersEnabled,
+    chartA,
     setLastReminderKey,
     timeTravelDate,
     upcomingReminderHits,
@@ -377,19 +358,19 @@ export function TransitsView() {
             <button
               type="button"
               className="timeline-controls__btn"
-              disabled={transitDayPage <= 0}
-              onClick={() => setTransitDayPage((page) => Math.max(0, page - 1))}
+              disabled={safeTransitDayPage <= 0}
+              onClick={() => setTransitDayPage(Math.max(0, safeTransitDayPage - 1))}
             >
               {t.transitsPrev}
             </button>
             <span className="timeline-day__summary">
-              {t.transitsPage(Math.min(transitDayPage + 1, transitPageCount), transitPageCount)}
+              {t.transitsPage(Math.min(safeTransitDayPage + 1, transitPageCount), transitPageCount)}
             </span>
             <button
               type="button"
               className="timeline-controls__btn"
-              disabled={transitDayPage >= transitPageCount - 1}
-              onClick={() => setTransitDayPage((page) => Math.min(transitPageCount - 1, page + 1))}
+              disabled={safeTransitDayPage >= transitPageCount - 1}
+              onClick={() => setTransitDayPage(Math.min(transitPageCount - 1, safeTransitDayPage + 1))}
             >
               {t.transitsNext}
             </button>

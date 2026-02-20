@@ -48,11 +48,6 @@ export function TimingView() {
   // Worker effect
   useEffect(() => {
     if (!chartA) {
-      setProgressed(null);
-      setSolarReturn(null);
-      setLunarReturn(null);
-      setProfections(null);
-      setSaturnReturnHits(null);
       return;
     }
     let canceled = false;

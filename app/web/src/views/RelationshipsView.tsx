@@ -120,8 +120,6 @@ export function RelationshipsView() {
   // Worker effect: composite + davison
   useEffect(() => {
     if (analysisMode !== "compatibility" || !chartA || !chartB) {
-      setCompositeChart(null);
-      setDavisonChart(null);
       return;
     }
     let canceled = false;
@@ -157,7 +155,6 @@ export function RelationshipsView() {
   // Worker effect: relationship transits
   useEffect(() => {
     if (analysisMode !== "compatibility" || !compositeChart) {
-      setRelationshipTransitFeed(null);
       return;
     }
     let canceled = false;
@@ -179,31 +176,6 @@ export function RelationshipsView() {
       });
     return () => { canceled = true; };
   }, [analysisMode, chartSettings, compositeChart, timeTravelDate]);
-
-  // Sync relationship transit pagination
-  useEffect(() => {
-    if (!relationshipTransitFeed || relationshipTransitFeed.days.length === 0) {
-      if (selectedRelationshipTransitDate !== "") setSelectedRelationshipTransitDate("");
-      if (relationshipTransitDayPage !== 0) setRelationshipTransitDayPage(0);
-      return;
-    }
-    const maxPage = Math.max(0, Math.ceil(relationshipTransitFeed.days.length / TRANSIT_PAGE_SIZE) - 1);
-    if (relationshipTransitDayPage > maxPage) {
-      setRelationshipTransitDayPage(maxPage);
-      return;
-    }
-    const selectedIndex = relationshipTransitFeed.days.findIndex(
-      (day) => day.date === selectedRelationshipTransitDate
-    );
-    if (selectedIndex === -1) {
-      setSelectedRelationshipTransitDate(relationshipTransitFeed.days[0].date);
-      return;
-    }
-    const selectedPage = Math.floor(selectedIndex / TRANSIT_PAGE_SIZE);
-    if (selectedPage !== relationshipTransitDayPage) {
-      setRelationshipTransitDayPage(selectedPage);
-    }
-  }, [relationshipTransitDayPage, relationshipTransitFeed, selectedRelationshipTransitDate]);
 
   // Local memos
   const matchScorecards = useMemo(() => {
@@ -263,12 +235,15 @@ export function RelationshipsView() {
     return Math.max(1, Math.ceil(relationshipTransitFeed.days.length / TRANSIT_PAGE_SIZE));
   }, [relationshipTransitFeed]);
 
+  const safeRelationshipTransitDayPage = useMemo(() => {
+    return Math.max(0, Math.min(relationshipTransitDayPage, relationshipTransitPageCount - 1));
+  }, [relationshipTransitDayPage, relationshipTransitPageCount]);
+
   const pagedRelationshipTransitDays = useMemo(() => {
     if (!relationshipTransitFeed) return [];
-    const safePage = Math.max(0, Math.min(relationshipTransitDayPage, relationshipTransitPageCount - 1));
-    const start = safePage * TRANSIT_PAGE_SIZE;
+    const start = safeRelationshipTransitDayPage * TRANSIT_PAGE_SIZE;
     return relationshipTransitFeed.days.slice(start, start + TRANSIT_PAGE_SIZE);
-  }, [relationshipTransitDayPage, relationshipTransitFeed, relationshipTransitPageCount]);
+  }, [relationshipTransitFeed, safeRelationshipTransitDayPage]);
 
   const selectedRelationshipTransitDay = useMemo(() => {
     if (!relationshipTransitFeed || relationshipTransitFeed.days.length === 0) return null;
@@ -399,23 +374,25 @@ export function RelationshipsView() {
             <button
               type="button"
               className="timeline-controls__btn"
-              disabled={relationshipTransitDayPage <= 0}
-              onClick={() => setRelationshipTransitDayPage((page) => Math.max(0, page - 1))}
+              disabled={safeRelationshipTransitDayPage <= 0}
+              onClick={() => setRelationshipTransitDayPage(Math.max(0, safeRelationshipTransitDayPage - 1))}
             >
               {t.transitsPrev}
             </button>
             <span className="timeline-day__summary">
               {t.transitsPage(
-                Math.min(relationshipTransitDayPage + 1, relationshipTransitPageCount),
+                Math.min(safeRelationshipTransitDayPage + 1, relationshipTransitPageCount),
                 relationshipTransitPageCount
               )}
             </span>
             <button
               type="button"
               className="timeline-controls__btn"
-              disabled={relationshipTransitDayPage >= relationshipTransitPageCount - 1}
+              disabled={safeRelationshipTransitDayPage >= relationshipTransitPageCount - 1}
               onClick={() =>
-                setRelationshipTransitDayPage((page) => Math.min(relationshipTransitPageCount - 1, page + 1))
+                setRelationshipTransitDayPage(
+                  Math.min(relationshipTransitPageCount - 1, safeRelationshipTransitDayPage + 1)
+                )
               }
             >
               {t.transitsNext}
