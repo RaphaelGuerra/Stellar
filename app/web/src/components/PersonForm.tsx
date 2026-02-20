@@ -3,6 +3,21 @@ import { DatePicker } from "./DatePicker";
 import { TimePicker } from "./TimePicker";
 import type { UseGeoSearchReturn } from "../lib/useGeoSearch";
 
+function formatTimezoneOffset(tz: string): string {
+  try {
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: tz,
+      timeZoneName: "shortOffset",
+    });
+    const parts = formatter.formatToParts(now);
+    const offsetPart = parts.find((p) => p.type === "timeZoneName");
+    return offsetPart?.value ?? tz;
+  } catch {
+    return tz;
+  }
+}
+
 interface PersonFormLabels {
   date: string;
   time: string;
@@ -156,7 +171,7 @@ export function PersonForm({
                         {suggestion.label}
                       </span>
                       <span className="city-search__option-meta">
-                        {suggestion.timezone}
+                        {formatTimezoneOffset(suggestion.timezone)}
                       </span>
                     </button>
                   </li>

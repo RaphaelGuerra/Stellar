@@ -199,7 +199,7 @@ function buildSuggestion(result: NominatimResult): GeoSuggestion | null {
   const country = result.address?.country_code?.toUpperCase() ?? "";
   if (!city || !country) return null;
 
-  const state = result.address?.state && result.address.state !== city ? result.address.state : "";
+  const state = result.address?.state ?? "";
   const labelParts = [city, state, country].filter(Boolean);
   const label = labelParts.join(", ");
 
