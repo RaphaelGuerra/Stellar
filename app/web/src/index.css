@@ -2638,6 +2638,13 @@ details:not([open]) .section__header--collapsible {
 .datepicker__placeholder {
   color: var(--color-text-muted);
   opacity: 0.5;
+  font-style: italic;
+}
+
+input::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.5;
+  font-style: italic;
 }
 
 /* Year button (replaces year <select>) */
