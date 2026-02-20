@@ -135,6 +135,9 @@ export function PersonForm({
                 activeIndex >= 0 ? `${suggestionsId}-${activeIndex}` : undefined
               }
               autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
               inputMode="search"
               placeholder={labels.searchPlaceholder}
               role="combobox"
