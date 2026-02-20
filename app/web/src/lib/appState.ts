@@ -121,15 +121,15 @@ function isIsoDate(value: unknown): value is string {
 function normalizePersonState(value: unknown, fallbackLocation: string): PersistedPersonState {
   if (!isObject(value)) {
     return {
-      date: "1990-01-01",
-      time: "12:00",
+      date: "",
+      time: "",
       daylightSaving: "auto",
       locationInput: fallbackLocation,
     };
   }
   return {
-    date: typeof value.date === "string" ? value.date : "1990-01-01",
-    time: typeof value.time === "string" ? value.time : "12:00",
+    date: typeof value.date === "string" ? value.date : "",
+    time: typeof value.time === "string" ? value.time : "",
     daylightSaving:
       value.daylightSaving === true || value.daylightSaving === false || value.daylightSaving === "auto"
         ? value.daylightSaving
@@ -263,8 +263,8 @@ export function readPersistedAppState(): PersistedAppState | null {
     const duoMode = isDuoMode(payload.duoMode) ? payload.duoMode : "romantic";
     const defaultTimeTravelDate = new Date().toISOString().slice(0, 10);
 
-    const personA = normalizePersonState(payload.personA, "Rio de Janeiro, BR");
-    const personB = normalizePersonState(payload.personB, "New York, US");
+    const personA = normalizePersonState(payload.personA, "");
+    const personB = normalizePersonState(payload.personB, "");
 
     return {
       primaryArea: isPrimaryArea(payload.primaryArea) ? payload.primaryArea : "chart",

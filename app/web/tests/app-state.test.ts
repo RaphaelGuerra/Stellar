@@ -131,7 +131,7 @@ describe("app state persistence", () => {
       maxOrb: 0.4,
       lastSentKey: undefined,
     });
-    expect(loaded?.personA.locationInput).toBe("Rio de Janeiro, BR");
+    expect(loaded?.personA.locationInput).toBe("");
     expect(loaded?.history).toEqual([]);
     expect(loaded?.progression).toEqual({
       xp: 0,
