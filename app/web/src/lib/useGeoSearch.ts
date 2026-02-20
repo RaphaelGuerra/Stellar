@@ -301,7 +301,7 @@ export function useGeoSearch(
   const [suggestions, setSuggestions] = useState<GeoSuggestion[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
-  const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
+  const [selectedLabel, setSelectedLabel] = useState<string | null>(initialLocation || null);
   const [resolvedLocation, setResolvedLocation] = useState<CityResolution | undefined>(undefined);
   const [resolvedCity, setResolvedCity] = useState<string | undefined>(undefined);
   const [resolvedCountry, setResolvedCountry] = useState<string | undefined>(undefined);

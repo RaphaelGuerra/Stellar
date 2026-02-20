@@ -1173,7 +1173,7 @@ details:not([open]) .section__header--collapsible {
 .form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: var(--space-sm);
   padding: var(--space-lg);
   border-radius: calc(var(--radius-lg) + 4px);
   border: 1px solid rgba(124, 106, 239, 0.18);
@@ -1231,6 +1231,18 @@ details:not([open]) .section__header--collapsible {
   font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--color-text-secondary);
+}
+
+.form__label--date,
+.form__label--time {
+  flex: 0 0 auto;
+  min-width: 0;
+  width: 140px;
+}
+
+.form__label--city {
+  flex: 1 1 0%;
+  min-width: 160px;
 }
 
 .form__label input,
@@ -1344,7 +1356,7 @@ details:not([open]) .section__header--collapsible {
 .city-search {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: 2px;
 }
 
 .city-search__list {
@@ -3118,6 +3130,15 @@ details:not([open]) .section__header--collapsible {
 
   .form__label {
     min-width: 0;
+  }
+
+  .form__label--date,
+  .form__label--time {
+    width: calc(50% - var(--space-md) / 2);
+  }
+
+  .form__label--city {
+    flex: 1 1 100%;
   }
 
   /* 3h. Astral Map Modal — Bottom Sheet */

@@ -68,7 +68,7 @@ export function PersonForm({
     <div className={`form__person ${framed ? "form__person--framed" : ""}`}>
       {title && <h3 className="form__person-title">{title}</h3>}
       <div className="form__row">
-        <label className="form__label">
+        <label className="form__label form__label--date">
           {labels.date}
           <DatePicker
             value={date}
@@ -84,7 +84,7 @@ export function PersonForm({
             }}
           />
         </label>
-        <label className="form__label">
+        <label className="form__label form__label--time">
           {labels.time}
           <input
             type="time"
@@ -95,9 +95,7 @@ export function PersonForm({
             required
           />
         </label>
-      </div>
-      <div className="form__row">
-        <label className="form__label">
+        <label className="form__label form__label--city">
           {labels.cityAndCountry}
           <div className="city-search">
             <input
