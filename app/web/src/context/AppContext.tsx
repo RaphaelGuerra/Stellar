@@ -382,26 +382,26 @@ export function AppProvider({ children }: AppProviderProps) {
   );
 
   // Person A state
-  const [dateA, setDateA] = useState(() => persisted?.personA.date ?? "1990-01-01");
-  const [timeA, setTimeA] = useState(() => persisted?.personA.time ?? "12:00");
+  const [dateA, setDateA] = useState(() => persisted?.personA.date ?? "");
+  const [timeA, setTimeA] = useState(() => persisted?.personA.time ?? "");
   const [daylightSavingA, setDaylightSavingA] = useState<boolean | "auto">(
     () => persisted?.personA.daylightSaving ?? "auto"
   );
   const [showDaylightSavingOverrideA, setShowDaylightSavingOverrideA] = useState(false);
   const geoA = useGeoSearch(
-    persisted?.personA.locationInput ?? "Rio de Janeiro, BR",
+    persisted?.personA.locationInput ?? "",
     isCarioca
   );
 
   // Person B state
-  const [dateB, setDateB] = useState(() => persisted?.personB.date ?? "1990-01-01");
-  const [timeB, setTimeB] = useState(() => persisted?.personB.time ?? "12:00");
+  const [dateB, setDateB] = useState(() => persisted?.personB.date ?? "");
+  const [timeB, setTimeB] = useState(() => persisted?.personB.time ?? "");
   const [daylightSavingB, setDaylightSavingB] = useState<boolean | "auto">(
     () => persisted?.personB.daylightSaving ?? "auto"
   );
   const [showDaylightSavingOverrideB, setShowDaylightSavingOverrideB] = useState(false);
   const geoB = useGeoSearch(
-    persisted?.personB.locationInput ?? "New York, US",
+    persisted?.personB.locationInput ?? "",
     isCarioca,
     analysisMode === "compatibility"
   );
@@ -860,16 +860,16 @@ export function AppProvider({ children }: AppProviderProps) {
     setAnalysisMode("single");
     setDuoMode("romantic");
     setChartSettings(DEFAULT_CHART_SETTINGS);
-    setDateA("1990-01-01");
-    setTimeA("12:00");
+    setDateA("");
+    setTimeA("");
     setDaylightSavingA("auto");
-    geoA.setLocationInput("Rio de Janeiro, BR");
+    geoA.setLocationInput("");
     geoA.setSuggestions([]);
     geoA.setSearchError(null);
-    setDateB("1990-01-01");
-    setTimeB("12:00");
+    setDateB("");
+    setTimeB("");
     setDaylightSavingB("auto");
-    geoB.setLocationInput("New York, US");
+    geoB.setLocationInput("");
     geoB.setSuggestions([]);
     geoB.setSearchError(null);
     setShowDaylightSavingOverrideA(false);

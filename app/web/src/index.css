@@ -2635,6 +2635,11 @@ details:not([open]) .section__header--collapsible {
   border-color: var(--color-primary-hover);
 }
 
+.datepicker__placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.5;
+}
+
 /* Year button (replaces year <select>) */
 .datepicker__year-btn {
   appearance: none;

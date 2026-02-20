@@ -197,6 +197,7 @@ describe("App aria labels localization", () => {
 
     renderApp();
 
+    fireEvent.click(screen.getByRole("button", { name: "Chart" }));
     const mapHeading = screen.getByRole("heading", { name: "Astral map" });
     const normalizedHeading = screen.getByRole("heading", { name: "Normalized data" });
     expect(mapHeading).toBeTruthy();
@@ -243,6 +244,7 @@ describe("App aria labels localization", () => {
 
     renderApp();
 
+    fireEvent.click(screen.getByRole("button", { name: "Chart" }));
     fireEvent.click(screen.getByRole("button", { name: "Open full-resolution map" }));
     expect(screen.getByRole("dialog", { name: "Full-resolution astral map" })).toBeTruthy();
 

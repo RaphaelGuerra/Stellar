@@ -12,6 +12,7 @@ interface TimePickerProps {
   name?: string;
   required?: boolean;
   labels?: TimePickerLabels;
+  placeholder?: string;
 }
 
 function pad2(n: number): string {
@@ -42,6 +43,7 @@ export function TimePicker({
   name,
   required,
   labels = { hour: "Hour", minute: "Minute" },
+  placeholder,
 }: TimePickerProps) {
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -99,7 +101,11 @@ export function TimePicker({
         aria-haspopup="dialog"
         aria-expanded={open}
       >
-        {displayValue || <span className="datepicker__placeholder">&nbsp;</span>}
+        {displayValue || (
+          placeholder
+            ? <span className="datepicker__placeholder">{placeholder}</span>
+            : <span className="datepicker__placeholder">&nbsp;</span>
+        )}
       </button>
       <input type="hidden" name={name} value={value} required={required} />
 

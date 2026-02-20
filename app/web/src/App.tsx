@@ -40,7 +40,7 @@ function App() {
   } = useAppContext();
 
   const [location, navigate] = useLocation();
-  const rawArea = location.replace(/^\//, "") || "chart";
+  const rawArea = location.replace(/^\//, "") || "relationships";
   const VALID_AREAS = ["chart", "transits", "timing", "relationships", "atlas", "library"] as const;
   const primaryArea = (VALID_AREAS as readonly string[]).includes(rawArea)
     ? rawArea as typeof VALID_AREAS[number]
@@ -124,7 +124,7 @@ function App() {
     date: isCarioca ? "Data" : "Date",
     time: isCarioca ? "Hora" : "Time",
     cityAndCountry: isCarioca ? "Cidade e pais, sem caozada" : "City & country",
-    searchPlaceholder: isCarioca ? "Ex: Rio de Janeiro, BR" : "e.g. New York, US",
+    searchPlaceholder: isCarioca ? "São Paulo, SP, Brasil" : "São Paulo, SP, Brasil",
     searching: isCarioca ? "Caçando cidade..." : "Searching cities...",
     noResults: isCarioca ? "Nao achei porra nenhuma." : "No cities found.",
     cityHint: "",
@@ -142,6 +142,9 @@ function App() {
     no: isCarioca ? "Nao, porra" : "No",
     hour: isCarioca ? "Hora" : "Hour",
     minute: isCarioca ? "Minuto" : "Minute",
+    datePlaceholder: isCarioca ? "10 de jun. de 1998" : "Jun 10, 1998",
+    timePlaceholder: "08:34",
+    cityPlaceholder: "São Paulo, SP, Brasil",
   };
 
   const hasResults =
@@ -413,7 +416,7 @@ function App() {
               <Route path="/relationships" component={RelationshipsView} />
               <Route path="/atlas" component={AtlasView} />
               <Route path="/library" component={LibraryView} />
-              <Route component={ChartView} />
+              <Route component={RelationshipsView} />
             </Switch>
 
             <section className="action-section action-section--compact">

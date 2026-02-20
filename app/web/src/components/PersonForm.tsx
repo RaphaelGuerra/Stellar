@@ -23,6 +23,9 @@ interface PersonFormLabels {
   no: string;
   hour: string;
   minute: string;
+  datePlaceholder: string;
+  timePlaceholder: string;
+  cityPlaceholder: string;
 }
 
 interface PersonFormProps {
@@ -79,6 +82,7 @@ export function PersonForm({
             locale={locale}
             name={`${namePrefix}-date`}
             required
+            placeholder={labels.datePlaceholder}
             labels={{
               chooseDate: labels.datePickerDialog,
               year: labels.datePickerYear,
@@ -94,6 +98,7 @@ export function PersonForm({
             onChange={onTimeChange}
             name={`${namePrefix}-time`}
             required
+            placeholder={labels.timePlaceholder}
             labels={{ hour: labels.hour, minute: labels.minute }}
           />
         </label>

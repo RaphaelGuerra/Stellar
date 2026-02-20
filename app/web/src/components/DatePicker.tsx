@@ -8,6 +8,7 @@ interface DatePickerProps {
   name?: string;
   required?: boolean;
   labels?: DatePickerLabels;
+  placeholder?: string;
 }
 
 interface CalendarDay {
@@ -102,6 +103,7 @@ export function DatePicker({
   name,
   required,
   labels,
+  placeholder,
 }: DatePickerProps) {
   const resolvedLabels = labels ?? getDefaultLabels(locale);
   const parsed = parseDate(value);
@@ -228,7 +230,11 @@ export function DatePicker({
         aria-expanded={open}
         aria-label={resolvedLabels.chooseDate}
       >
-        {triggerLabel || <span className="datepicker__placeholder">&nbsp;</span>}
+        {triggerLabel || (
+          placeholder
+            ? <span className="datepicker__placeholder">{placeholder}</span>
+            : <span className="datepicker__placeholder">&nbsp;</span>
+        )}
       </button>
       <input type="hidden" name={name} value={value} required={required} />
 
