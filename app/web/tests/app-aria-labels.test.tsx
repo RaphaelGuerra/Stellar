@@ -286,9 +286,10 @@ describe("App aria labels localization", () => {
     expect(await screen.findByText(/Janela de|Janela estavel/)).toBeTruthy();
   });
 
-  it("tracks quest actions and updates labels after completion", async () => {
+  it("tracks mission reflection bonus and updates labels", async () => {
     const chartA = buildChart({ Sun: 0, Moon: 90, Venus: 120 });
     const chartB = buildChart({ Sun: 180, Moon: 270, Venus: 300 });
+    const todayUtc = new Date().toISOString().slice(0, 10);
     window.localStorage.setItem(
       APP_STATE_STORAGE_KEY,
       JSON.stringify({
@@ -312,8 +313,9 @@ describe("App aria labels localization", () => {
         progression: {
           xp: 0,
           streak: 0,
-          completedQuestIds: [],
+          completedQuestIds: [`daily-mission:${todayUtc}`],
           reflectedQuestIds: [],
+          unlockedInsights: [],
         },
       })
     );
@@ -322,16 +324,11 @@ describe("App aria labels localization", () => {
     fireEvent.click(screen.getByRole("button", { name: "Relationships" }));
 
     expect(await screen.findByRole("heading", { name: "Relationship quest" })).toBeTruthy();
-    const reflectBefore = await screen.findByRole("button", { name: "Log reflection (+20 XP)" });
-    expect((reflectBefore as HTMLButtonElement).disabled).toBe(true);
-
-    const complete = await screen.findByRole("button", { name: "Complete quest (+40 XP)" });
-    fireEvent.click(complete);
-    expect(await screen.findByRole("button", { name: "Quest completed" })).toBeTruthy();
-
-    const reflect = await screen.findByRole("button", { name: "Log reflection (+20 XP)" });
+    expect(screen.queryByRole("button", { name: "Complete quest (+40 XP)" })).toBeNull();
+    const reflect = await screen.findByRole("button", { name: "Log reflection (+bonus insight)" });
+    expect((reflect as HTMLButtonElement).disabled).toBe(false);
     fireEvent.click(reflect);
-    expect(await screen.findByRole("button", { name: "Reflection logged" })).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "Reflection bonus claimed" })).toBeTruthy();
   });
 
   it("allows disabling persistence and clearing local data", () => {

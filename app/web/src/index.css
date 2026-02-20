@@ -1687,6 +1687,7 @@ details:not([open]) .section__header--collapsible {
 .app[data-content-mode="carioca"] .advanced-card,
 .app[data-content-mode="carioca"] .synastry-stats__item,
 .app[data-content-mode="carioca"] .quest-panel,
+.app[data-content-mode="carioca"] .quest-insights__item,
 .app[data-content-mode="carioca"] .normalized__card,
 .app[data-content-mode="carioca"] .core-triad__card {
   border-color: rgba(255, 157, 72, 0.24);
@@ -2096,6 +2097,58 @@ details:not([open]) .section__header--collapsible {
 .quest-action:disabled {
   opacity: 0.7;
   cursor: default;
+}
+
+.quest-insights {
+  margin-top: var(--space-md);
+}
+
+.quest-insights__title {
+  margin: 0 0 var(--space-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.quest-insights__empty {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.quest-insights__list {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.quest-insights__item {
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.quest-insights__meta,
+.quest-insights__item-title,
+.quest-insights__text {
+  margin: 0;
+}
+
+.quest-insights__meta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.quest-insights__item-title {
+  margin-top: 2px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+
+.quest-insights__text {
+  margin-top: var(--space-xs);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
 }
 
 /* ===== Error Boundary ===== */

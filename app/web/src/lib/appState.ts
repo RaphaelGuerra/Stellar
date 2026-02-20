@@ -2,6 +2,7 @@ import type { ChartResult, ChartSettings, DuoMode, PrimaryArea } from "./types";
 import { DEFAULT_CHART_SETTINGS, normalizeChartSettings } from "./constants";
 import {
   DEFAULT_PROGRESSION_STATE,
+  type UnlockedInsight,
   type ProgressionState,
 } from "./progression";
 
@@ -62,6 +63,7 @@ const DEFAULT_REMINDER_RULES: PersistedReminderRules = {
   leadDays: 1,
   maxOrb: 0.4,
 };
+const PROGRESSION_UNLOCKED_INSIGHTS_LIMIT = 48;
 
 export interface PersistedPrivacySettings {
   persistLocalData: boolean;
@@ -173,6 +175,48 @@ function normalizeIdList(value: unknown): string[] {
   ).slice(0, PROGRESSION_IDS_LIMIT);
 }
 
+function normalizeUnlockedInsights(value: unknown): UnlockedInsight[] {
+  if (!Array.isArray(value)) return [];
+  const deduped = new Set<string>();
+  const normalized: UnlockedInsight[] = [];
+  for (const entry of value) {
+    if (!isObject(entry)) continue;
+    if (typeof entry.id !== "string" || entry.id.length === 0) continue;
+    if (deduped.has(entry.id)) continue;
+    if (
+      typeof entry.dayKey !== "string" ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(entry.dayKey)
+    ) {
+      continue;
+    }
+    if (entry.source !== "mission" && entry.source !== "reflection") continue;
+    if (typeof entry.title !== "string" || entry.title.trim().length === 0) continue;
+    if (typeof entry.text !== "string" || entry.text.trim().length === 0) continue;
+    if (entry.tone !== "harmonious" && entry.tone !== "challenging" && entry.tone !== "intense") continue;
+    const tags = Array.isArray(entry.tags)
+      ? Array.from(
+          new Set(entry.tags.filter((tag): tag is string => typeof tag === "string" && tag.trim().length > 0))
+        )
+      : [];
+    normalized.push({
+      id: entry.id,
+      dayKey: entry.dayKey,
+      source: entry.source,
+      title: entry.title,
+      text: entry.text,
+      tags,
+      tone: entry.tone,
+      createdAt:
+        typeof entry.createdAt === "string" && Number.isFinite(Date.parse(entry.createdAt))
+          ? entry.createdAt
+          : new Date(0).toISOString(),
+    });
+    deduped.add(entry.id);
+    if (normalized.length >= PROGRESSION_UNLOCKED_INSIGHTS_LIMIT) break;
+  }
+  return normalized;
+}
+
 function normalizeTransitDayPage(value: unknown): number {
   if (typeof value !== "number" || !Number.isFinite(value)) return 0;
   return Math.max(0, Math.min(MAX_TRANSIT_PAGE, Math.round(value)));
@@ -208,6 +252,7 @@ function normalizeProgression(value: unknown): ProgressionState {
       ...DEFAULT_PROGRESSION_STATE,
       completedQuestIds: [],
       reflectedQuestIds: [],
+      unlockedInsights: [],
     };
   }
   return {
@@ -225,6 +270,7 @@ function normalizeProgression(value: unknown): ProgressionState {
         : undefined,
     completedQuestIds: normalizeIdList(value.completedQuestIds),
     reflectedQuestIds: normalizeIdList(value.reflectedQuestIds),
+    unlockedInsights: normalizeUnlockedInsights(value.unlockedInsights),
   };
 }
 

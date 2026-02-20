@@ -7,13 +7,14 @@ import { runAstroWorkerTask } from "../lib/astroWorkerClient";
 import { buildMatchScorecards } from "../lib/matchScorecards";
 import { buildAdvancedOverlaySummary } from "../lib/phase5";
 import {
-  ADVANCED_OVERLAYS_UNLOCK_XP,
-  getAdvancedOverlaysUnlockXp,
-  getDetailUnlockCount,
-  getNextDetailUnlockXp,
-  hasCompletedQuest,
-  hasReflectedQuest,
-  isAdvancedOverlaysUnlocked,
+  ADVANCED_OVERLAYS_UNLOCK_MISSIONS,
+  getAdvancedOverlaysUnlockMissionCount,
+  getDetailUnlockCountByMissions,
+  getMissionCompletionCount,
+  getNextDetailUnlockMissionCount,
+  hasCompletedMissionDay,
+  hasReflectedMissionDay,
+  isAdvancedOverlaysUnlockedByMissions,
   buildRelationshipQuest,
 } from "../lib/progression";
 import { shiftIsoDate } from "../lib/dateUtils";
@@ -34,7 +35,6 @@ export function RelationshipsView() {
     progression,
     resultVersion,
     analysisMode,
-    handleQuestComplete,
     handleQuestReflection,
   } = useAppContext();
 
@@ -63,25 +63,34 @@ export function RelationshipsView() {
         ? isCarioca ? "Missao da parceria" : "Friendship quest"
         : isCarioca ? "Missao da dupla" : "Relationship quest",
     questBadge: (label: string) => isCarioca ? `foco em ${label}` : `${label} focus`,
-    questXpLabel: isCarioca ? "XP acumulado" : "Total XP",
+    questStatusLabel: isCarioca ? "Status de hoje" : "Today's mission",
+    questStatusDone: isCarioca ? "Concluida hoje" : "Completed today",
+    questStatusPending: isCarioca ? "Pendente hoje" : "Not completed today",
+    questCompletedMissionsLabel: isCarioca ? "Missoes concluidas" : "Completed missions",
     questStreakLabel: isCarioca ? "Sequencia" : "Streak",
     questUnlockLabel: (count: number) =>
       isCarioca ? `Destravou ${count}/4 blocos` : `Unlocked detail blocks: ${count}/4`,
-    questNextUnlockLabel: (xp: number) =>
-      isCarioca ? `Falta ${xp} XP pro proximo unlock` : `Next unlock at ${xp} XP`,
-    questComplete: isCarioca ? `Missao cumprida! (+40 XP)` : "Complete quest (+40 XP)",
-    questCompleted: isCarioca ? "Feito, porra!" : "Quest completed",
-    questReflect: isCarioca ? "Refletir sobre isso (+20 XP)" : "Log reflection (+20 XP)",
-    questReflected: isCarioca ? "Reflexao salva, show!" : "Reflection logged",
+    questNextUnlockLabel: (target: number, remaining: number) =>
+      isCarioca
+        ? `${remaining} missao(oes) pra liberar ${target} missoes`
+        : `${remaining} mission(s) to unlock at ${target} missions`,
+    questReflect: isCarioca ? "Refletir (+insight bonus)" : "Log reflection (+bonus insight)",
+    questReflected: isCarioca ? "Reflexao bonus salva" : "Reflection bonus claimed",
+    questVaultTitle: isCarioca ? "Insights destravados" : "Unlocked insights",
+    questVaultEmpty: isCarioca
+      ? "Gera o mapa de compatibilidade pra destravar o primeiro insight."
+      : "Generate a compatibility chart to unlock your first insight.",
+    questInsightSourceMission: isCarioca ? "missao" : "mission",
+    questInsightSourceReflection: isCarioca ? "reflexao" : "reflection",
     advancedTitle: isCarioca ? "Overlays avancados" : "Advanced overlays",
     advancedBadge: isCarioca ? "composite + midpoints" : "composite + midpoints",
     advancedLocked: isCarioca
-      ? `Trancado! Precisa de ${ADVANCED_OVERLAYS_UNLOCK_XP} XP pra abrir`
-      : `Unlocks at ${ADVANCED_OVERLAYS_UNLOCK_XP} XP`,
-    advancedLockedHint: (xp: number) =>
+      ? `Trancado! Precisa de ${ADVANCED_OVERLAYS_UNLOCK_MISSIONS} missoes concluidas pra abrir`
+      : `Unlocks at ${ADVANCED_OVERLAYS_UNLOCK_MISSIONS} completed missions`,
+    advancedLockedHint: (target: number, currentCount: number) =>
       isCarioca
-        ? `Faltam ${Math.max(0, xp - progression.xp)} XP, bora completar missao!`
-        : `${Math.max(0, xp - progression.xp)} XP to unlock.`,
+        ? `Faltam ${Math.max(0, target - currentCount)} missao(oes).`
+        : `${Math.max(0, target - currentCount)} mission(s) to unlock.`,
     advancedCompositeTitle: isCarioca ? "Core do composite" : "Composite core",
     advancedMidpointTitle: isCarioca ? "Midpoints principais" : "Key midpoints",
     relationshipsComposite: isCarioca ? "Mapa composto" : "Composite chart",
@@ -183,13 +192,17 @@ export function RelationshipsView() {
     return buildMatchScorecards(comparison, isCarioca ? "pt" : "en", duoMode);
   }, [analysisMode, comparison, duoMode, isCarioca]);
 
-  const unlockedDetailCount = useMemo(
-    () => getDetailUnlockCount(progression.xp),
-    [progression.xp]
+  const completedMissionCount = useMemo(
+    () => getMissionCompletionCount(progression),
+    [progression]
   );
-  const nextDetailUnlockXp = useMemo(
-    () => getNextDetailUnlockXp(progression.xp),
-    [progression.xp]
+  const unlockedDetailCount = useMemo(
+    () => getDetailUnlockCountByMissions(completedMissionCount),
+    [completedMissionCount]
+  );
+  const nextDetailUnlockMissionCount = useMemo(
+    () => getNextDetailUnlockMissionCount(completedMissionCount),
+    [completedMissionCount]
   );
 
   const relationshipQuest = useMemo(() => {
@@ -220,14 +233,14 @@ export function RelationshipsView() {
     }));
   }, [comparison, unlockedDetailCount]);
 
-  const advancedUnlocked = isAdvancedOverlaysUnlocked(progression.xp);
-  const advancedUnlockTarget = getAdvancedOverlaysUnlockXp(progression.xp);
+  const advancedUnlocked = isAdvancedOverlaysUnlockedByMissions(completedMissionCount);
+  const advancedUnlockTarget = getAdvancedOverlaysUnlockMissionCount(completedMissionCount);
 
   const questCompleted = relationshipQuest
-    ? hasCompletedQuest(progression, relationshipQuest.id)
+    ? hasCompletedMissionDay(progression, relationshipQuest.dayKey)
     : false;
   const questReflected = relationshipQuest
-    ? hasReflectedQuest(progression, relationshipQuest.id)
+    ? hasReflectedMissionDay(progression, relationshipQuest.dayKey)
     : false;
 
   const relationshipTransitPageCount = useMemo(() => {
@@ -304,22 +317,20 @@ export function RelationshipsView() {
         <Section icon="🎯" title={t.questTitle} badge={t.questBadge(relationshipQuest.focusStatLabel)} collapsible>
           <div className="quest-panel">
             <div className="quest-panel__stats">
-              <p>{t.questXpLabel}: {progression.xp}</p>
+              <p>{t.questStatusLabel}: {questCompleted ? t.questStatusDone : t.questStatusPending}</p>
+              <p>{t.questCompletedMissionsLabel}: {completedMissionCount}</p>
               <p>{t.questStreakLabel}: {progression.streak}</p>
               <p>{t.questUnlockLabel(unlockedDetailCount)}</p>
-              {nextDetailUnlockXp != null && (
-                <p>{t.questNextUnlockLabel(nextDetailUnlockXp)}</p>
+              {nextDetailUnlockMissionCount != null && (
+                <p>
+                  {t.questNextUnlockLabel(
+                    nextDetailUnlockMissionCount,
+                    Math.max(0, nextDetailUnlockMissionCount - completedMissionCount)
+                  )}
+                </p>
               )}
             </div>
             <div className="quest-panel__actions">
-              <button
-                type="button"
-                className="quest-action"
-                onClick={() => handleQuestComplete(relationshipQuest)}
-                disabled={questCompleted}
-              >
-                {questCompleted ? t.questCompleted : t.questComplete}
-              </button>
               <button
                 type="button"
                 className="quest-action"
@@ -343,6 +354,25 @@ export function RelationshipsView() {
               orb={relationshipQuest.sourceAspect.orb}
               expandLabels={cardExpandLabels}
             />
+          </div>
+          <div className="quest-insights">
+            <p className="quest-insights__title">{t.questVaultTitle}</p>
+            {progression.unlockedInsights.length === 0 && (
+              <p className="quest-insights__empty">{t.questVaultEmpty}</p>
+            )}
+            {progression.unlockedInsights.length > 0 && (
+              <div className="quest-insights__list">
+                {progression.unlockedInsights.slice(0, 6).map((insight) => (
+                  <article key={insight.id} className="quest-insights__item">
+                    <p className="quest-insights__meta">
+                      {insight.dayKey} · {insight.source === "mission" ? t.questInsightSourceMission : t.questInsightSourceReflection}
+                    </p>
+                    <p className="quest-insights__item-title">{insight.title}</p>
+                    <p className="quest-insights__text">{insight.text}</p>
+                  </article>
+                ))}
+              </div>
+            )}
           </div>
         </Section>
       )}
@@ -453,7 +483,7 @@ export function RelationshipsView() {
             <div className="advanced-lock">
               <p>{t.advancedLocked}</p>
               {advancedUnlockTarget != null && (
-                <p>{t.advancedLockedHint(advancedUnlockTarget)}</p>
+                <p>{t.advancedLockedHint(advancedUnlockTarget, completedMissionCount)}</p>
               )}
             </div>
           )}

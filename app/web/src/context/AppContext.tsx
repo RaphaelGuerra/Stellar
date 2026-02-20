@@ -19,11 +19,12 @@ import { generateChartInWorker } from "../lib/astroWorkerClient";
 import { DEFAULT_CHART_SETTINGS } from "../lib/constants";
 import {
   DEFAULT_PROGRESSION_STATE,
-  awardQuestCompletion,
-  awardQuestReflection,
+  awardDailyMissionCompletion,
+  awardDailyMissionReflection,
+  buildUnlockedInsight,
   getLocalDayKey,
-  hasCompletedQuest,
-  hasReflectedQuest,
+  hasCompletedMissionDay,
+  hasReflectedMissionDay,
   buildRelationshipQuest,
   type RelationshipQuest,
   type ProgressionState,
@@ -339,7 +340,6 @@ export interface AppContextType {
 
   // Quest helpers (used by RelationshipsView)
   buildQuestForCurrentCharts: () => RelationshipQuest | null;
-  handleQuestComplete: (quest: RelationshipQuest) => void;
   handleQuestReflection: (quest: RelationshipQuest) => void;
 
   // Retention constant
@@ -839,11 +839,26 @@ export function AppProvider({ children }: AppProviderProps) {
       setShowDaylightSavingOverrideA(false);
       setShowDaylightSavingOverrideB(false);
       appendHistoryEntry(chartAValue, chartBValue);
-      setShowShootingStar(false);
-      requestAnimationFrame(() => {
-        setShowShootingStar(true);
-        setTimeout(() => setShowShootingStar(false), 2000);
+      const locale = isCarioca ? "pt" : "en";
+      const generatedComparison = buildChartComparison(chartAValue, chartBValue, locale, duoMode);
+      const missionQuest = buildRelationshipQuest(generatedComparison, {
+        locale,
+        duoMode,
+        timeZone: chartAValue.normalized.timezone,
       });
+      const dayKey = getLocalDayKey(new Date(), chartAValue.normalized.timezone);
+      const missionInsight = missionQuest
+        ? buildUnlockedInsight(generatedComparison, missionQuest, "mission", locale)
+        : null;
+      let missionAwarded = false;
+      setProgression((current) => {
+        const next = awardDailyMissionCompletion(current, dayKey, missionInsight);
+        missionAwarded = next !== current;
+        return next;
+      });
+      if (missionAwarded) {
+        triggerCelebration();
+      }
       setResultVersion((prev) => prev + 1);
     } catch (err) {
       if (hasErrorName(err, "AmbiguousLocalTimeError")) {
@@ -1048,16 +1063,28 @@ export function AppProvider({ children }: AppProviderProps) {
     });
   }
 
-  function handleQuestComplete(quest: RelationshipQuest) {
-    if (!chartA) return;
-    const dayKey = getLocalDayKey(new Date(), chartA.normalized.timezone);
-    setProgression((current) => awardQuestCompletion(current, quest.id, dayKey));
+  function triggerCelebration() {
+    setShowShootingStar(false);
+    requestAnimationFrame(() => {
+      setShowShootingStar(true);
+      setTimeout(() => setShowShootingStar(false), 2000);
+    });
   }
 
   function handleQuestReflection(quest: RelationshipQuest) {
-    if (!hasCompletedQuest(progression, quest.id)) return;
-    if (hasReflectedQuest(progression, quest.id)) return;
-    setProgression((current) => awardQuestReflection(current, quest.id));
+    if (!comparison) return;
+    if (!hasCompletedMissionDay(progression, quest.dayKey)) return;
+    if (hasReflectedMissionDay(progression, quest.dayKey)) return;
+    const reflectionInsight = buildUnlockedInsight(comparison, quest, "reflection", isCarioca ? "pt" : "en");
+    let reflectionAwarded = false;
+    setProgression((current) => {
+      const next = awardDailyMissionReflection(current, quest.dayKey, reflectionInsight);
+      reflectionAwarded = next !== current;
+      return next;
+    });
+    if (reflectionAwarded) {
+      triggerCelebration();
+    }
   }
 
   const value: AppContextType = {
@@ -1150,7 +1177,6 @@ export function AppProvider({ children }: AppProviderProps) {
     handleOpenSharedImport,
     handleSharedImportFile,
     buildQuestForCurrentCharts,
-    handleQuestComplete,
     handleQuestReflection,
     appStateRetentionDays: APP_STATE_RETENTION_DAYS,
   };

@@ -8,7 +8,7 @@ import { buildCompatibilityForecast, type ForecastRange } from "../lib/phase5";
 import { buildTransitThemes, groupExactHitsByDate } from "../lib/transits";
 import { dayDistanceFrom, shiftIsoDate } from "../lib/dateUtils";
 import type { TransitRangeResult } from "../lib/engine";
-import { getDetailUnlockCount } from "../lib/progression";
+import { getDetailUnlockCountByMissions, getMissionCompletionCount } from "../lib/progression";
 
 const TRANSIT_PAGE_SIZE = 10;
 
@@ -91,8 +91,8 @@ export function TransitsView() {
     : { more: "Show more", less: "Show less" };
 
   const unlockedDetailCount = useMemo(
-    () => getDetailUnlockCount(progression.xp),
-    [progression.xp]
+    () => getDetailUnlockCountByMissions(getMissionCompletionCount(progression)),
+    [progression]
   );
 
   // View-local state

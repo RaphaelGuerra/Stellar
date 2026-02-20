@@ -89,6 +89,7 @@ describe("app state persistence", () => {
         lastCompletionDay: "2026-02-10",
         completedQuestIds: ["q-1"],
         reflectedQuestIds: ["q-1"],
+        unlockedInsights: [],
       },
     };
 
@@ -111,6 +112,7 @@ describe("app state persistence", () => {
     expect(loaded?.progression.xp).toBe(120);
     expect(loaded?.progression.streak).toBe(3);
     expect(loaded?.progression.completedQuestIds).toEqual(["q-1"]);
+    expect(loaded?.progression.unlockedInsights).toEqual([]);
   });
 
   it("returns safe defaults for invalid stored payload", () => {
@@ -138,8 +140,74 @@ describe("app state persistence", () => {
       streak: 0,
       completedQuestIds: [],
       reflectedQuestIds: [],
+      unlockedInsights: [],
       lastCompletionDay: undefined,
     });
+  });
+
+  it("normalizes unlocked insights and drops invalid entries", () => {
+    window.localStorage.setItem(
+      APP_STATE_STORAGE_KEY,
+      JSON.stringify({
+        analysisMode: "compatibility",
+        duoMode: "romantic",
+        personA: {
+          date: "1990-01-01",
+          time: "12:00",
+          daylightSaving: "auto",
+          locationInput: "Rio de Janeiro, BR",
+        },
+        personB: {
+          date: "1992-02-02",
+          time: "18:00",
+          daylightSaving: "auto",
+          locationInput: "New York, US",
+        },
+        history: [],
+        progression: {
+          xp: 0,
+          streak: 0,
+          completedQuestIds: [],
+          reflectedQuestIds: [],
+          unlockedInsights: [
+            {
+              id: "ok-1",
+              dayKey: "2026-02-10",
+              source: "mission",
+              title: "Mission Insight",
+              text: "Valid",
+              tags: ["a", "a", ""],
+              tone: "harmonious",
+              createdAt: "2026-02-10T00:00:00.000Z",
+            },
+            {
+              id: "bad-1",
+              dayKey: "invalid-day",
+              source: "mission",
+              title: "Bad",
+              text: "Bad",
+              tags: [],
+              tone: "harmonious",
+              createdAt: "2026-02-10T00:00:00.000Z",
+            },
+          ],
+        },
+      })
+    );
+    const loaded = readPersistedAppState();
+    expect(loaded).not.toBeNull();
+    expect(loaded?.progression.unlockedInsights).toEqual([
+      {
+        id: "ok-1",
+        dayKey: "2026-02-10",
+        source: "mission",
+        title: "Mission Insight",
+        text: "Valid",
+        tags: ["a"],
+        tone: "harmonious",
+        createdAt: "2026-02-10T00:00:00.000Z",
+      },
+    ]);
   });
 
   it("drops expired persisted payloads", () => {
@@ -188,6 +256,7 @@ describe("app state persistence", () => {
             streak: 0,
             completedQuestIds: [],
             reflectedQuestIds: [],
+            unlockedInsights: [],
           },
         },
       })
@@ -245,6 +314,7 @@ describe("app state persistence", () => {
         streak: 0,
         completedQuestIds: [],
         reflectedQuestIds: [],
+        unlockedInsights: [],
       },
     });
 
@@ -280,6 +350,7 @@ describe("app state persistence", () => {
             streak: 0,
             completedQuestIds: [],
             reflectedQuestIds: [],
+            unlockedInsights: [],
           },
         },
       })
