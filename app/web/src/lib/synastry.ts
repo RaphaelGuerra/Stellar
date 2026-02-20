@@ -8,6 +8,7 @@ import {
   normalizeAngle,
   resolveAspectDefinitions,
 } from "./constants";
+import { buildSunComparison } from "./sunComparison";
 import type {
   AspectName,
   AspectTone,
@@ -18,6 +19,7 @@ import type {
   DetailBlock,
   DuoMode,
   PlanetName,
+  SunComparison,
   SynastryStat,
   SynastryStatKey,
   ZodiacSign,
@@ -827,6 +829,7 @@ function buildStatSummary(
   stat: SynastryStatKey,
   score: number,
   locale: SynastryLocale,
+  sunComparison: SunComparison,
   dominantAspect?: ComparisonAspect,
   complementaryAspect?: ComparisonAspect,
   chartA?: ChartResult,
@@ -835,25 +838,32 @@ function buildStatSummary(
   const theme = SYNASTRY_STAT_THEME[locale][stat];
   const scoreMessage = buildStatScoreMessage(score, locale);
   const dominantLabel = dominantAspect ? buildAspectSummaryLabel(dominantAspect, locale) : null;
+  const hasComplementarySun = sunComparison.relation === "complementary-opposites";
+  const sunContext =
+    hasComplementarySun
+      ? locale === "pt"
+        ? `Bonus solar global (+${sunComparison.globalBonus}) ativo em ${sunComparison.label}.`
+        : `Global Sun bonus (+${sunComparison.globalBonus}) active in ${sunComparison.label}.`
+      : "";
 
   if (complementaryAspect && chartA && chartB) {
     const complementaryLabel = buildComplementaryLabel(complementaryAspect, chartA, chartB, locale);
     if (locale === "pt") {
       const strengthLabel = score >= 70 ? "Match forte" : "Vinculo forte";
-      return `${theme} ${scoreMessage} ${strengthLabel} de opostos complementares em ${complementaryLabel}, com potencial de conexao profunda.`;
+      return `${theme} ${scoreMessage} ${strengthLabel} de opostos complementares em ${complementaryLabel}, com potencial de conexao profunda. ${sunContext}`.trim();
     }
     const strengthLabel = score >= 70 ? "Strong match" : "Strong bond";
-    return `${theme} ${scoreMessage} ${strengthLabel} from complementary opposites in ${complementaryLabel}, with deep-bond potential.`;
+    return `${theme} ${scoreMessage} ${strengthLabel} from complementary opposites in ${complementaryLabel}, with deep-bond potential. ${sunContext}`.trim();
   }
 
   if (dominantLabel) {
     if (locale === "pt") {
-      return `${theme} ${scoreMessage} Aspecto dominante: ${dominantLabel}.`;
+      return `${theme} ${scoreMessage} Aspecto dominante: ${dominantLabel}. ${sunContext}`.trim();
     }
-    return `${theme} ${scoreMessage} Dominant aspect: ${dominantLabel}.`;
+    return `${theme} ${scoreMessage} Dominant aspect: ${dominantLabel}. ${sunContext}`.trim();
   }
 
-  return `${theme} ${scoreMessage}`;
+  return `${theme} ${scoreMessage} ${sunContext}`.trim();
 }
 
 function buildStatWeight(aspect: ComparisonAspect, stat: SynastryStatKey): number {
@@ -876,7 +886,8 @@ function buildSynastryStats(
   aspects: readonly ComparisonAspect[],
   locale: SynastryLocale,
   chartA: ChartResult,
-  chartB: ChartResult
+  chartB: ChartResult,
+  sunComparison: SunComparison
 ): SynastryStat[] {
   const totals: Record<SynastryStatKey, { weighted: number; maximum: number }> = {
     attraction: { weighted: 0, maximum: 0 },
@@ -926,7 +937,7 @@ function buildSynastryStats(
   return SYNASTRY_STAT_ORDER.map((stat) => {
     const total = totals[stat];
     const normalized = total.maximum > 0 ? (total.weighted / total.maximum) * 100 : 0;
-    const score = clampToPercent(normalized);
+    const score = clampToPercent(normalized + sunComparison.globalBonus);
     return {
       key: stat,
       label: SYNASTRY_STAT_LABELS[locale][stat],
@@ -935,6 +946,7 @@ function buildSynastryStats(
         stat,
         score,
         locale,
+        sunComparison,
         dominantAspect[stat]?.aspect,
         complementaryOpposition[stat]?.aspect,
         chartA,
@@ -1038,7 +1050,8 @@ export function buildChartComparison(
 
   aspects.sort((left, right) => (left.orb ?? 0) - (right.orb ?? 0));
   const highlights = aspects.map((aspect, index) => makeHighlight(aspect, index, locale, duoMode));
-  const stats = buildSynastryStats(aspects, locale, chartA, chartB);
+  const sunComparison = buildSunComparison(chartA, chartB, locale);
+  const stats = buildSynastryStats(aspects, locale, chartA, chartB, sunComparison);
 
   return {
     chartA,
@@ -1046,5 +1059,6 @@ export function buildChartComparison(
     aspects,
     highlights,
     stats,
+    sunComparison,
   };
 }

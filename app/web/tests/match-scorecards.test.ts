@@ -69,15 +69,15 @@ function buildChart(longitudes: Partial<Record<PlanetName, number>>): ChartResul
 }
 
 describe("buildMatchScorecards", () => {
-  it("returns exactly 3 area cards", () => {
+  it("returns exactly 4 cards with sun comparison at the end", () => {
     const chartA = buildChart({ Sun: 0, Moon: 120, Venus: 60, Mars: 180 });
     const chartB = buildChart({ Sun: 180, Moon: 300, Venus: 240, Mars: 0 });
     const comparison = buildChartComparison(chartA, chartB, "en", "romantic");
 
     const scorecards = buildMatchScorecards(comparison, "en", "romantic");
 
-    expect(scorecards).toHaveLength(3);
-    expect(scorecards.map((card) => card.area)).toEqual(["love", "friends", "family"]);
+    expect(scorecards).toHaveLength(4);
+    expect(scorecards.map((card) => card.area)).toEqual(["love", "friends", "family", "sun"]);
   });
 
   it("keeps score values in 0-100 and computes support/tension highlights", () => {
@@ -104,21 +104,22 @@ describe("buildMatchScorecards", () => {
 
     const scorecards = buildMatchScorecards(comparison, "pt", "friend");
 
-    expect(scorecards).toHaveLength(3);
+    expect(scorecards).toHaveLength(4);
     expect(scorecards[0].summary.startsWith("Vibe")).toBe(true);
   });
 
-  it("returns neutral summaries when there are no synastry aspects", () => {
+  it("returns neutral area summaries when there are no synastry aspects", () => {
     const chartA = buildChart({ Sun: 0, Moon: 10, Mercury: 20, Venus: 30, Mars: 40 });
     const chartB = buildChart({ Sun: 13, Moon: 23, Mercury: 33, Venus: 43, Mars: 53 });
     const comparison = buildChartComparison(chartA, chartB, "en", "romantic");
     comparison.aspects = [];
 
     const scorecards = buildMatchScorecards(comparison, "en", "romantic");
+    const areaCards = scorecards.filter((card) => card.area !== "sun");
 
-    expect(scorecards.every((card) => card.score === 50)).toBe(true);
-    expect(scorecards.every((card) => card.topSupportAspect == null)).toBe(true);
-    expect(scorecards.every((card) => card.topTensionAspect == null)).toBe(true);
+    expect(areaCards.every((card) => card.score === 50)).toBe(true);
+    expect(areaCards.every((card) => card.topSupportAspect == null)).toBe(true);
+    expect(areaCards.every((card) => card.topTensionAspect == null)).toBe(true);
   });
 
   it("highlights complementary opposites for strong same-planet opposition", () => {
@@ -134,5 +135,36 @@ describe("buildMatchScorecards", () => {
     expect(loveCard?.summary).toContain("Sol em Sagitario x Sol em Gemeos");
     expect(loveCard?.topSupportAspect).toContain("Sol");
     expect(loveCard?.status).toBe("good");
+
+    const sunCard = scorecards.find((card) => card.area === "sun");
+    expect(sunCard).toBeDefined();
+    expect(sunCard?.summary).toContain("opostos complementares");
+    expect(sunCard?.summary).toContain("Sol em Sagitario x Sol em Gemeos");
+  });
+
+  it("applies the global Sun bonus to area cards when suns are complementary opposites", () => {
+    const chartA = buildChart({ Sun: 240, Moon: 10, Venus: 30, Mars: 60, Mercury: 90 });
+    const chartBNeutral = buildChart({ Sun: 300, Moon: 70, Venus: 120, Mars: 150, Mercury: 180 });
+    const chartBOpposite = buildChart({ Sun: 60, Moon: 70, Venus: 120, Mars: 150, Mercury: 180 });
+
+    const neutral = buildMatchScorecards(
+      buildChartComparison(chartA, chartBNeutral, "en", "romantic"),
+      "en",
+      "romantic"
+    );
+    const opposite = buildMatchScorecards(
+      buildChartComparison(chartA, chartBOpposite, "en", "romantic"),
+      "en",
+      "romantic"
+    );
+
+    const neutralLove = neutral.find((card) => card.area === "love");
+    const oppositeLove = opposite.find((card) => card.area === "love");
+    const oppositeSun = opposite.find((card) => card.area === "sun");
+    expect(neutralLove).toBeDefined();
+    expect(oppositeLove).toBeDefined();
+    expect(oppositeSun).toBeDefined();
+    expect((oppositeLove?.score ?? 0) - (neutralLove?.score ?? 0)).toBeGreaterThanOrEqual(12);
+    expect(oppositeSun?.summary).toContain("complementary opposites");
   });
 });

@@ -224,6 +224,17 @@ describe("buildChartComparison", () => {
     ]);
   });
 
+  it("builds explicit Sun x Sun comparison metadata", () => {
+    const chartA = buildChart({ Sun: 240 }); // Sagittarius
+    const chartB = buildChart({ Sun: 60 }); // Gemini
+    const comparison = buildChartComparison(chartA, chartB, "pt", "romantic");
+
+    expect(comparison.sunComparison).toBeDefined();
+    expect(comparison.sunComparison.relation).toBe("complementary-opposites");
+    expect(comparison.sunComparison.label).toBe("Sol em Sagitario x Sol em Gemeos");
+    expect(comparison.sunComparison.globalBonus).toBe(15);
+  });
+
   it("mentions complementary opposites in relationship stats when applicable", () => {
     const chartA = buildChart({ Sun: 240 }); // Sagittarius
     const chartB = buildChart({ Sun: 60 }); // Gemini
@@ -235,6 +246,33 @@ describe("buildChartComparison", () => {
     expect(comparison.stats.some((stat) => stat.summary.includes("Sol em Sagitario x Sol em Gemeos"))).toBe(
       true
     );
+  });
+
+  it("applies Sun global bonus to RPG stats for opposite signs even without Sun opposition orb", () => {
+    const chartA = buildChart({ Sun: 29, Moon: 0, Mercury: 10, Venus: 20, Mars: 30 });
+    const chartB = buildChart({ Sun: 181, Moon: 40, Mercury: 50, Venus: 60, Mars: 70 });
+    const comparison = buildChartComparison(chartA, chartB, "pt", "romantic");
+
+    const sunOpposition = (comparison.aspects ?? []).find(
+      (aspect) =>
+        aspect.a.planet === "Sun" &&
+        aspect.b.planet === "Sun" &&
+        aspect.type === "Opposition"
+    );
+
+    expect(sunOpposition).toBeUndefined();
+    expect(comparison.sunComparison.relation).toBe("complementary-opposites");
+    expect(comparison.sunComparison.globalBonus).toBe(12);
+    expect(comparison.stats.some((stat) => stat.summary.includes("Bonus solar global (+12)"))).toBe(true);
+  });
+
+  it("caps the Sun global bonus at +15 for near-exact oppositions", () => {
+    const chartA = buildChart({ Sun: 240 });
+    const chartB = buildChart({ Sun: 60 });
+    const comparison = buildChartComparison(chartA, chartB, "en", "romantic");
+
+    expect(comparison.sunComparison.globalBonus).toBe(15);
+    expect(comparison.stats.some((stat) => stat.summary.includes("Global Sun bonus (+15)"))).toBe(true);
   });
 
   it("uses friend framing for bond-heavy friend mode highlights", () => {

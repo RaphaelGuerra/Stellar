@@ -1,8 +1,8 @@
-import type { LifeArea, MatchScorecard } from "../lib/types";
+import type { MatchScorecard, MatchScorecardArea } from "../lib/types";
 
 interface MatchScorecardsProps {
   cards: MatchScorecard[];
-  areaLabels: Record<LifeArea, string>;
+  areaLabels: Record<MatchScorecardArea, string>;
   supportLabel: string;
   tensionLabel: string;
   emptyAspectLabel: string;

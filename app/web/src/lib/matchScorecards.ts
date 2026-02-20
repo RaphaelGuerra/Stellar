@@ -279,8 +279,16 @@ function buildSummary(
     supportHits: number;
     tensionHits: number;
     complementaryLabel?: string;
+    solarGlobalBonus?: number;
+    solarLabel?: string;
   }
 ): string {
+  const solarBonusText =
+    context.solarGlobalBonus && context.solarGlobalBonus > 0
+      ? locale === "pt"
+        ? `Bonus solar global (+${context.solarGlobalBonus}) aplicado por ${context.solarLabel ?? "Sol x Sol"}.`
+        : `Global Sun bonus (+${context.solarGlobalBonus}) applied from ${context.solarLabel ?? "Sun x Sun"}.`
+      : "";
   const balanceLabel =
     context.supportHits > context.tensionHits
       ? locale === "pt"
@@ -302,18 +310,18 @@ function buildSummary(
           : status === "bad"
             ? "Conexao forte existe, mas precisa combinado claro pra nao virar disputa de ego."
             : "Tem intensidade positiva, desde que role alinhamento pratico no dia a dia.";
-      return `${areaLabel}: opostos complementares ativados em ${context.complementaryLabel}. ${trail}`;
+      return `${areaLabel}: opostos complementares ativados em ${context.complementaryLabel}. ${trail} ${solarBonusText}`.trim();
     }
 
     const best = context.bestLabel ? `Forca: ${context.bestLabel}. ` : "";
     const worst = context.worstLabel ? `Ponto de atrito: ${context.worstLabel}. ` : "";
     if (status === "good") {
-      return `${areaLabel}: fase boa com ${balanceLabel}. ${best}${worst}`.trim();
+      return `${areaLabel}: fase boa com ${balanceLabel}. ${best}${worst}${solarBonusText}`.trim();
     }
     if (status === "bad") {
-      return `${areaLabel}: fase sensivel com ${balanceLabel}. ${best}${worst}`.trim();
+      return `${areaLabel}: fase sensivel com ${balanceLabel}. ${best}${worst}${solarBonusText}`.trim();
     }
-    return `${areaLabel}: leitura mista com ${balanceLabel}. ${best}${worst}`.trim();
+    return `${areaLabel}: leitura mista com ${balanceLabel}. ${best}${worst}${solarBonusText}`.trim();
   }
 
   if (context.complementaryLabel) {
@@ -323,18 +331,18 @@ function buildSummary(
         : status === "bad"
           ? "Strong pull is present, but boundaries are required to avoid conflict loops."
           : "There is high voltage chemistry when both people align on practical choices.";
-    return `${areaLabel}: complementary opposites active in ${context.complementaryLabel}. ${trail}`;
+    return `${areaLabel}: complementary opposites active in ${context.complementaryLabel}. ${trail} ${solarBonusText}`.trim();
   }
 
   const best = context.bestLabel ? `Strength: ${context.bestLabel}. ` : "";
   const worst = context.worstLabel ? `Friction: ${context.worstLabel}. ` : "";
   if (status === "good") {
-    return `${areaLabel}: strong flow with ${balanceLabel}. ${best}${worst}`.trim();
+    return `${areaLabel}: strong flow with ${balanceLabel}. ${best}${worst}${solarBonusText}`.trim();
   }
   if (status === "bad") {
-    return `${areaLabel}: tension-heavy phase with ${balanceLabel}. ${best}${worst}`.trim();
+    return `${areaLabel}: tension-heavy phase with ${balanceLabel}. ${best}${worst}${solarBonusText}`.trim();
   }
-  return `${areaLabel}: mixed signal with ${balanceLabel}. ${best}${worst}`.trim();
+  return `${areaLabel}: mixed signal with ${balanceLabel}. ${best}${worst}${solarBonusText}`.trim();
 }
 
 function buildAspectLabel(
@@ -435,8 +443,10 @@ export function buildMatchScorecards(
   duoMode: DuoMode
 ): MatchScorecard[] {
   const labels = getAreaLabels(locale, duoMode);
+  const sunGlobalBonus = comparison.sunComparison.globalBonus ?? 0;
+  const solarLabel = comparison.sunComparison.label;
 
-  return AREAS.map((area) => {
+  const areaCards = AREAS.map((area) => {
     const acc = initAccumulator();
 
     for (const aspect of comparison.aspects ?? []) {
@@ -493,14 +503,14 @@ export function buildMatchScorecards(
       }
     }
 
-    const normalized =
-      acc.maxMagnitude > 0 ? clampPercent(50 + (acc.total / acc.maxMagnitude) * 50) : 50;
-    const status = buildStatus(normalized);
+    const normalized = acc.maxMagnitude > 0 ? 50 + (acc.total / acc.maxMagnitude) * 50 : 50;
+    const score = clampPercent(normalized + sunGlobalBonus);
+    const status = buildStatus(score);
     const areaLabel = labels[area];
 
     return {
       area,
-      score: normalized,
+      score,
       status,
       summary: buildSummary(status, areaLabel, locale, {
         bestLabel: acc.best?.summaryLabel,
@@ -508,9 +518,22 @@ export function buildMatchScorecards(
         supportHits: acc.supportHits,
         tensionHits: acc.tensionHits,
         complementaryLabel: acc.complementary?.label,
+        solarGlobalBonus: sunGlobalBonus,
+        solarLabel,
       }),
       topSupportAspect: acc.best?.label,
       topTensionAspect: acc.worst?.label,
     };
   });
+
+  const sunCard: MatchScorecard = {
+    area: "sun",
+    score: comparison.sunComparison.score,
+    status: comparison.sunComparison.status,
+    summary: comparison.sunComparison.summary,
+    topSupportAspect: comparison.sunComparison.label,
+    topTensionAspect: undefined,
+  };
+
+  return [...areaCards, sunCard];
 }

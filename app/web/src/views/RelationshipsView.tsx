@@ -17,7 +17,7 @@ import {
   buildRelationshipQuest,
 } from "../lib/progression";
 import { shiftIsoDate } from "../lib/dateUtils";
-import type { ChartResult, LifeArea } from "../lib/types";
+import type { ChartResult, MatchScorecardArea } from "../lib/types";
 import type { TransitRangeResult } from "../lib/engine";
 
 const TRANSIT_PAGE_SIZE = 10;
@@ -40,10 +40,11 @@ export function RelationshipsView() {
 
   const t = {
     matchScorecardsTitle: isCarioca ? "Resumo rapido dos matches" : "Best and worst match summary",
-    matchScorecardsBadge: isCarioca ? "amor, amizade, familia" : "love, friendship, family",
+    matchScorecardsBadge: isCarioca ? "amor, amizade, familia, sol x sol" : "love, friendship, family, sun x sun",
     matchAreaLove: duoMode === "friend" ? (isCarioca ? "Vibe" : "Bond") : isCarioca ? "Amor" : "Love",
     matchAreaFriends: isCarioca ? "Amizade" : "Friendship",
     matchAreaFamily: isCarioca ? "Familia" : "Family",
+    matchAreaSun: isCarioca ? "Sol x Sol" : "Sun x Sun",
     matchSupportLabel: isCarioca ? "Melhor apoio" : "Best support",
     matchTensionLabel: isCarioca ? "Maior tensao" : "Biggest tension",
     matchAspectEmpty: isCarioca ? "Sem aspecto dominante" : "No dominant aspect",
@@ -102,10 +103,11 @@ export function RelationshipsView() {
     ? { more: "Abrir mais", less: "Fechar" }
     : { more: "Show more", less: "Show less" };
 
-  const matchAreaLabels: Record<LifeArea, string> = {
+  const matchAreaLabels: Record<MatchScorecardArea, string> = {
     love: t.matchAreaLove,
     friends: t.matchAreaFriends,
     family: t.matchAreaFamily,
+    sun: t.matchAreaSun,
   };
 
   // View-local state

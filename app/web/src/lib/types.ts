@@ -202,6 +202,8 @@ export type AspectTone = "harmonious" | "challenging" | "intense";
 export type DuoMode = "romantic" | "friend";
 export type SynastryStatKey = "attraction" | "communication" | "stability" | "growth";
 export type LifeArea = "love" | "friends" | "family";
+export type MatchScorecardArea = LifeArea | "sun";
+export type SunRelationKind = "complementary-opposites" | "same-sign" | "supportive" | "neutral";
 
 export interface DetailBlock {
   title: string;
@@ -213,6 +215,15 @@ export interface SynastryStat {
   label: string;
   score: number; // normalized 0-100
   summary: string;
+}
+
+export interface SunComparison {
+  label: string;
+  relation: SunRelationKind;
+  score: number;
+  status: "good" | "mixed" | "bad";
+  summary: string;
+  globalBonus: number;
 }
 
 export interface ComparisonHighlight {
@@ -239,6 +250,7 @@ export interface ChartComparison {
   highlights: ComparisonHighlight[];
   aspects?: ComparisonAspect[]; // optional detailed synastry list
   stats: SynastryStat[];
+  sunComparison: SunComparison;
 }
 
 export interface MapHouse {
@@ -274,7 +286,7 @@ export interface AstralMapModel {
 }
 
 export interface MatchScorecard {
-  area: LifeArea;
+  area: MatchScorecardArea;
   score: number;
   status: "good" | "mixed" | "bad";
   summary: string;
