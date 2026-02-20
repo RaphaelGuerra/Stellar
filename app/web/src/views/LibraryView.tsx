@@ -62,24 +62,24 @@ export function LibraryView() {
 
   const t = {
     libraryTitle: isCarioca ? "Biblioteca astrologica" : "Astrology library",
-    libraryGlossary: isCarioca ? "Glossario base para consulta rapida." : "Core glossary for quick reference.",
-    libraryTemplates: isCarioca ? "Templates de interpretacao e journal." : "Interpretation and journaling templates.",
-    libraryMoonTitle: isCarioca ? "Ciclo lunar (data atual)" : "Moon cycle (current date)",
+    libraryGlossary: isCarioca ? "Glossario rapidao pra tu consultar." : "Core glossary for quick reference.",
+    libraryTemplates: isCarioca ? "Templates de interpretacao e diario." : "Interpretation and journaling templates.",
+    libraryMoonTitle: isCarioca ? "Lua de hoje" : "Moon cycle (current date)",
     libraryMoonPhase: isCarioca ? "Fase" : "Phase",
     libraryMoonIllumination: isCarioca ? "Iluminacao" : "Illumination",
-    libraryTarotTitle: isCarioca ? "Tarot opcional" : "Optional tarot pull",
-    libraryTarotDraw: isCarioca ? "Puxar carta" : "Draw card",
+    libraryTarotTitle: isCarioca ? "Tarot do dia (opcional)" : "Optional tarot pull",
+    libraryTarotDraw: isCarioca ? "Puxa uma carta, vai" : "Draw card",
     libraryTarotHint: isCarioca
-      ? "Usa como prompt de journaling, nao como verdade absoluta."
+      ? "Usa como inspiracao pro diario, nao leva ao pe da letra, porra."
       : "Use as a journaling prompt, not absolute truth.",
   };
 
   const libraryGlossaryEntries = isCarioca
     ? [
-        { term: "Ascendente", text: "Como tu chega no mundo e no primeiro impacto." },
-        { term: "MC", text: "Direcao publica, carreira e reputacao." },
-        { term: "Casa 7", text: "Parcerias, namoro, casamento e contratos." },
-        { term: "Retorno Solar", text: "Mapa do ano pessoal entre aniversarios." },
+        { term: "Ascendente", text: "A mascara que tu usa no mundo, a primeira impressao que da." },
+        { term: "MC", text: "Tua carreira, reputacao e direcao publica, mermao." },
+        { term: "Casa 7", text: "Namoro, casamento, parcerias e contratos. A area do crush, ne." },
+        { term: "Retorno Solar", text: "O mapa do teu ano, de aniversario a aniversario." },
       ]
     : [
         { term: "Ascendant", text: "Your outward style and first-impression interface." },
@@ -90,9 +90,9 @@ export function LibraryView() {
 
   const libraryTemplateEntries = isCarioca
     ? [
-        "Template de transito: o que ativou, como senti no corpo, acao concreta hoje.",
-        "Template de sinastria: ponto forte, ponto sensivel, acordo pratico da semana.",
-        "Template de atlas: cidade, linhas proximas, objetivo de vida ligado ao lugar.",
+        "Transito: o que ativou hoje, como senti no corpo, uma acao concreta pra fazer.",
+        "Sinastria: ponto forte da dupla, onde pega, um acordo pratico pra essa semana.",
+        "Atlas: cidade que me chamou, linhas proximas, qual objetivo de vida combina.",
       ]
     : [
         "Transit template: what was activated, body signal, one concrete action today.",

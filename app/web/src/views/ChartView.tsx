@@ -35,7 +35,7 @@ export function ChartView() {
   } = useAppContext();
 
   const t = {
-    normalizedTitle: isCarioca ? "Dados no papo reto" : "Normalized data",
+    normalizedTitle: isCarioca ? "Dados mastigados" : "Normalized data",
     timezoneLabel: isCarioca ? "Fuso" : "Timezone",
     utcLabel: "UTC",
     localLabel: isCarioca ? "Local" : "Local",
@@ -43,24 +43,24 @@ export function ChartView() {
     latLonLabel: "Lat/Lon",
     dstLabel: isCarioca ? "Horario de verao" : "Daylight saving",
     yes: isCarioca ? "Sim, porra" : "Yes",
-    no: isCarioca ? "Nao, porra" : "No",
+    no: isCarioca ? "Nao, caralho" : "No",
     settingsHouseSystem: isCarioca ? "Sistema de casas" : "House system",
     housesStatus: isCarioca
-      ? "Casas calculadas no sistema selecionado."
+      ? "Casas calculadas certinho no sistema que tu escolheu."
       : "House cusps calculated using the selected system.",
     coreTriadTitle: isCarioca ? "Sol, Lua e Ascendente" : "Sun, Moon, Ascendant",
-    coreTriadBadge: isCarioca ? "base do mapa" : "chart core",
-    coreSun: isCarioca ? "Sol (identidade)" : "Sun (identity)",
-    coreMoon: isCarioca ? "Lua (emocional)" : "Moon (emotions)",
-    coreAsc: isCarioca ? "Ascendente (estilo externo)" : "Ascendant (outer style)",
-    coreAscMissing: isCarioca ? "Ascendente indisponivel" : "Ascendant unavailable",
-    personA: isCarioca ? "Pessoa A (tu)" : "Person A",
-    personB: isCarioca ? "Pessoa B (o outro)" : "Person B",
+    coreTriadBadge: isCarioca ? "o basico, mermao" : "chart core",
+    coreSun: isCarioca ? "Sol (quem tu e de verdade)" : "Sun (identity)",
+    coreMoon: isCarioca ? "Lua (o emocional, cria)" : "Moon (emotions)",
+    coreAsc: isCarioca ? "Ascendente (a fachada, ne)" : "Ascendant (outer style)",
+    coreAscMissing: isCarioca ? "Ascendente sumiu, que merda" : "Ascendant unavailable",
+    personA: isCarioca ? "Tu (Pessoa A)" : "Person A",
+    personB: isCarioca ? "O outro (Pessoa B)" : "Person B",
     chartPointsTitle: isCarioca ? "Tabela completa de pontos" : "Full points table",
     chartHousesTitle: isCarioca ? "Tabela de casas" : "House table",
     chartAspectsTableTitle: isCarioca ? "Tabela de aspectos" : "Aspects table",
     chartAspectsTableBadge: (n: number) => isCarioca ? `${n} aspectos` : `${n} aspects`,
-    chartDignitiesTitle: isCarioca ? "Resumo de dignidades" : "Dignities summary",
+    chartDignitiesTitle: isCarioca ? "Dignidades dos planetas" : "Dignities summary",
     chartDignitiesBadge: (n: number) => isCarioca ? `${n} planetas` : `${n} planets`,
     chartPointsBadge: (n: number) => isCarioca ? `${n} pontos` : `${n} points`,
     chartHousesBadge: (n: number) => isCarioca ? `${n} casas` : `${n} houses`,
@@ -72,20 +72,20 @@ export function ChartView() {
     colLongitude: isCarioca ? "Longitude" : "Longitude",
     colOrb: "Orb",
     colStatus: isCarioca ? "Status" : "Status",
-    emptyTable: isCarioca ? "Sem dados para mostrar." : "No data available.",
-    dignityDomicile: isCarioca ? "Domicilio" : "Domicile",
-    dignityExaltation: isCarioca ? "Exaltacao" : "Exaltation",
-    dignityDetriment: isCarioca ? "Detrimento" : "Detriment",
-    dignityFall: isCarioca ? "Queda" : "Fall",
-    dignityNeutral: isCarioca ? "Neutro" : "Neutral",
-    sunMoonInsightsTitle: isCarioca ? "Insights de Sol e Lua" : "Sun and Moon insights",
-    planetsTitle: isCarioca ? "Posicoes planetarias" : "Planet placements",
-    aspectsTitle: isCarioca ? "Aspectos planetarios" : "Planetary aspects",
+    emptyTable: isCarioca ? "Nada pra mostrar ainda, fica frio." : "No data available.",
+    dignityDomicile: isCarioca ? "Em casa (domicilio)" : "Domicile",
+    dignityExaltation: isCarioca ? "Exaltado, voando" : "Exaltation",
+    dignityDetriment: isCarioca ? "Fudido (detrimento)" : "Detriment",
+    dignityFall: isCarioca ? "Na lona (queda)" : "Fall",
+    dignityNeutral: isCarioca ? "De boa" : "Neutral",
+    sunMoonInsightsTitle: isCarioca ? "Sol e Lua no papo reto" : "Sun and Moon insights",
+    planetsTitle: isCarioca ? "Onde cada planeta ta" : "Planet placements",
+    aspectsTitle: isCarioca ? "Aspectos entre os planetas" : "Planetary aspects",
     aspectsBadge: (n: number) => isCarioca ? `${n} conexoes brabas` : `${n} connections`,
     emptyState: isCarioca
-      ? 'Clica em "Gerar mapa, porra" pra ver os cards desse mapa.'
+      ? 'Aperta "Gerar mapa, porra!" la em cima pra ver teu mapa.'
       : 'Click "Generate chart" to see your birth chart cards.',
-    loading: isCarioca ? "Calculando os planetas nessa porra" : "Calculating planetary positions",
+    loading: isCarioca ? "Calculando os planetas, segura ai..." : "Calculating planetary positions",
     astralMapTitle: isCarioca ? "Mapa astral visual" : "Astral map",
     astralMapBadge:
       analysisMode === "compatibility"
@@ -93,23 +93,23 @@ export function ChartView() {
         : isCarioca ? "solo + conexoes" : "single + connections",
     astralMapThumbTitle:
       analysisMode === "compatibility"
-        ? isCarioca ? "Visao combinada das energias" : "Combined energy map"
-        : isCarioca ? "Visao completa do mapa" : "Full chart map",
+        ? isCarioca ? "Energia combinada dos dois" : "Combined energy map"
+        : isCarioca ? "Teu mapa completo" : "Full chart map",
     astralMapThumbSubtitle:
       analysisMode === "compatibility"
         ? `${isCarioca ? "Pessoa A" : "Person A"} + ${isCarioca ? "Pessoa B" : "Person B"}`
         : isCarioca ? "Planetas, casas e aspectos" : "Planets, houses, and aspects",
-    astralMapOpen: isCarioca ? "Abrir mapa em resolucao total" : "Open full-resolution map",
+    astralMapOpen: isCarioca ? "Abrir mapa em HD" : "Open full-resolution map",
     astralMapHouseBeta: isCarioca
-      ? "Casas seguem o sistema selecionado; fallback equal-house so se faltar dado."
+      ? "Casas seguem o sistema escolhido. So usa equal-house se faltar dado."
       : "Houses follow the selected system; equal-house is only a fallback when data is missing.",
     astralMapAscFallback: isCarioca
-      ? "Ascendente ausente no dado salvo. Usando fallback em 0 deg Aries."
+      ? "Ascendente sumiu do dado salvo. Usando 0 grau de Aries como fallback."
       : "Ascendant missing in saved data. Using fallback at 0deg Aries.",
   };
 
   const cardExpandLabels = isCarioca
-    ? { more: "Abrir mais", less: "Fechar" }
+    ? { more: "Ver mais", less: "Fecha ai" }
     : { more: "Show more", less: "Show less" };
 
   const { heroCards, planetCards, aspectCards } = useMemo(() => {

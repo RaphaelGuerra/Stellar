@@ -39,68 +39,68 @@ export function RelationshipsView() {
   } = useAppContext();
 
   const t = {
-    matchScorecardsTitle: isCarioca ? "Resumo rapido dos matches" : "Best and worst match summary",
+    matchScorecardsTitle: isCarioca ? "Resumo do match" : "Best and worst match summary",
     matchScorecardsBadge: isCarioca ? "amor, amizade, familia, sol x sol" : "love, friendship, family, sun x sun",
     matchAreaLove: duoMode === "friend" ? (isCarioca ? "Vibe" : "Bond") : isCarioca ? "Amor" : "Love",
     matchAreaFriends: isCarioca ? "Amizade" : "Friendship",
     matchAreaFamily: isCarioca ? "Familia" : "Family",
     matchAreaSun: isCarioca ? "Sol x Sol" : "Sun x Sun",
-    matchSupportLabel: isCarioca ? "Melhor apoio" : "Best support",
-    matchTensionLabel: isCarioca ? "Maior tensao" : "Biggest tension",
-    matchAspectEmpty: isCarioca ? "Sem aspecto dominante" : "No dominant aspect",
-    compatibilityTitle: isCarioca ? "Sinastria de cria" : "Synastry",
+    matchSupportLabel: isCarioca ? "Ponto forte, maluco" : "Best support",
+    matchTensionLabel: isCarioca ? "Onde pega, cuidado" : "Biggest tension",
+    matchAspectEmpty: isCarioca ? "Nenhum aspecto dominante" : "No dominant aspect",
+    compatibilityTitle: isCarioca ? "Sinastria" : "Synastry",
     compatibilityBadge: (n: number) => isCarioca ? `${n} aspectos brabos` : `${n} aspects`,
     compatibilityEmpty: isCarioca
-      ? 'Clica em "Gerar mapa, porra" pra ver a treta entre Pessoa A e Pessoa B.'
+      ? 'Aperta "Gerar mapa, porra!" pra ver a quimica entre voces.'
       : 'Click "Generate chart" to see aspects between Person A and Person B.',
     compatibilityStatsTitle:
       duoMode === "friend"
-        ? isCarioca ? "Stats da amizade" : "Friendship stats"
+        ? isCarioca ? "Stats da parceria" : "Friendship stats"
         : isCarioca ? "Stats da relacao" : "Relationship stats",
-    compatibilityStatsBadge: isCarioca ? "modo RPG" : "RPG mode",
+    compatibilityStatsBadge: isCarioca ? "modo RPG, caralho" : "RPG mode",
     questTitle:
       duoMode === "friend"
-        ? isCarioca ? "Missao da amizade" : "Friendship quest"
+        ? isCarioca ? "Missao da parceria" : "Friendship quest"
         : isCarioca ? "Missao da dupla" : "Relationship quest",
     questBadge: (label: string) => isCarioca ? `foco em ${label}` : `${label} focus`,
-    questXpLabel: isCarioca ? "XP total" : "Total XP",
-    questStreakLabel: isCarioca ? "Streak" : "Streak",
+    questXpLabel: isCarioca ? "XP acumulado" : "Total XP",
+    questStreakLabel: isCarioca ? "Sequencia" : "Streak",
     questUnlockLabel: (count: number) =>
-      isCarioca ? `Blocos destravados: ${count}/4` : `Unlocked detail blocks: ${count}/4`,
+      isCarioca ? `Destravou ${count}/4 blocos` : `Unlocked detail blocks: ${count}/4`,
     questNextUnlockLabel: (xp: number) =>
-      isCarioca ? `Proximo unlock em ${xp} XP` : `Next unlock at ${xp} XP`,
-    questComplete: isCarioca ? `Concluir missao (+40 XP)` : "Complete quest (+40 XP)",
-    questCompleted: isCarioca ? "Missao concluida" : "Quest completed",
-    questReflect: isCarioca ? "Registrar reflexao (+20 XP)" : "Log reflection (+20 XP)",
-    questReflected: isCarioca ? "Reflexao registrada" : "Reflection logged",
+      isCarioca ? `Falta ${xp} XP pro proximo unlock` : `Next unlock at ${xp} XP`,
+    questComplete: isCarioca ? `Missao cumprida! (+40 XP)` : "Complete quest (+40 XP)",
+    questCompleted: isCarioca ? "Feito, porra!" : "Quest completed",
+    questReflect: isCarioca ? "Refletir sobre isso (+20 XP)" : "Log reflection (+20 XP)",
+    questReflected: isCarioca ? "Reflexao salva, show!" : "Reflection logged",
     advancedTitle: isCarioca ? "Overlays avancados" : "Advanced overlays",
     advancedBadge: isCarioca ? "composite + midpoints" : "composite + midpoints",
     advancedLocked: isCarioca
-      ? `Desbloqueia com ${ADVANCED_OVERLAYS_UNLOCK_XP} XP`
+      ? `Trancado! Precisa de ${ADVANCED_OVERLAYS_UNLOCK_XP} XP pra abrir`
       : `Unlocks at ${ADVANCED_OVERLAYS_UNLOCK_XP} XP`,
     advancedLockedHint: (xp: number) =>
       isCarioca
-        ? `Faltam ${Math.max(0, xp - progression.xp)} XP para liberar.`
+        ? `Faltam ${Math.max(0, xp - progression.xp)} XP, bora completar missao!`
         : `${Math.max(0, xp - progression.xp)} XP to unlock.`,
-    advancedCompositeTitle: isCarioca ? "Composite core" : "Composite core",
-    advancedMidpointTitle: isCarioca ? "Midpoints-chave" : "Key midpoints",
+    advancedCompositeTitle: isCarioca ? "Core do composite" : "Composite core",
+    advancedMidpointTitle: isCarioca ? "Midpoints principais" : "Key midpoints",
     relationshipsComposite: isCarioca ? "Mapa composto" : "Composite chart",
     relationshipsDavison: isCarioca ? "Mapa Davison" : "Davison chart",
-    relationshipsTransitTimeline: isCarioca ? "Timeline de transitos da relacao" : "Relationship transit timeline",
-    relationshipsTransitExact: isCarioca ? "Aspectos exatos da relacao" : "Relationship exact hits",
-    relationshipsTransitSelectedDay: isCarioca ? "Dia da relacao" : "Relationship day",
-    relationshipsTransitNoHits: isCarioca ? "Sem hits de relacao nesse dia." : "No relationship hits on this day.",
+    relationshipsTransitTimeline: isCarioca ? "Timeline da relacao" : "Relationship transit timeline",
+    relationshipsTransitExact: isCarioca ? "Hits exatos da relacao" : "Relationship exact hits",
+    relationshipsTransitSelectedDay: isCarioca ? "O dia de voces" : "Relationship day",
+    relationshipsTransitNoHits: isCarioca ? "Nada forte nesse dia, de boa." : "No relationship hits on this day.",
     transitsPrev: isCarioca ? "Anterior" : "Prev",
     transitsNext: isCarioca ? "Proximo" : "Next",
     transitsPage: (page: number, total: number) =>
-      isCarioca ? `Pagina ${page}/${total}` : `Page ${page}/${total}`,
+      isCarioca ? `${page} de ${total}` : `Page ${page}/${total}`,
     emptyModeHint: isCarioca
-      ? "Muda pra Sinastria braba pra liberar a area de relacoes."
+      ? "Muda pra Sinastria braba la em cima pra desbloquear relacoes, mermao."
       : "Switch to Compatibility mode to use Relationships.",
   };
 
   const cardExpandLabels = isCarioca
-    ? { more: "Abrir mais", less: "Fechar" }
+    ? { more: "Ver mais", less: "Fecha ai" }
     : { more: "Show more", less: "Show less" };
 
   const matchAreaLabels: Record<MatchScorecardArea, string> = {

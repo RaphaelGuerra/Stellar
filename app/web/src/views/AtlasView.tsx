@@ -25,39 +25,39 @@ export function AtlasView() {
 
   const t = {
     atlasTitle: isCarioca ? "Astrocartografia" : "Astrocartography",
-    atlasMapTitle: isCarioca ? "Mapa global de linhas" : "Global line map",
+    atlasMapTitle: isCarioca ? "Mapa mundi das linhas" : "Global line map",
     atlasMapBadge: isCarioca ? "MC/IC/ASC/DSC" : "MC/IC/ASC/DSC",
     atlasMapHint: isCarioca
-      ? "Linhas verticais mostram onde cada ponto angular fica mais forte."
+      ? "As linhas mostram onde cada energia bate mais forte no mundo todo, mermao."
       : "Vertical lines show where each angle expression is strongest globally.",
-    atlasShortlistTitle: isCarioca ? "Melhores cidades por linhas" : "Best-fit location shortlist",
-    atlasShortlistBadge: isCarioca ? "proximidade de linhas" : "line proximity",
-    atlasGoalFocusTitle: isCarioca ? "Objetivo principal" : "Primary goal",
-    atlasGoalCareer: isCarioca ? "Carreira" : "Career",
+    atlasShortlistTitle: isCarioca ? "Melhores cidades pra ti" : "Best-fit location shortlist",
+    atlasShortlistBadge: isCarioca ? "por proximidade de linha" : "line proximity",
+    atlasGoalFocusTitle: isCarioca ? "Qual teu objetivo, cria?" : "Primary goal",
+    atlasGoalCareer: isCarioca ? "Trampo" : "Career",
     atlasGoalRelationships: isCarioca ? "Relacoes" : "Relationships",
-    atlasGoalHome: isCarioca ? "Casa/Familia" : "Home/Family",
-    atlasGoalGrowth: isCarioca ? "Crescimento" : "Growth",
+    atlasGoalHome: isCarioca ? "Lar doce lar" : "Home/Family",
+    atlasGoalGrowth: isCarioca ? "Evolucao pessoal" : "Growth",
     atlasShortlistEmpty: isCarioca
-      ? "Sem matches fortes por enquanto. Tenta mudar data ou sistema de casas."
+      ? "Nada forte ainda, tenta mudar a data ou o sistema de casas."
       : "No strong matches yet. Try another date or house system.",
     atlasCrossingsTitle: isCarioca ? "Cruzamentos de linhas" : "Line crossings",
-    atlasCrossingsBadge: isCarioca ? "zonas de sobreposicao" : "overlap zones",
+    atlasCrossingsBadge: isCarioca ? "zonas quentes" : "overlap zones",
     atlasCrossingsEmpty: isCarioca
-      ? "Sem cruzamentos fortes no momento."
+      ? "Sem cruzamento forte no momento, suave."
       : "No strong crossings detected right now.",
-    atlasInspectorTitle: isCarioca ? "Inspecionar localizacao" : "Inspect location",
+    atlasInspectorTitle: isCarioca ? "Investigar cidade" : "Inspect location",
     atlasInspectorHint: isCarioca
-      ? "Busca uma cidade e ve as linhas mais proximas."
+      ? "Manda uma cidade ai pra ver as linhas mais perto."
       : "Search a location and inspect the nearest lines.",
-    atlasInspectorButton: isCarioca ? "Inspecionar" : "Inspect",
-    atlasInspectorLoading: isCarioca ? "Inspecionando..." : "Inspecting...",
-    atlasInspectorCrossing: isCarioca ? "Cruzamento dominante" : "Strongest crossing",
+    atlasInspectorButton: isCarioca ? "Investigar" : "Inspect",
+    atlasInspectorLoading: isCarioca ? "Analisando, segura..." : "Inspecting...",
+    atlasInspectorCrossing: isCarioca ? "Cruzamento mais forte" : "Strongest crossing",
     atlasInspectorEmpty: isCarioca
-      ? "Sem leitura ainda. Escolhe uma cidade e clica em inspecionar."
+      ? "Escolhe uma cidade e clica em investigar, porra."
       : "No location analysis yet. Enter a city and inspect.",
     searchPlaceholder: isCarioca ? "Ex: Rio de Janeiro, BR" : "e.g. New York, US",
     emptyState: isCarioca
-      ? 'Clica em "Gerar mapa, porra" pra ver o atlas.'
+      ? 'Aperta "Gerar mapa, porra!" la em cima pra ver teu atlas.'
       : 'Click "Generate chart" to see the astrocartography atlas.',
   };
 
@@ -109,7 +109,7 @@ export function AtlasView() {
       setAtlasInspectorResult(null);
       setAtlasInspectorError(
         isCarioca
-          ? "Gera o atlas primeiro pra inspecionar local."
+          ? "Gera o atlas primeiro, caralho! Sem mapa nao da."
           : "Generate atlas lines first to inspect a location."
       );
       return;
@@ -119,7 +119,7 @@ export function AtlasView() {
       setAtlasInspectorResult(null);
       setAtlasInspectorError(
         isCarioca
-          ? "Manda pelo menos 3 letras da cidade."
+          ? "Bota pelo menos 3 letras, porra."
           : "Type at least 3 characters to search a location."
       );
       return;
@@ -131,7 +131,7 @@ export function AtlasView() {
         setAtlasInspectorResult(null);
         setAtlasInspectorError(
           isCarioca
-            ? "Busca de cidade indisponivel agora."
+            ? "A busca deu pau agora, tenta de novo."
             : "Location search is temporarily unavailable."
         );
         return;
@@ -140,7 +140,7 @@ export function AtlasView() {
         setAtlasInspectorResult(null);
         setAtlasInspectorError(
           isCarioca
-            ? "Nao achei essa localizacao. Tenta cidade + pais."
+            ? "Nao achei essa porra. Tenta cidade + pais."
             : "Location not found. Try city + country."
         );
         return;
@@ -149,7 +149,7 @@ export function AtlasView() {
         setAtlasInspectorResult(null);
         setAtlasInspectorError(
           isCarioca
-            ? "Localizacao ambigua. Especifica melhor com pais."
+            ? "Tem varias cidades com esse nome. Bota o pais junto, mermao."
             : "Ambiguous location. Add country for a specific result."
         );
         return;
@@ -160,7 +160,7 @@ export function AtlasView() {
         setAtlasInspectorResult(null);
         setAtlasInspectorError(
           isCarioca
-            ? "Nao foi possivel analisar esse ponto."
+            ? "Deu merda analisando esse lugar, tenta outro."
             : "Could not analyze this location right now."
         );
         return;

@@ -23,18 +23,18 @@ export function TimingView() {
   const t = {
     timingTitle: isCarioca ? "Timing astrologico" : "Astrology timing",
     timingAsOf: isCarioca ? "Referencia" : "Reference date",
-    timingProgressed: isCarioca ? "Progressoes secundarias" : "Secondary progression",
-    timingSolarReturn: isCarioca ? "Retorno solar" : "Solar return",
+    timingProgressed: isCarioca ? "Progressao secundaria" : "Secondary progression",
+    timingSolarReturn: isCarioca ? "Retorno solar (aniversario cosmico)" : "Solar return",
     timingLunarReturn: isCarioca ? "Retorno lunar" : "Lunar return",
     timingProfection: isCarioca ? "Profeccao anual" : "Annual profection",
-    timingSaturnReturn: isCarioca ? "Saturn return tracker" : "Saturn return tracker",
-    timeTravelTitle: isCarioca ? "Navegador de data" : "Time travel date",
+    timingSaturnReturn: isCarioca ? "Retorno de Saturno (a porrada)" : "Saturn return tracker",
+    timeTravelTitle: isCarioca ? "Viagem no tempo" : "Time travel date",
     timeTravelBack: isCarioca ? "-7 dias" : "-7 days",
     timeTravelForward: isCarioca ? "+7 dias" : "+7 days",
     timeTravelToday: isCarioca ? "Hoje" : "Today",
     settingsHouseSystem: isCarioca ? "Sistema de casas" : "House system",
     emptyState: isCarioca
-      ? 'Clica em "Gerar mapa, porra" pra ver o timing.'
+      ? 'Aperta "Gerar mapa, porra!" pra ver o timing.'
       : 'Click "Generate chart" to see astrology timing.',
   };
 

@@ -75,17 +75,17 @@ const EN_VALIDATION_MESSAGES: Record<ValidationErrorCode, string> = {
 };
 
 const CARIOCA_VALIDATION_MESSAGES: Record<ValidationErrorCode, string> = {
-  DATE_REQUIRED: "Sem data nao rola, porra.",
-  DATE_FORMAT_INVALID: "A data ta zoada, mermão. Usa YYYY-MM-DD sem inventar moda.",
-  DATE_INVALID: "Essa data ai ta errada pra caralho.",
-  DATE_TOO_OLD: "Ta puxando data jurassica demais. Manda depois de 1900.",
-  TIME_REQUIRED: "Sem hora nao tem mapa, caralho.",
-  TIME_FORMAT_INVALID: "Hora toda cagada. Usa HH:mm certinho.",
-  CITY_REQUIRED: "Manda cidade e pais direito, porra. Ex: Rio de Janeiro, BR.",
-  CITY_TOO_SHORT: "Nome de cidade com 1 letra e sacanagem. Bota pelo menos 2.",
-  COUNTRY_TOO_SHORT: "Codigo do pais ta curto pra cacete. Usa pelo menos 2 letras.",
-  DATE_IN_FUTURE: "Nascer no futuro nao da, ne porra.",
-  TIMEZONE_INVALID: "Timezone dessa localizacao veio toda errada.",
+  DATE_REQUIRED: "Bota a data ai, porra! Sem data nao rola nada.",
+  DATE_FORMAT_INVALID: "Essa data ta toda cagada, mermao. Usa YYYY-MM-DD direitinho.",
+  DATE_INVALID: "Tu inventou uma data que nao existe, maluco.",
+  DATE_TOO_OLD: "Eita, essa data e antes de 1900. Ninguem e tao velho assim, caralho.",
+  TIME_REQUIRED: "Cadê a hora, porra? Sem hora o mapa fica manco.",
+  TIME_FORMAT_INVALID: "Essa hora ta zoada pra cacete. Manda no formato HH:mm.",
+  CITY_REQUIRED: "Fala a cidade e o pais, caralho! Ex: Rio de Janeiro, BR.",
+  CITY_TOO_SHORT: "Uma letra so de cidade? Ta de sacanagem, ne. Bota pelo menos 2.",
+  COUNTRY_TOO_SHORT: "Codigo do pais com 1 letra? Bota pelo menos 2, porra.",
+  DATE_IN_FUTURE: "Opa, ninguem nasce no futuro, maluco. Confere essa data ai.",
+  TIMEZONE_INVALID: "O fuso dessa cidade veio todo fudido. Tenta outra localizacao.",
 };
 
 function formatValidationMessages(errors: readonly ValidationErrorCode[], isCarioca: boolean): string[] {

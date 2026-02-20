@@ -154,7 +154,7 @@ describe("App aria labels localization", () => {
     fireEvent.click(screen.getByRole("button", { name: "Carioca" }));
 
     expect(screen.getByRole("main").getAttribute("aria-label")).toBe("Gerador de mapa astral");
-    expect(screen.getByRole("group", { name: "Modo de conteudo" })).toBeTruthy();
+    expect(screen.getByRole("group", { name: "Idioma" })).toBeTruthy();
     expect(screen.getByRole("group", { name: "Modo de analise" })).toBeTruthy();
     expect(screen.getByLabelText("Dados atuais do mapa")).toBeTruthy();
   });
@@ -282,7 +282,7 @@ describe("App aria labels localization", () => {
     fireEvent.click(screen.getByRole("button", { name: "Carioca" }));
     fireEvent.click(screen.getByRole("button", { name: "Transitos" }));
 
-    expect(await screen.findByRole("heading", { name: "Hoje pra amizade" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Hoje pra parceria" })).toBeTruthy();
     expect(await screen.findByText(/Janela de|Janela estavel/)).toBeTruthy();
   });
 

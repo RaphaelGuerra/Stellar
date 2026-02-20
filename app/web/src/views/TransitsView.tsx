@@ -41,53 +41,53 @@ export function TransitsView() {
   } = useAppContext();
 
   const t = {
-    transitsTitle: isCarioca ? "Feed de transitos" : "Transit feed",
-    timeTravelTitle: isCarioca ? "Navegador de data" : "Time travel date",
+    transitsTitle: isCarioca ? "O ceu ta mexendo, olha so" : "Transit feed",
+    timeTravelTitle: isCarioca ? "Viagem no tempo" : "Time travel date",
     timeTravelBack: isCarioca ? "-7 dias" : "-7 days",
     timeTravelForward: isCarioca ? "+7 dias" : "+7 days",
     timeTravelToday: isCarioca ? "Hoje" : "Today",
-    transitsExactHits: isCarioca ? "Aspectos exatos" : "Exact hits",
-    transitsStrongest: isCarioca ? "Mais fortes do dia" : "Strongest today",
+    transitsExactHits: isCarioca ? "Aspectos na mosca" : "Exact hits",
+    transitsStrongest: isCarioca ? "Os mais fortes de hoje" : "Strongest today",
     transitsRangeToday: isCarioca ? "Hoje" : "Today",
     transitsRangeWeek: isCarioca ? "Semana" : "Week",
     transitsRangeMonth: isCarioca ? "Mes" : "Month",
     transitsPage: (page: number, total: number) =>
-      isCarioca ? `Pagina ${page}/${total}` : `Page ${page}/${total}`,
+      isCarioca ? `${page} de ${total}` : `Page ${page}/${total}`,
     transitsPrev: isCarioca ? "Anterior" : "Prev",
     transitsNext: isCarioca ? "Proximo" : "Next",
     transitsSelectedDay: isCarioca ? "Dia selecionado" : "Selected day",
-    transitsNoHitsDay: isCarioca ? "Sem hits relevantes nesse dia." : "No strong hits on this day.",
-    transitsThemeShort: isCarioca ? "Temas de curto prazo" : "Short-term themes",
-    transitsThemeLong: isCarioca ? "Temas de longo prazo" : "Long-term themes",
-    transitsThemeCount: isCarioca ? "ocorrencias" : "occurrences",
-    transitsExactCalendar: isCarioca ? "Calendario de exatos" : "Exact-hit calendar",
-    transitsReminderTitle: isCarioca ? "Regras de lembrete local" : "Local reminder rules",
+    transitsNoHitsDay: isCarioca ? "Hoje ta tranquilo, sem transito forte." : "No strong hits on this day.",
+    transitsThemeShort: isCarioca ? "Temas do momento" : "Short-term themes",
+    transitsThemeLong: isCarioca ? "Temas de fundo" : "Long-term themes",
+    transitsThemeCount: isCarioca ? "vezes" : "occurrences",
+    transitsExactCalendar: isCarioca ? "Calendario dos exatos" : "Exact-hit calendar",
+    transitsReminderTitle: isCarioca ? "Lembrete de transito" : "Local reminder rules",
     transitsReminderLeadDays: isCarioca ? "Antecedencia" : "Lead time",
     transitsReminderOrb: isCarioca ? "Orb maximo" : "Max orb",
-    transitsReminderStatus: isCarioca ? "Status de notificacao" : "Notification status",
-    transitsReminderPermissionMissing: isCarioca ? "Notificacoes nao permitidas no navegador." : "Notifications are not allowed in this browser.",
-    transitsReminderPermissionPrompt: isCarioca ? "Ativa o lembrete pra solicitar permissao." : "Enable reminders to request permission.",
-    transitsReminderPermissionDenied: isCarioca ? "Permissao negada; o lembrete fica so no feed." : "Permission denied; reminders stay in-app only.",
-    transitsReminderPermissionGranted: isCarioca ? "Permissao ativa; alertas locais habilitados." : "Permission granted; local alerts enabled.",
-    transitsReminderUpcoming: isCarioca ? "Proximos alertas pela regra" : "Upcoming rule matches",
+    transitsReminderStatus: isCarioca ? "Notificacao" : "Notification status",
+    transitsReminderPermissionMissing: isCarioca ? "Teu navegador bloqueou as notificacoes, porra." : "Notifications are not allowed in this browser.",
+    transitsReminderPermissionPrompt: isCarioca ? "Liga o lembrete ai pra pedir permissao." : "Enable reminders to request permission.",
+    transitsReminderPermissionDenied: isCarioca ? "Tu negou a permissao, ai fica so no feed." : "Permission denied; reminders stay in-app only.",
+    transitsReminderPermissionGranted: isCarioca ? "Show, alertas locais ativados!" : "Permission granted; local alerts enabled.",
+    transitsReminderUpcoming: isCarioca ? "Alertas vindo ai" : "Upcoming rule matches",
     emptyState: isCarioca
-      ? 'Clica em "Gerar mapa, porra" pra ver os transitos.'
+      ? 'Aperta "Gerar mapa, porra!" la em cima pra ver os transitos.'
       : 'Click "Generate chart" to see your transits.',
     todayForUsTitle:
       duoMode === "friend"
-        ? isCarioca ? "Hoje pra amizade" : "Today for Friends"
+        ? isCarioca ? "Hoje pra parceria" : "Today for Friends"
         : isCarioca ? "Hoje pra dupla" : "Today for Us",
-    todayForUsBadge: isCarioca ? "transitos ativos" : "live transits",
-    forecastTitle: isCarioca ? "Timeline de compatibilidade" : "Compatibility timeline",
+    todayForUsBadge: isCarioca ? "rolando agora" : "live transits",
+    forecastTitle: isCarioca ? "Previsao da relacao" : "Compatibility timeline",
     forecastBadge: (days: number) => isCarioca ? `proximos ${days} dias` : `next ${days} days`,
-    forecastBest: isCarioca ? "Melhor janela" : "Best window",
-    forecastTough: isCarioca ? "Dia mais sensivel" : "Toughest day",
+    forecastBest: isCarioca ? "Melhor momento" : "Best window",
+    forecastTough: isCarioca ? "Dia mais tenso, cuidado" : "Toughest day",
     forecastVibe: isCarioca ? "Vibe" : "Vibe",
     forecastRisk: isCarioca ? "Risco" : "Risk",
   };
 
   const cardExpandLabels = isCarioca
-    ? { more: "Abrir mais", less: "Fechar" }
+    ? { more: "Ver mais", less: "Fecha ai" }
     : { more: "Show more", less: "Show less" };
 
   const unlockedDetailCount = useMemo(
@@ -217,7 +217,7 @@ export function TransitsView() {
     ].join("|");
     if (reminderKey === lastReminderKey) return;
     if (typeof window !== "undefined" && typeof Notification !== "undefined" && Notification.permission === "granted") {
-      const title = isCarioca ? "Lembrete de transito" : "Transit reminder";
+      const title = isCarioca ? "Opa, transito vindo ai!" : "Transit reminder";
       const body = `${next.date}: ${next.transitPlanet} ${next.aspect} ${next.natalPlanet} (orb ${next.orb.toFixed(1)}deg)`;
       new Notification(title, { body });
     }
