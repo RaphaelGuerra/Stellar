@@ -186,8 +186,6 @@ function pickCityName(address?: NominatimAddress): string | null {
     address.town ||
     address.village ||
     address.municipality ||
-    address.county ||
-    address.state ||
     null
   );
 }
@@ -201,8 +199,8 @@ function buildSuggestion(result: NominatimResult): GeoSuggestion | null {
   const country = result.address?.country_code?.toUpperCase() ?? "";
   if (!city || !country) return null;
 
-  const region = result.address?.state && result.address.state !== city ? result.address.state : "";
-  const labelParts = [city, region, country].filter(Boolean);
+  const state = result.address?.state && result.address.state !== city ? result.address.state : "";
+  const labelParts = [city, state, country].filter(Boolean);
   const label = labelParts.join(", ");
 
   return {
@@ -221,7 +219,7 @@ function toUniqueSuggestions(results: NominatimResult[]): GeoSuggestion[] {
   for (const item of results) {
     const suggestion = buildSuggestion(item);
     if (!suggestion) continue;
-    const key = `${suggestion.label}|${suggestion.lat}|${suggestion.lon}`;
+    const key = suggestion.label.toLowerCase();
     if (!unique.has(key)) {
       unique.set(key, suggestion);
     }
