@@ -20,7 +20,7 @@ describe("DatePicker", () => {
     fireEvent.click(screen.getByRole("button", { name: "Escolher data" }));
 
     expect(screen.getByRole("dialog", { name: "Escolher data" })).toBeTruthy();
-    expect(screen.getByRole("combobox", { name: "Ano" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Ano" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Mes anterior" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Proximo mes" })).toBeTruthy();
   });
@@ -40,10 +40,10 @@ describe("DatePicker", () => {
       />
     );
 
-    fireEvent.click(screen.getByRole("button"));
+    fireEvent.click(screen.getByRole("button", { name: "Escolher data" }));
 
     expect(screen.getByRole("dialog", { name: "Escolher data" })).toBeTruthy();
-    expect(screen.getByRole("combobox", { name: "Ano" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Ano" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Mes anterior" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Proximo mes" })).toBeTruthy();
   });
@@ -53,7 +53,7 @@ describe("DatePicker", () => {
       <DatePicker value="2000-01-15" onChange={vi.fn()} locale="en-US" />
     );
 
-    const trigger = screen.getByRole("button");
+    const trigger = screen.getByRole("button", { name: "Choose date" });
     fireEvent.click(trigger);
     expect(screen.getByText(/January/i)).toBeTruthy();
 

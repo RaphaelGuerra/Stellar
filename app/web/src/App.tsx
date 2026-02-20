@@ -140,6 +140,8 @@ function App() {
       : "Keep Auto for most cases. Use manual only when a birth time is duplicated by DST fallback.",
     yes: isCarioca ? "Sim, porra" : "Yes",
     no: isCarioca ? "Nao, porra" : "No",
+    hour: isCarioca ? "Hora" : "Hour",
+    minute: isCarioca ? "Minuto" : "Minute",
   };
 
   const hasResults =

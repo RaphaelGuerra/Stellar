@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { DatePicker } from "./DatePicker";
+import { TimePicker } from "./TimePicker";
 import type { UseGeoSearchReturn } from "../lib/useGeoSearch";
 
 interface PersonFormLabels {
@@ -20,6 +21,8 @@ interface PersonFormLabels {
   daylightSavingManualHint: string;
   yes: string;
   no: string;
+  hour: string;
+  minute: string;
 }
 
 interface PersonFormProps {
@@ -86,13 +89,12 @@ export function PersonForm({
         </label>
         <label className="form__label form__label--time">
           {labels.time}
-          <input
-            type="time"
-            name={`${namePrefix}-time`}
-            autoComplete="off"
+          <TimePicker
             value={time}
-            onChange={(e) => onTimeChange(e.target.value)}
+            onChange={onTimeChange}
+            name={`${namePrefix}-time`}
             required
+            labels={{ hour: labels.hour, minute: labels.minute }}
           />
         </label>
         <label className="form__label form__label--city">

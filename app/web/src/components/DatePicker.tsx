@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { ScrollPicker } from "./ScrollPicker";
 
 interface DatePickerProps {
   value: string;
@@ -107,8 +108,18 @@ export function DatePicker({
   const [open, setOpen] = useState(false);
   const [viewYear, setViewYear] = useState(parsed.year);
   const [viewMonth, setViewMonth] = useState(parsed.month);
+  const [yearOverlayOpen, setYearOverlayOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+
+  const yearItems = useMemo(
+    () =>
+      Array.from({ length: CURRENT_YEAR - MIN_YEAR + 1 }, (_, i) => {
+        const y = MIN_YEAR + i;
+        return { value: y, label: String(y) };
+      }),
+    [],
+  );
 
   // Close on outside click
   useEffect(() => {
@@ -197,11 +208,6 @@ export function DatePicker({
     ? triggerFormatter().format(new Date(parsed.year, parsed.month, parsed.day))
     : "";
 
-  const yearOptions: number[] = [];
-  for (let y = CURRENT_YEAR; y >= MIN_YEAR; y--) {
-    yearOptions.push(y);
-  }
-
   function toggleOpen() {
     if (!open) {
       const nextParsed = parseDate(value);
@@ -234,16 +240,14 @@ export function DatePicker({
           aria-label={resolvedLabels.chooseDate}
         >
           <div className="datepicker__controls">
-            <select
-              className="datepicker__year-select"
-              value={viewYear}
-              onChange={(e) => setViewYear(Number(e.target.value))}
+            <button
+              type="button"
+              className="datepicker__year-btn"
+              onClick={() => setYearOverlayOpen((c) => !c)}
               aria-label={resolvedLabels.year}
             >
-              {yearOptions.map((y) => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
+              {viewYear}
+            </button>
 
             <div className="datepicker__month-nav">
               <button
@@ -297,6 +301,20 @@ export function DatePicker({
               );
             })}
           </div>
+
+          {yearOverlayOpen && (
+            <div className="datepicker__year-overlay">
+              <ScrollPicker
+                items={yearItems}
+                selected={viewYear}
+                onChange={(y) => {
+                  setViewYear(y);
+                  setYearOverlayOpen(false);
+                }}
+                ariaLabel={resolvedLabels.year}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>
