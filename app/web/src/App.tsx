@@ -41,9 +41,9 @@ function App() {
 
   const [location, navigate] = useLocation();
   const defaultArea = analysisMode === "compatibility" ? "relationships" : "chart";
-  const rawArea = location.replace(/^\//, "") || defaultArea;
+  const rawArea = location.replace(/^\//, "");
   const VALID_AREAS = ["chart", "transits", "timing", "relationships", "atlas", "library"] as const;
-  const isValidArea = (VALID_AREAS as readonly string[]).includes(rawArea);
+  const isValidArea = rawArea !== "" && (VALID_AREAS as readonly string[]).includes(rawArea);
   const isRelationshipsInSingle = rawArea === "relationships" && analysisMode === "single";
   const primaryArea = isValidArea && !isRelationshipsInSingle
     ? rawArea as typeof VALID_AREAS[number]
