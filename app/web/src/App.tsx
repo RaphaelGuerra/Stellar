@@ -147,10 +147,10 @@ function App() {
     (analysisMode === "compatibility" && chartA != null && chartB != null);
 
   const primaryAreas = [
+    { key: "relationships" as const, label: t.areaRelationships },
     { key: "chart" as const, label: t.areaChart },
     { key: "transits" as const, label: t.areaTransits },
     { key: "timing" as const, label: t.areaTiming },
-    { key: "relationships" as const, label: t.areaRelationships },
     { key: "atlas" as const, label: t.areaAtlas },
     { key: "library" as const, label: t.areaLibrary },
   ];
