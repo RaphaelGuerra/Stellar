@@ -38,6 +38,10 @@ function clampScore(value: number): number {
   return Math.max(0, Math.min(100, Math.round(value)));
 }
 
+function formatDeg(value: number): string {
+  return `${value.toFixed(1)}deg`;
+}
+
 function buildStatus(score: number): SunComparison["status"] {
   if (score >= 67) return "good";
   if (score <= 39) return "bad";
@@ -86,31 +90,34 @@ function getSummary(
   locale: SunComparisonLocale,
   relation: SunRelationKind,
   label: string,
-  globalBonus: number
+  globalBonus: number,
+  separation: number,
+  score: number
 ): string {
+  const separationLabel = formatDeg(separation);
   if (locale === "pt") {
     if (relation === "complementary-opposites") {
-      return `${label}: opostos complementares ativos; se completam no mapa do Sol, iluminando o ser de cada um. Bonus global +${globalBonus}.`;
+      return `${label}: opostos complementares ativos, vibe yin-yang total. Voces se completam no mapa do Sol, iluminando o ser de cada um. Angulo solar ${separationLabel} e score ${score}/100. Bonus global +${globalBonus}.`;
     }
     if (relation === "same-sign") {
-      return `${label}: mesma assinatura solar, com leitura de identidade parecida e ritmo interno semelhante.`;
+      return `${label}: mesma assinatura solar, com identidade parecida e ritmo interno no mesmo compasso. Angulo solar ${separationLabel} e score ${score}/100. Flui facil, so evita competir por protagonismo o tempo todo.`;
     }
     if (relation === "supportive") {
-      return `${label}: compatibilidade solar de apoio, favorecendo cooperacao e entendimento de direcao.`;
+      return `${label}: compatibilidade solar de apoio, com boa leitura de direcao e parceria no dia a dia. Angulo solar ${separationLabel} e score ${score}/100.`;
     }
-    return `${label}: dinamica solar neutra, com espaco para alinhamento consciente no dia a dia.`;
+    return `${label}: dinamica solar neutra, sem drama e com espaco pra alinhamento consciente. Angulo solar ${separationLabel} e score ${score}/100.`;
   }
 
   if (relation === "complementary-opposites") {
-    return `${label}: complementary opposites are active; both complete each other in the Sun map, illuminating each person's whole being. Global bonus +${globalBonus}.`;
+    return `${label}: complementary opposites are active; both complete each other in the Sun map, illuminating each person's whole being. Sun angle ${separationLabel} and score ${score}/100. Global bonus +${globalBonus}.`;
   }
   if (relation === "same-sign") {
-    return `${label}: same-sign Suns, with a familiar identity style and similar inner pace.`;
+    return `${label}: same-sign Suns with a familiar identity style and similar inner pace. Sun angle ${separationLabel} and score ${score}/100.`;
   }
   if (relation === "supportive") {
-    return `${label}: supportive Sun connection, favoring cooperation and aligned direction.`;
+    return `${label}: supportive Sun connection, favoring cooperation and aligned direction. Sun angle ${separationLabel} and score ${score}/100.`;
   }
-  return `${label}: neutral Sun dynamic, with room for conscious alignment in daily choices.`;
+  return `${label}: neutral Sun dynamic, with room for conscious alignment in daily choices. Sun angle ${separationLabel} and score ${score}/100.`;
 }
 
 export function buildSunComparison(
@@ -152,7 +159,7 @@ export function buildSunComparison(
     relation,
     score,
     status: buildStatus(score),
-    summary: getSummary(locale, relation, label, globalBonus),
+    summary: getSummary(locale, relation, label, globalBonus, separation, score),
     globalBonus,
   };
 }

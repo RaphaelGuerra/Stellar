@@ -269,6 +269,13 @@ function buildStatus(score: number): MatchScorecard["status"] {
   return "mixed";
 }
 
+function joinSentences(parts: Array<string | undefined | null>): string {
+  return parts
+    .filter((part): part is string => typeof part === "string" && part.trim().length > 0)
+    .map((part) => part.trim())
+    .join(" ");
+}
+
 function buildSummary(
   status: MatchScorecard["status"],
   areaLabel: string,
@@ -310,18 +317,22 @@ function buildSummary(
           : status === "bad"
             ? "Conexao forte existe, mas precisa combinado claro pra nao virar disputa de ego."
             : "Tem intensidade positiva, desde que role alinhamento pratico no dia a dia.";
-      return `${areaLabel}: opostos complementares ativados em ${context.complementaryLabel}. ${trail} ${solarBonusText}`.trim();
+      return joinSentences([
+        `${areaLabel}: opostos complementares ativados em ${context.complementaryLabel}.`,
+        trail,
+        solarBonusText,
+      ]);
     }
 
     const best = context.bestLabel ? `Forca: ${context.bestLabel}. ` : "";
     const worst = context.worstLabel ? `Ponto de atrito: ${context.worstLabel}. ` : "";
     if (status === "good") {
-      return `${areaLabel}: fase boa com ${balanceLabel}. ${best}${worst}${solarBonusText}`.trim();
+      return joinSentences([`${areaLabel}: fase boa com ${balanceLabel}.`, `${best}${worst}`, solarBonusText]);
     }
     if (status === "bad") {
-      return `${areaLabel}: fase sensivel com ${balanceLabel}. ${best}${worst}${solarBonusText}`.trim();
+      return joinSentences([`${areaLabel}: fase sensivel com ${balanceLabel}.`, `${best}${worst}`, solarBonusText]);
     }
-    return `${areaLabel}: leitura mista com ${balanceLabel}. ${best}${worst}${solarBonusText}`.trim();
+    return joinSentences([`${areaLabel}: leitura mista com ${balanceLabel}.`, `${best}${worst}`, solarBonusText]);
   }
 
   if (context.complementaryLabel) {
@@ -331,18 +342,22 @@ function buildSummary(
         : status === "bad"
           ? "Strong pull is present, but boundaries are required to avoid conflict loops."
           : "There is high voltage chemistry when both people align on practical choices.";
-    return `${areaLabel}: complementary opposites active in ${context.complementaryLabel}. ${trail} ${solarBonusText}`.trim();
+    return joinSentences([
+      `${areaLabel}: complementary opposites active in ${context.complementaryLabel}.`,
+      trail,
+      solarBonusText,
+    ]);
   }
 
   const best = context.bestLabel ? `Strength: ${context.bestLabel}. ` : "";
   const worst = context.worstLabel ? `Friction: ${context.worstLabel}. ` : "";
   if (status === "good") {
-    return `${areaLabel}: strong flow with ${balanceLabel}. ${best}${worst}${solarBonusText}`.trim();
+    return joinSentences([`${areaLabel}: strong flow with ${balanceLabel}.`, `${best}${worst}`, solarBonusText]);
   }
   if (status === "bad") {
-    return `${areaLabel}: tension-heavy phase with ${balanceLabel}. ${best}${worst}${solarBonusText}`.trim();
+    return joinSentences([`${areaLabel}: tension-heavy phase with ${balanceLabel}.`, `${best}${worst}`, solarBonusText]);
   }
-  return `${areaLabel}: mixed signal with ${balanceLabel}. ${best}${worst}${solarBonusText}`.trim();
+  return joinSentences([`${areaLabel}: mixed signal with ${balanceLabel}.`, `${best}${worst}`, solarBonusText]);
 }
 
 function buildAspectLabel(
