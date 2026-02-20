@@ -309,16 +309,19 @@ export function DatePicker({
           </div>
 
           {yearOverlayOpen && (
-            <div className="datepicker__year-overlay">
-              <ScrollPicker
-                items={yearItems}
-                selected={viewYear}
-                onChange={(y) => {
-                  setViewYear(y);
-                  setYearOverlayOpen(false);
-                }}
-                ariaLabel={resolvedLabels.year}
-              />
+            <div
+              className="datepicker__year-overlay"
+              onClick={() => setYearOverlayOpen(false)}
+              onKeyDown={(e) => { if (e.key === "Enter") setYearOverlayOpen(false); }}
+            >
+              <div onClick={(e) => e.stopPropagation()}>
+                <ScrollPicker
+                  items={yearItems}
+                  selected={viewYear}
+                  onChange={setViewYear}
+                  ariaLabel={resolvedLabels.year}
+                />
+              </div>
             </div>
           )}
         </div>
