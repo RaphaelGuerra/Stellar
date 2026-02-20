@@ -224,6 +224,19 @@ describe("buildChartComparison", () => {
     ]);
   });
 
+  it("mentions complementary opposites in relationship stats when applicable", () => {
+    const chartA = buildChart({ Sun: 240 }); // Sagittarius
+    const chartB = buildChart({ Sun: 60 }); // Gemini
+    const comparison = buildChartComparison(chartA, chartB, "pt", "romantic");
+
+    expect(comparison.stats.some((stat) => /opostos complementares/i.test(stat.summary))).toBe(
+      true
+    );
+    expect(comparison.stats.some((stat) => stat.summary.includes("Sol em Sagitario x Sol em Gemeos"))).toBe(
+      true
+    );
+  });
+
   it("uses friend framing for bond-heavy friend mode highlights", () => {
     const chartA = buildChart({ Venus: 0 });
     const chartB = buildChart({ Venus: 0 });

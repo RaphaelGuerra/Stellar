@@ -120,4 +120,19 @@ describe("buildMatchScorecards", () => {
     expect(scorecards.every((card) => card.topSupportAspect == null)).toBe(true);
     expect(scorecards.every((card) => card.topTensionAspect == null)).toBe(true);
   });
+
+  it("highlights complementary opposites for strong same-planet opposition", () => {
+    const chartA = buildChart({ Sun: 240 }); // Sagittarius
+    const chartB = buildChart({ Sun: 60 }); // Gemini
+    const comparison = buildChartComparison(chartA, chartB, "pt", "romantic");
+
+    const scorecards = buildMatchScorecards(comparison, "pt", "romantic");
+    const loveCard = scorecards.find((card) => card.area === "love");
+
+    expect(loveCard).toBeDefined();
+    expect(loveCard?.summary).toContain("opostos complementares");
+    expect(loveCard?.summary).toContain("Sol em Sagitario x Sol em Gemeos");
+    expect(loveCard?.topSupportAspect).toContain("Sol");
+    expect(loveCard?.status).toBe("good");
+  });
 });

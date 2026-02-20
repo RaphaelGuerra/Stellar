@@ -2,9 +2,12 @@ import { ASPECT_SYMBOL } from "./constants";
 import type {
   AspectName,
   ChartComparison,
+  ComparisonAspect,
   DuoMode,
   LifeArea,
   MatchScorecard,
+  PlanetName,
+  ZodiacSign,
 } from "./types";
 
 type SynastryLocale = "en" | "pt";
@@ -12,8 +15,11 @@ type SynastryLocale = "en" | "pt";
 type ScoreAccumulator = {
   total: number;
   maxMagnitude: number;
-  best: { score: number; label: string } | null;
-  worst: { score: number; label: string } | null;
+  supportHits: number;
+  tensionHits: number;
+  best: { score: number; label: string; summaryLabel: string } | null;
+  worst: { score: number; label: string; summaryLabel: string } | null;
+  complementary: { score: number; label: string } | null;
 };
 
 type AreaLabelSet = {
@@ -118,6 +124,92 @@ const AREA_LABELS: Record<SynastryLocale, { romantic: AreaLabelSet; friend: Area
   },
 };
 
+const PLANET_LABELS: Record<SynastryLocale, Record<PlanetName, string>> = {
+  en: {
+    Sun: "Sun",
+    Moon: "Moon",
+    Mercury: "Mercury",
+    Venus: "Venus",
+    Mars: "Mars",
+    Jupiter: "Jupiter",
+    Saturn: "Saturn",
+    Uranus: "Uranus",
+    Neptune: "Neptune",
+    Pluto: "Pluto",
+  },
+  pt: {
+    Sun: "Sol",
+    Moon: "Lua",
+    Mercury: "Mercurio",
+    Venus: "Venus",
+    Mars: "Marte",
+    Jupiter: "Jupiter",
+    Saturn: "Saturno",
+    Uranus: "Urano",
+    Neptune: "Netuno",
+    Pluto: "Plutao",
+  },
+};
+
+const SIGN_LABELS: Record<SynastryLocale, Record<ZodiacSign, string>> = {
+  en: {
+    Aries: "Aries",
+    Taurus: "Taurus",
+    Gemini: "Gemini",
+    Cancer: "Cancer",
+    Leo: "Leo",
+    Virgo: "Virgo",
+    Libra: "Libra",
+    Scorpio: "Scorpio",
+    Sagittarius: "Sagittarius",
+    Capricorn: "Capricorn",
+    Aquarius: "Aquarius",
+    Pisces: "Pisces",
+  },
+  pt: {
+    Aries: "Aries",
+    Taurus: "Touro",
+    Gemini: "Gemeos",
+    Cancer: "Cancer",
+    Leo: "Leao",
+    Virgo: "Virgem",
+    Libra: "Libra",
+    Scorpio: "Escorpiao",
+    Sagittarius: "Sagitario",
+    Capricorn: "Capricornio",
+    Aquarius: "Aquario",
+    Pisces: "Peixes",
+  },
+};
+
+const OPPOSITE_SIGNS: Record<ZodiacSign, ZodiacSign> = {
+  Aries: "Libra",
+  Taurus: "Scorpio",
+  Gemini: "Sagittarius",
+  Cancer: "Capricorn",
+  Leo: "Aquarius",
+  Virgo: "Pisces",
+  Libra: "Aries",
+  Scorpio: "Taurus",
+  Sagittarius: "Gemini",
+  Capricorn: "Cancer",
+  Aquarius: "Leo",
+  Pisces: "Virgo",
+};
+
+const PERSONAL_PLANETS = new Set<PlanetName>(["Sun", "Moon", "Mercury", "Venus", "Mars"]);
+
+const COMPLEMENTARY_OPPOSITION_TUNING = {
+  base: 0.25,
+  samePlanet: 0.5,
+  personalPair: 0.2,
+  orbTiers: [
+    { maxOrb: 1.0, bonus: 0.28 },
+    { maxOrb: 2.2, bonus: 0.16 },
+    { maxOrb: 4.0, bonus: 0.08 },
+  ],
+} as const;
+
 const ASPECT_LABELS: Record<SynastryLocale, Partial<Record<AspectName, string>>> = {
   en: {
     Conjunction: "Conjunction",
@@ -159,6 +251,10 @@ function getAspectLabel(locale: SynastryLocale, type: AspectName): string {
   return ASPECT_LABELS[locale][type] ?? type;
 }
 
+function getPlanetLabel(locale: SynastryLocale, planet: PlanetName): string {
+  return PLANET_LABELS[locale][planet] ?? planet;
+}
+
 function clampPercent(value: number): number {
   return Math.max(0, Math.min(100, Math.round(value)));
 }
@@ -176,31 +272,75 @@ function buildStatus(score: number): MatchScorecard["status"] {
 function buildSummary(
   status: MatchScorecard["status"],
   areaLabel: string,
-  locale: SynastryLocale
+  locale: SynastryLocale,
+  context: {
+    bestLabel?: string;
+    worstLabel?: string;
+    supportHits: number;
+    tensionHits: number;
+    complementaryLabel?: string;
+  }
 ): string {
+  const balanceLabel =
+    context.supportHits > context.tensionHits
+      ? locale === "pt"
+        ? "apoio acima da tensao"
+        : "support above tension"
+      : context.tensionHits > context.supportHits
+        ? locale === "pt"
+          ? "tensao acima do apoio"
+          : "tension above support"
+        : locale === "pt"
+          ? "equilibrio entre apoio e atrito"
+          : "balanced support and friction";
+
   if (locale === "pt") {
+    if (context.complementaryLabel) {
+      const trail =
+        status === "good"
+          ? "Match forte com conexao profunda quando os dois atuam no mesmo time."
+          : status === "bad"
+            ? "Conexao forte existe, mas precisa combinado claro pra nao virar disputa de ego."
+            : "Tem intensidade positiva, desde que role alinhamento pratico no dia a dia.";
+      return `${areaLabel}: opostos complementares ativados em ${context.complementaryLabel}. ${trail}`;
+    }
+
+    const best = context.bestLabel ? `Forca: ${context.bestLabel}. ` : "";
+    const worst = context.worstLabel ? `Ponto de atrito: ${context.worstLabel}. ` : "";
     if (status === "good") {
-      return `${areaLabel}: fase boa, com apoio forte nos aspectos principais.`;
+      return `${areaLabel}: fase boa com ${balanceLabel}. ${best}${worst}`.trim();
     }
     if (status === "bad") {
-      return `${areaLabel}: ponto sensivel agora, pede ajuste pratico e conversa direta.`;
+      return `${areaLabel}: fase sensivel com ${balanceLabel}. ${best}${worst}`.trim();
     }
-    return `${areaLabel}: mistura de apoio e atrito; funciona melhor com alinhamento claro.`;
+    return `${areaLabel}: leitura mista com ${balanceLabel}. ${best}${worst}`.trim();
   }
 
+  if (context.complementaryLabel) {
+    const trail =
+      status === "good"
+        ? "Strong match with deep and productive bond potential."
+        : status === "bad"
+          ? "Strong pull is present, but boundaries are required to avoid conflict loops."
+          : "There is high voltage chemistry when both people align on practical choices.";
+    return `${areaLabel}: complementary opposites active in ${context.complementaryLabel}. ${trail}`;
+  }
+
+  const best = context.bestLabel ? `Strength: ${context.bestLabel}. ` : "";
+  const worst = context.worstLabel ? `Friction: ${context.worstLabel}. ` : "";
   if (status === "good") {
-    return `${areaLabel}: strong flow with supportive aspects leading the dynamic.`;
+    return `${areaLabel}: strong flow with ${balanceLabel}. ${best}${worst}`.trim();
   }
   if (status === "bad") {
-    return `${areaLabel}: tension is dominant, so this area needs active repair.`;
+    return `${areaLabel}: tension-heavy phase with ${balanceLabel}. ${best}${worst}`.trim();
   }
-  return `${areaLabel}: mixed signal, with both support and friction in play.`;
+  return `${areaLabel}: mixed signal with ${balanceLabel}. ${best}${worst}`.trim();
 }
 
 function buildAspectLabel(
   input: {
-    aPlanet: string;
-    bPlanet: string;
+    aPlanet: PlanetName;
+    bPlanet: PlanetName;
     type: AspectName;
     orb?: number;
   },
@@ -208,6 +348,8 @@ function buildAspectLabel(
 ): string {
   const symbol = ASPECT_SYMBOL[input.type] ?? "";
   const label = getAspectLabel(locale, input.type);
+  const planetA = getPlanetLabel(locale, input.aPlanet);
+  const planetB = getPlanetLabel(locale, input.bPlanet);
   const orbText =
     typeof input.orb === "number"
       ? locale === "pt"
@@ -216,15 +358,74 @@ function buildAspectLabel(
       : locale === "pt"
         ? "orb n/a"
         : "orb n/a";
-  return `${input.aPlanet} ${symbol} ${input.bPlanet} (${label}, ${orbText})`;
+  return `${planetA} ${symbol} ${planetB} (${label}, ${orbText})`;
+}
+
+function buildAspectSummaryLabel(
+  input: {
+    aPlanet: PlanetName;
+    bPlanet: PlanetName;
+    type: AspectName;
+  },
+  locale: SynastryLocale
+): string {
+  return `${getPlanetLabel(locale, input.aPlanet)} ${getAspectLabel(locale, input.type)} ${getPlanetLabel(
+    locale,
+    input.bPlanet
+  )}`;
+}
+
+function isComplementaryOpposition(aspect: ComparisonAspect, comparison: ChartComparison): boolean {
+  if (aspect.type !== "Opposition") return false;
+  const signA = comparison.chartA.planets[aspect.a.planet]?.sign;
+  const signB = comparison.chartB.planets[aspect.b.planet]?.sign;
+  if (!signA || !signB) return false;
+  return OPPOSITE_SIGNS[signA] === signB;
+}
+
+function buildComplementaryLabel(
+  aspect: ComparisonAspect,
+  comparison: ChartComparison,
+  locale: SynastryLocale
+): string {
+  const signA = comparison.chartA.planets[aspect.a.planet]?.sign;
+  const signB = comparison.chartB.planets[aspect.b.planet]?.sign;
+  const signLabelA = signA ? SIGN_LABELS[locale][signA] : "?";
+  const signLabelB = signB ? SIGN_LABELS[locale][signB] : "?";
+  const planetA = getPlanetLabel(locale, aspect.a.planet);
+  const planetB = getPlanetLabel(locale, aspect.b.planet);
+  return `${planetA} em ${signLabelA} x ${planetB} em ${signLabelB}`;
+}
+
+function getComplementaryOppositionBoost(aspect: ComparisonAspect, comparison: ChartComparison): number {
+  if (!isComplementaryOpposition(aspect, comparison)) return 0;
+
+  let boost = COMPLEMENTARY_OPPOSITION_TUNING.base;
+  if (aspect.a.planet === aspect.b.planet) boost += COMPLEMENTARY_OPPOSITION_TUNING.samePlanet;
+  if (PERSONAL_PLANETS.has(aspect.a.planet) && PERSONAL_PLANETS.has(aspect.b.planet)) {
+    boost += COMPLEMENTARY_OPPOSITION_TUNING.personalPair;
+  }
+
+  const orb = aspect.orb ?? getAspectOrbCap(aspect.type);
+  for (const tier of COMPLEMENTARY_OPPOSITION_TUNING.orbTiers) {
+    if (orb <= tier.maxOrb) {
+      boost += tier.bonus;
+      break;
+    }
+  }
+
+  return boost;
 }
 
 function initAccumulator(): ScoreAccumulator {
   return {
     total: 0,
     maxMagnitude: 0,
+    supportHits: 0,
+    tensionHits: 0,
     best: null,
     worst: null,
+    complementary: null,
   };
 }
 
@@ -244,7 +445,8 @@ export function buildMatchScorecards(
       const pairWeight = weightA + weightB;
       if (pairWeight <= 0) continue;
 
-      const baseImpact = getAspectBaseImpact(aspect.type);
+      const complementaryBoost = getComplementaryOppositionBoost(aspect, comparison);
+      const baseImpact = getAspectBaseImpact(aspect.type) + complementaryBoost;
       const orbCap = getAspectOrbCap(aspect.type);
       const orb = aspect.orb ?? orbCap;
       const orbFactor = Math.max(0.15, 1 - orb / orbCap);
@@ -252,6 +454,8 @@ export function buildMatchScorecards(
 
       acc.total += weightedImpact;
       acc.maxMagnitude += pairWeight;
+      if (weightedImpact > 0) acc.supportHits += 1;
+      if (weightedImpact < 0) acc.tensionHits += 1;
 
       const lineLabel = buildAspectLabel(
         {
@@ -262,12 +466,30 @@ export function buildMatchScorecards(
         },
         locale
       );
+      const summaryLabel = buildAspectSummaryLabel(
+        {
+          aPlanet: aspect.a.planet,
+          bPlanet: aspect.b.planet,
+          type: aspect.type,
+        },
+        locale
+      );
 
       if (weightedImpact > 0 && (!acc.best || weightedImpact > acc.best.score)) {
-        acc.best = { score: weightedImpact, label: lineLabel };
+        acc.best = { score: weightedImpact, label: lineLabel, summaryLabel };
       }
       if (weightedImpact < 0 && (!acc.worst || weightedImpact < acc.worst.score)) {
-        acc.worst = { score: weightedImpact, label: lineLabel };
+        acc.worst = { score: weightedImpact, label: lineLabel, summaryLabel };
+      }
+
+      if (complementaryBoost > 0) {
+        const complementaryScore = complementaryBoost * pairWeight * orbFactor;
+        if (!acc.complementary || complementaryScore > acc.complementary.score) {
+          acc.complementary = {
+            score: complementaryScore,
+            label: buildComplementaryLabel(aspect, comparison, locale),
+          };
+        }
       }
     }
 
@@ -280,7 +502,13 @@ export function buildMatchScorecards(
       area,
       score: normalized,
       status,
-      summary: buildSummary(status, areaLabel, locale),
+      summary: buildSummary(status, areaLabel, locale, {
+        bestLabel: acc.best?.summaryLabel,
+        worstLabel: acc.worst?.summaryLabel,
+        supportHits: acc.supportHits,
+        tensionHits: acc.tensionHits,
+        complementaryLabel: acc.complementary?.label,
+      }),
       topSupportAspect: acc.best?.label,
       topTensionAspect: acc.worst?.label,
     };

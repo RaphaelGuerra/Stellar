@@ -20,6 +20,7 @@ import type {
   PlanetName,
   SynastryStat,
   SynastryStatKey,
+  ZodiacSign,
 } from "./types";
 
 export type SynastryLocale = "pt" | "en";
@@ -92,7 +93,7 @@ const SYNASTRY_STAT_LABELS: Record<SynastryLocale, Record<SynastryStatKey, strin
   },
 };
 
-const SYNASTRY_STAT_SUMMARY: Record<SynastryLocale, Record<SynastryStatKey, string>> = {
+const SYNASTRY_STAT_THEME: Record<SynastryLocale, Record<SynastryStatKey, string>> = {
   en: {
     attraction: "Chemistry, desire, and romantic pull.",
     communication: "How well both people exchange ideas.",
@@ -106,6 +107,93 @@ const SYNASTRY_STAT_SUMMARY: Record<SynastryLocale, Record<SynastryStatKey, stri
     growth: "Capacidade de evoluir e construir junto.",
   },
 };
+
+const PLANET_LABELS: Record<SynastryLocale, Record<PlanetName, string>> = {
+  en: {
+    Sun: "Sun",
+    Moon: "Moon",
+    Mercury: "Mercury",
+    Venus: "Venus",
+    Mars: "Mars",
+    Jupiter: "Jupiter",
+    Saturn: "Saturn",
+    Uranus: "Uranus",
+    Neptune: "Neptune",
+    Pluto: "Pluto",
+  },
+  pt: {
+    Sun: "Sol",
+    Moon: "Lua",
+    Mercury: "Mercurio",
+    Venus: "Venus",
+    Mars: "Marte",
+    Jupiter: "Jupiter",
+    Saturn: "Saturno",
+    Uranus: "Urano",
+    Neptune: "Netuno",
+    Pluto: "Plutao",
+  },
+};
+
+const SIGN_LABELS: Record<SynastryLocale, Record<ZodiacSign, string>> = {
+  en: {
+    Aries: "Aries",
+    Taurus: "Taurus",
+    Gemini: "Gemini",
+    Cancer: "Cancer",
+    Leo: "Leo",
+    Virgo: "Virgo",
+    Libra: "Libra",
+    Scorpio: "Scorpio",
+    Sagittarius: "Sagittarius",
+    Capricorn: "Capricorn",
+    Aquarius: "Aquarius",
+    Pisces: "Pisces",
+  },
+  pt: {
+    Aries: "Aries",
+    Taurus: "Touro",
+    Gemini: "Gemeos",
+    Cancer: "Cancer",
+    Leo: "Leao",
+    Virgo: "Virgem",
+    Libra: "Libra",
+    Scorpio: "Escorpiao",
+    Sagittarius: "Sagitario",
+    Capricorn: "Capricornio",
+    Aquarius: "Aquario",
+    Pisces: "Peixes",
+  },
+};
+
+const OPPOSITE_SIGNS: Record<ZodiacSign, ZodiacSign> = {
+  Aries: "Libra",
+  Taurus: "Scorpio",
+  Gemini: "Sagittarius",
+  Cancer: "Capricorn",
+  Leo: "Aquarius",
+  Virgo: "Pisces",
+  Libra: "Aries",
+  Scorpio: "Taurus",
+  Sagittarius: "Gemini",
+  Capricorn: "Cancer",
+  Aquarius: "Leo",
+  Pisces: "Virgo",
+};
+
+const PERSONAL_PLANETS = new Set<PlanetName>(["Sun", "Moon", "Mercury", "Venus", "Mars"]);
+
+const COMPLEMENTARY_STAT_TUNING = {
+  base: 0.08,
+  samePlanet: 0.12,
+  personalPair: 0.08,
+  orbTiers: [
+    { maxOrb: 1.0, bonus: 0.12 },
+    { maxOrb: 2.2, bonus: 0.08 },
+    { maxOrb: 4.0, bonus: 0.04 },
+  ],
+  impactCap: 1.2,
+} as const;
 
 const ASPECT_STAT_IMPACT: Partial<Record<AspectName, number>> = {
   Trine: 1,
@@ -660,6 +748,114 @@ function scoreAspect(aspect: ComparisonAspect): number {
   return Math.max(0, 100 - orb * 10);
 }
 
+function getPlanetLabel(locale: SynastryLocale, planet: PlanetName): string {
+  return PLANET_LABELS[locale][planet] ?? planet;
+}
+
+function buildAspectSummaryLabel(aspect: ComparisonAspect, locale: SynastryLocale): string {
+  const aspectLabel = getAspectLabel(locale, aspect.type);
+  return `${getPlanetLabel(locale, aspect.a.planet)} ${aspectLabel} ${getPlanetLabel(locale, aspect.b.planet)}`;
+}
+
+function isComplementaryOpposition(
+  aspect: ComparisonAspect,
+  chartA: ChartResult,
+  chartB: ChartResult
+): boolean {
+  if (aspect.type !== "Opposition") return false;
+  const signA = chartA.planets[aspect.a.planet]?.sign;
+  const signB = chartB.planets[aspect.b.planet]?.sign;
+  if (!signA || !signB) return false;
+  return OPPOSITE_SIGNS[signA] === signB;
+}
+
+function buildComplementaryLabel(
+  aspect: ComparisonAspect,
+  chartA: ChartResult,
+  chartB: ChartResult,
+  locale: SynastryLocale
+): string {
+  const signA = chartA.planets[aspect.a.planet]?.sign;
+  const signB = chartB.planets[aspect.b.planet]?.sign;
+  const signLabelA = signA ? SIGN_LABELS[locale][signA] : "?";
+  const signLabelB = signB ? SIGN_LABELS[locale][signB] : "?";
+  return `${getPlanetLabel(locale, aspect.a.planet)} em ${signLabelA} x ${getPlanetLabel(
+    locale,
+    aspect.b.planet
+  )} em ${signLabelB}`;
+}
+
+function getComplementaryStatBonus(
+  aspect: ComparisonAspect,
+  chartA: ChartResult,
+  chartB: ChartResult
+): number {
+  if (!isComplementaryOpposition(aspect, chartA, chartB)) return 0;
+
+  let bonus = COMPLEMENTARY_STAT_TUNING.base;
+  if (aspect.a.planet === aspect.b.planet) bonus += COMPLEMENTARY_STAT_TUNING.samePlanet;
+  if (PERSONAL_PLANETS.has(aspect.a.planet) && PERSONAL_PLANETS.has(aspect.b.planet)) {
+    bonus += COMPLEMENTARY_STAT_TUNING.personalPair;
+  }
+
+  const orb = aspect.orb ?? 8;
+  for (const tier of COMPLEMENTARY_STAT_TUNING.orbTiers) {
+    if (orb <= tier.maxOrb) {
+      bonus += tier.bonus;
+      break;
+    }
+  }
+
+  return bonus;
+}
+
+function buildStatScoreMessage(score: number, locale: SynastryLocale): string {
+  if (locale === "pt") {
+    if (score >= 75) return "Status forte agora.";
+    if (score >= 56) return "Status estavel com espaco para subir.";
+    if (score >= 40) return "Status misto, pede ajuste fino.";
+    return "Status sensivel, precisa estrategia no dia a dia.";
+  }
+
+  if (score >= 75) return "Strong status right now.";
+  if (score >= 56) return "Stable status with room to improve.";
+  if (score >= 40) return "Mixed status; this needs fine-tuning.";
+  return "Fragile status; this needs active structure.";
+}
+
+function buildStatSummary(
+  stat: SynastryStatKey,
+  score: number,
+  locale: SynastryLocale,
+  dominantAspect?: ComparisonAspect,
+  complementaryAspect?: ComparisonAspect,
+  chartA?: ChartResult,
+  chartB?: ChartResult
+): string {
+  const theme = SYNASTRY_STAT_THEME[locale][stat];
+  const scoreMessage = buildStatScoreMessage(score, locale);
+  const dominantLabel = dominantAspect ? buildAspectSummaryLabel(dominantAspect, locale) : null;
+
+  if (complementaryAspect && chartA && chartB) {
+    const complementaryLabel = buildComplementaryLabel(complementaryAspect, chartA, chartB, locale);
+    if (locale === "pt") {
+      const strengthLabel = score >= 70 ? "Match forte" : "Vinculo forte";
+      return `${theme} ${scoreMessage} ${strengthLabel} de opostos complementares em ${complementaryLabel}, com potencial de conexao profunda.`;
+    }
+    const strengthLabel = score >= 70 ? "Strong match" : "Strong bond";
+    return `${theme} ${scoreMessage} ${strengthLabel} from complementary opposites in ${complementaryLabel}, with deep-bond potential.`;
+  }
+
+  if (dominantLabel) {
+    if (locale === "pt") {
+      return `${theme} ${scoreMessage} Aspecto dominante: ${dominantLabel}.`;
+    }
+    return `${theme} ${scoreMessage} Dominant aspect: ${dominantLabel}.`;
+  }
+
+  return `${theme} ${scoreMessage}`;
+}
+
 function buildStatWeight(aspect: ComparisonAspect, stat: SynastryStatKey): number {
   const areas = SYNASTRY_STAT_AREAS[stat];
   const weightsA = PLANET_AREA_WEIGHTS[aspect.a.planet];
@@ -678,7 +874,9 @@ function buildStatWeight(aspect: ComparisonAspect, stat: SynastryStatKey): numbe
 
 function buildSynastryStats(
   aspects: readonly ComparisonAspect[],
-  locale: SynastryLocale
+  locale: SynastryLocale,
+  chartA: ChartResult,
+  chartB: ChartResult
 ): SynastryStat[] {
   const totals: Record<SynastryStatKey, { weighted: number; maximum: number }> = {
     attraction: { weighted: 0, maximum: 0 },
@@ -686,25 +884,62 @@ function buildSynastryStats(
     stability: { weighted: 0, maximum: 0 },
     growth: { weighted: 0, maximum: 0 },
   };
+  const dominantAspect: Partial<Record<SynastryStatKey, { score: number; aspect: ComparisonAspect }>> =
+    {};
+  const complementaryOpposition: Partial<
+    Record<SynastryStatKey, { score: number; aspect: ComparisonAspect }>
+  > = {};
 
   for (const aspect of aspects) {
     const baseScore = scoreAspect(aspect);
-    const impact = getAspectImpact(aspect.type);
+    const baseImpact = getAspectImpact(aspect.type);
+    const complementaryBonus = getComplementaryStatBonus(aspect, chartA, chartB);
+    const impact = Math.min(COMPLEMENTARY_STAT_TUNING.impactCap, baseImpact + complementaryBonus);
     for (const stat of SYNASTRY_STAT_ORDER) {
       const weight = buildStatWeight(aspect, stat);
-      totals[stat].weighted += baseScore * impact * weight;
+      const contribution = baseScore * impact * weight;
+      totals[stat].weighted += contribution;
       totals[stat].maximum += 100 * weight;
+
+      if (!dominantAspect[stat] || contribution > (dominantAspect[stat]?.score ?? 0)) {
+        dominantAspect[stat] = { score: contribution, aspect };
+      }
+
+      if (isComplementaryOpposition(aspect, chartA, chartB)) {
+        let complementaryScore = contribution;
+        if (aspect.a.planet === aspect.b.planet) complementaryScore += 40;
+        if (PERSONAL_PLANETS.has(aspect.a.planet) && PERSONAL_PLANETS.has(aspect.b.planet)) {
+          complementaryScore += 20;
+        }
+        complementaryScore += Math.max(0, 8 - (aspect.orb ?? 8)) * 2;
+
+        if (
+          !complementaryOpposition[stat] ||
+          complementaryScore > (complementaryOpposition[stat]?.score ?? 0)
+        ) {
+          complementaryOpposition[stat] = { score: complementaryScore, aspect };
+        }
+      }
     }
   }
 
   return SYNASTRY_STAT_ORDER.map((stat) => {
     const total = totals[stat];
     const normalized = total.maximum > 0 ? (total.weighted / total.maximum) * 100 : 0;
+    const score = clampToPercent(normalized);
     return {
       key: stat,
       label: SYNASTRY_STAT_LABELS[locale][stat],
-      score: clampToPercent(normalized),
-      summary: SYNASTRY_STAT_SUMMARY[locale][stat],
+      score,
+      summary: buildStatSummary(
+        stat,
+        score,
+        locale,
+        dominantAspect[stat]?.aspect,
+        complementaryOpposition[stat]?.aspect,
+        chartA,
+        chartB
+      ),
     };
   });
 }
@@ -803,7 +1038,7 @@ export function buildChartComparison(
 
   aspects.sort((left, right) => (left.orb ?? 0) - (right.orb ?? 0));
   const highlights = aspects.map((aspect, index) => makeHighlight(aspect, index, locale, duoMode));
-  const stats = buildSynastryStats(aspects, locale);
+  const stats = buildSynastryStats(aspects, locale, chartA, chartB);
 
   return {
     chartA,
