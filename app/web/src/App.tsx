@@ -40,11 +40,14 @@ function App() {
   } = useAppContext();
 
   const [location, navigate] = useLocation();
-  const rawArea = location.replace(/^\//, "") || "relationships";
+  const defaultArea = analysisMode === "compatibility" ? "relationships" : "chart";
+  const rawArea = location.replace(/^\//, "") || defaultArea;
   const VALID_AREAS = ["chart", "transits", "timing", "relationships", "atlas", "library"] as const;
-  const primaryArea = (VALID_AREAS as readonly string[]).includes(rawArea)
+  const isValidArea = (VALID_AREAS as readonly string[]).includes(rawArea);
+  const isRelationshipsInSingle = rawArea === "relationships" && analysisMode === "single";
+  const primaryArea = isValidArea && !isRelationshipsInSingle
     ? rawArea as typeof VALID_AREAS[number]
-    : "chart";
+    : defaultArea as typeof VALID_AREAS[number];
 
   const t = {
     modeLabel: isCarioca ? "Carioca raiz, porra" : "English",
@@ -151,14 +154,17 @@ function App() {
     (analysisMode === "single" && chartA != null) ||
     (analysisMode === "compatibility" && chartA != null && chartB != null);
 
-  const primaryAreas = [
-    { key: "relationships" as const, label: t.areaRelationships },
-    { key: "chart" as const, label: t.areaChart },
-    { key: "transits" as const, label: t.areaTransits },
-    { key: "timing" as const, label: t.areaTiming },
-    { key: "atlas" as const, label: t.areaAtlas },
-    { key: "library" as const, label: t.areaLibrary },
+  const allAreas = [
+    { key: "relationships" as const, label: t.areaRelationships, compatOnly: true },
+    { key: "chart" as const, label: t.areaChart, compatOnly: false },
+    { key: "transits" as const, label: t.areaTransits, compatOnly: false },
+    { key: "timing" as const, label: t.areaTiming, compatOnly: false },
+    { key: "atlas" as const, label: t.areaAtlas, compatOnly: false },
+    { key: "library" as const, label: t.areaLibrary, compatOnly: false },
   ];
+  const primaryAreas = allAreas.filter(
+    (a) => !a.compatOnly || analysisMode === "compatibility"
+  );
 
   return (
     <>
@@ -200,14 +206,22 @@ function App() {
                   <button
                     type="button"
                     className={`analysis-mode__btn ${analysisMode === "single" ? "analysis-mode__btn--active" : ""}`}
-                    onClick={() => { setError(null); setAnalysisMode("single"); }}
+                    onClick={() => {
+                      setError(null);
+                      setAnalysisMode("single");
+                      if (primaryArea === "relationships") navigate("/chart");
+                    }}
                   >
                     {t.singleMode}
                   </button>
                   <button
                     type="button"
                     className={`analysis-mode__btn ${analysisMode === "compatibility" ? "analysis-mode__btn--active" : ""}`}
-                    onClick={() => { setError(null); setAnalysisMode("compatibility"); }}
+                    onClick={() => {
+                      setError(null);
+                      setAnalysisMode("compatibility");
+                      navigate("/relationships");
+                    }}
                   >
                     {t.compatibilityMode}
                   </button>
