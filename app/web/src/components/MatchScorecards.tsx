@@ -22,7 +22,7 @@ export function MatchScorecards({
       {cards.map((card) => (
         <article
           key={card.area}
-          className={`match-scorecard match-scorecard--${card.status}`}
+          className={`match-scorecard match-scorecard--${card.status}${card.area === "sun" ? " match-scorecard--hero" : ""}`}
           aria-label={`${areaLabels[card.area]} ${card.score}%`}
         >
           <div className="match-scorecard__head">

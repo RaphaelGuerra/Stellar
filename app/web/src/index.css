@@ -2893,7 +2893,7 @@ details:not([open]) .section__header--collapsible {
 
 .match-scorecards {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--space-md);
 }
 
@@ -2902,6 +2902,24 @@ details:not([open]) .section__header--collapsible {
   border-radius: var(--radius-md);
   background: var(--color-bg-card);
   padding: var(--space-md);
+}
+
+.match-scorecard--hero {
+  grid-column: 1 / -1;
+  border-color: rgba(124, 106, 239, 0.2);
+  background: linear-gradient(135deg, rgba(124, 106, 239, 0.08), rgba(34, 211, 238, 0.06));
+}
+
+.match-scorecard--hero .match-scorecard__head h3 {
+  font-size: var(--font-size-xl);
+}
+
+.match-scorecard--hero .match-scorecard__head p {
+  font-size: var(--font-size-xl);
+}
+
+.match-scorecard--hero .match-scorecard__track {
+  height: 10px;
 }
 
 .match-scorecard__head {
@@ -2959,9 +2977,13 @@ details:not([open]) .section__header--collapsible {
   font-size: var(--font-size-sm);
 }
 
-@media (min-width: 760px) {
+@media (max-width: 760px) {
   .match-scorecards {
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: 1fr;
+  }
+
+  .match-scorecard--hero {
+    grid-column: 1;
   }
 }
 

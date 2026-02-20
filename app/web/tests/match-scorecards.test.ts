@@ -77,7 +77,7 @@ describe("buildMatchScorecards", () => {
     const scorecards = buildMatchScorecards(comparison, "en", "romantic");
 
     expect(scorecards).toHaveLength(4);
-    expect(scorecards.map((card) => card.area)).toEqual(["love", "friends", "family", "sun"]);
+    expect(scorecards.map((card) => card.area)).toEqual(["sun", "love", "friends", "family"]);
   });
 
   it("keeps score values in 0-100 and computes support/tension highlights", () => {
@@ -105,7 +105,7 @@ describe("buildMatchScorecards", () => {
     const scorecards = buildMatchScorecards(comparison, "pt", "friend");
 
     expect(scorecards).toHaveLength(4);
-    expect(scorecards[0].summary.startsWith("Vibe")).toBe(true);
+    expect(scorecards[1].summary.startsWith("Vibe")).toBe(true);
   });
 
   it("returns neutral area summaries when there are no synastry aspects", () => {

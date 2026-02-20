@@ -535,5 +535,5 @@ export function buildMatchScorecards(
     topTensionAspect: undefined,
   };
 
-  return [...areaCards, sunCard];
+  return [sunCard, ...areaCards];
 }
