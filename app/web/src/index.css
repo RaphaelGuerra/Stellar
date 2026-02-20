@@ -2970,3 +2970,188 @@ details:not([open]) .section__header--collapsible {
     transform: none;
   }
 }
+
+/* ===== Touch Device — Hover Guard ===== */
+@media (hover: none) and (pointer: coarse) {
+  .card:hover {
+    transform: none;
+    box-shadow: none;
+    border-color: var(--color-border);
+    background: var(--color-bg-card);
+  }
+
+  .card:hover::before {
+    opacity: 0;
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    transform: none;
+    box-shadow: none;
+    background-position: 0% 50%;
+  }
+
+  .btn-primary:hover:not(:disabled)::before {
+    animation: none;
+  }
+
+  .placements-strip__item:hover {
+    transform: none;
+  }
+
+  .astral-map-thumbnail:hover {
+    transform: none;
+    border-color: var(--color-border);
+  }
+}
+
+/* ===== Mobile — iPhone 15 Pro Max (430px and below) ===== */
+@media (max-width: 430px) {
+  /* 3a. CSS Variable Overrides */
+  :root {
+    --space-lg: 14px;
+    --space-xl: 20px;
+    --space-2xl: 32px;
+    --font-size-3xl: clamp(1.75rem, 7vw, 2.25rem);
+    --font-size-sm: 15px;
+    --font-size-xs: 13px;
+  }
+
+  /* 3b. Safe Area Insets */
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .primary-nav {
+    position: sticky;
+    top: env(safe-area-inset-top);
+  }
+
+  /* 3c. Primary Nav — Horizontal Scroll Strip */
+  .primary-nav {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .primary-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .primary-nav__btn {
+    flex: 0 0 auto;
+    min-height: 44px;
+  }
+
+  /* 3d. Header */
+  .header {
+    padding: var(--space-sm) var(--space-md);
+    flex-wrap: wrap;
+  }
+
+  .header__tagline {
+    display: none;
+  }
+
+  .header__meta {
+    font-size: var(--font-size-xs);
+    gap: var(--space-xs);
+  }
+
+  /* 3e. Touch Targets (44px minimum) */
+  .datepicker__nav-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .history-item__load,
+  .timeline-controls__btn,
+  .privacy-controls__clear {
+    min-height: 44px;
+  }
+
+  .btn-ghost,
+  .analysis-mode__btn,
+  .duo-mode__btn {
+    min-height: 44px;
+  }
+
+  /* 3f. DatePicker Edge Clamping */
+  .datepicker__panel {
+    width: calc(100vw - 2 * var(--space-md));
+    max-width: 340px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  /* 3g. Form Layout */
+  .form__row--actions {
+    flex-direction: column;
+  }
+
+  .form__row--actions .btn-primary,
+  .form__row--actions .btn-ghost {
+    width: 100%;
+  }
+
+  .form__label {
+    min-width: 0;
+  }
+
+  /* 3h. Astral Map Modal — Bottom Sheet */
+  .astral-map-modal-backdrop {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .astral-map-modal {
+    width: 100%;
+    max-height: 85vh;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    padding-bottom: calc(var(--space-lg) + env(safe-area-inset-bottom));
+  }
+
+  /* 3i. iOS Safari Polish */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: max(1rem, 16px);
+  }
+
+  .city-search__list {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .astral-map-modal {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .container {
+    overflow-x: hidden;
+  }
+
+  .placements-strip {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .placements-strip::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* 3j. Performance — Disable Background Animations */
+  .starfield__layer,
+  .carioca-orb,
+  .carioca-ribbon {
+    animation: none !important;
+  }
+
+  .shooting-star {
+    display: none;
+  }
+}
