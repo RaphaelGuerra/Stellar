@@ -87,8 +87,7 @@ function pad2(n: number): string {
 function parseDate(value: string): { year: number; month: number; day: number } {
   const [y, m, d] = value.split("-").map(Number);
   if (!y || isNaN(m) || isNaN(d)) {
-    const now = new Date();
-    return { year: now.getFullYear(), month: now.getMonth(), day: now.getDate() };
+    return { year: 1998, month: 5, day: 10 }; // Jun 10, 1998 — sensible default for birth dates
   }
   return { year: y, month: m - 1, day: d };
 }
