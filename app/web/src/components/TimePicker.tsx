@@ -22,8 +22,8 @@ function pad2(n: number): string {
 function parseTime(value: string): { hour: number; minute: number } {
   const [h, m] = value.split(":").map(Number);
   return {
-    hour: isNaN(h) ? 12 : Math.max(0, Math.min(23, h)),
-    minute: isNaN(m) ? 0 : Math.max(0, Math.min(59, m)),
+    hour: isNaN(h) ? 8 : Math.max(0, Math.min(23, h)),
+    minute: isNaN(m) ? 34 : Math.max(0, Math.min(59, m)),
   };
 }
 
