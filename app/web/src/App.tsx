@@ -430,7 +430,7 @@ function App() {
               <Route path="/relationships" component={RelationshipsView} />
               <Route path="/atlas" component={AtlasView} />
               <Route path="/library" component={LibraryView} />
-              <Route component={RelationshipsView} />
+              <Route component={analysisMode === "compatibility" ? RelationshipsView : ChartView} />
             </Switch>
 
             <section className="action-section action-section--compact">
