@@ -1,5 +1,16 @@
 # Stellar
 
+Last updated: 2026-02-24
+
+## Table of Contents
+
+<!-- TOC start -->
+- [What it does](#what-it-does)
+- [Features](#features)
+- [Stack](#stack)
+- [Run](#run)
+<!-- TOC end -->
+
 > "A bit of madness is key to give us new colors to see."
 
 Stellar was inspired by a remarkable person — the kind you meet once and suddenly the world has more color in it. This app exists because some connections deserve to be explored, understood, and celebrated.

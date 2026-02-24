@@ -1,5 +1,14 @@
 # External Baselines
 
+Last updated: 2026-02-24
+
+## Table of Contents
+
+<!-- TOC start -->
+- [Flow](#flow)
+- [Notes](#notes)
+<!-- TOC end -->
+
 Use `external-baselines.json` to compare engine outputs with third-party references.
 
 ## Flow
